@@ -10,6 +10,18 @@ Built with Arabic localization support
 </p>
 </p>
 
+## Demo
+
+<p align="center">
+  <a href="https://youtu.be/3H64gGhfA4U">
+    <img src="https://img.youtube.com/vi/3H64gGhfA4U/maxresdefault.jpg" alt="NUST Forms Builder Demo" width="600">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/3H64gGhfA4U">Watch the full demo video</a>
+</p>
+
 ## About NUST Forms Builder
 
 NUST Forms Builder is a comprehensive survey and forms platform designed for NUST organization. It provides an intuitive interface for creating, managing, and analyzing surveys with full Arabic language support.
