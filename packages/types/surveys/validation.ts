@@ -38,6 +38,15 @@ const FIELD_TO_LABEL_MAP: Record<string, string> = {
   cardHeadline: "note",
   welcomeCardHtml: "welcome message",
   endingCardButtonLabel: "button label",
+  "province.label": "province label",
+  "province.placeholder": "province placeholder",
+  "province.otherLabel": "province other option label",
+  "judiciary.label": "district label",
+  "judiciary.placeholder": "district placeholder",
+  "judiciary.otherLabel": "district other option label",
+  "area.label": "area label",
+  "area.placeholder": "area placeholder",
+  "area.otherLabel": "area other option label",
 };
 
 const extractLanguageCodes = (surveyLanguages?: TSurveyLanguage[]): string[] => {

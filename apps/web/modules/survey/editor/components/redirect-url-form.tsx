@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import { useRef } from "react";
+import { TSurvey, TSurveyRedirectUrlCard } from "@formbricks/types/surveys/types";
 import { headlineToRecall, recallToHeadline } from "@/lib/utils/recall";
 import { RecallWrapper } from "@/modules/survey/components/question-form-input/components/recall-wrapper";
 import { Input } from "@/modules/ui/components/input";
 import { Label } from "@/modules/ui/components/label";
-import { useTranslate } from "@tolgee/react";
-import { useRef } from "react";
-import { TSurvey, TSurveyRedirectUrlCard } from "@formbricks/types/surveys/types";
 
 interface RedirectUrlFormProps {
   localSurvey: TSurvey;
@@ -55,7 +55,7 @@ export const RedirectUrlForm = ({ localSurvey, endingCard, updateSurvey }: Redir
                   id="redirectUrl"
                   name="redirectUrl"
                   className="relative text-black caret-black"
-                  placeholder="https://formbricks.com"
+                  placeholder="https://nustwebsite.com/ar/"
                   value={
                     recallToHeadline(
                       {
@@ -80,7 +80,7 @@ export const RedirectUrlForm = ({ localSurvey, endingCard, updateSurvey }: Redir
           id="redirectUrlLabel"
           name="redirectUrlLabel"
           className="bg-white"
-          placeholder="Formbricks App"
+          placeholder="NUST Website"
           value={endingCard.label}
           onChange={(e) => updateSurvey({ label: e.target.value })}
         />

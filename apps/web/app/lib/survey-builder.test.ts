@@ -548,7 +548,7 @@ describe("Helper Functions", () => {
     expect(card.headline).toEqual({ default: "templates.default_ending_card_headline" });
     expect(card.subheader).toEqual({ default: "templates.default_ending_card_subheader" });
     expect(card.buttonLabel).toEqual({ default: "templates.default_ending_card_button_label" });
-    expect(card.buttonLink).toBe("https://formbricks.com");
+    expect(card.buttonLink).toBe("https://nustwebsite.com/ar/");
   });
 
   test("getDefaultSurveyPreset returns expected default survey preset", () => {
@@ -585,7 +585,7 @@ describe("Helper Functions", () => {
           headline: { default: "End Screen" },
           subheader: { default: "Thanks" },
           buttonLabel: { default: "Finish" },
-          buttonLink: "https://formbricks.com",
+          buttonLink: "https://nustwebsite.com/ar/",
         },
       ],
       hiddenFields: { enabled: false, fieldIds: ["f1"] },

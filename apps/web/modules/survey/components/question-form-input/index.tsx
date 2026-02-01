@@ -1,19 +1,9 @@
 "use client";
 
-import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
-import { useSyncScroll } from "@/lib/utils/hooks/useSyncScroll";
-import { recallToHeadline } from "@/lib/utils/recall";
-import { MultiLangWrapper } from "@/modules/survey/components/question-form-input/components/multi-lang-wrapper";
-import { RecallWrapper } from "@/modules/survey/components/question-form-input/components/recall-wrapper";
-import { Button } from "@/modules/ui/components/button";
-import { FileInput } from "@/modules/ui/components/file-input";
-import { Input } from "@/modules/ui/components/input";
-import { Label } from "@/modules/ui/components/label";
-import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useTranslate } from "@tolgee/react";
 import { debounce } from "lodash";
-import { ImagePlusIcon, TrashIcon } from "lucide-react";
+import { TrashIcon } from "lucide-react";
 import { RefObject, useCallback, useMemo, useRef, useState } from "react";
 import {
   TI18nString,
@@ -24,6 +14,16 @@ import {
   TSurveyRedirectUrlCard,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
+import { useSyncScroll } from "@/lib/utils/hooks/useSyncScroll";
+import { recallToHeadline } from "@/lib/utils/recall";
+import { MultiLangWrapper } from "@/modules/survey/components/question-form-input/components/multi-lang-wrapper";
+import { RecallWrapper } from "@/modules/survey/components/question-form-input/components/recall-wrapper";
+import { Button } from "@/modules/ui/components/button";
+import { FileInput } from "@/modules/ui/components/file-input";
+import { Input } from "@/modules/ui/components/input";
+import { Label } from "@/modules/ui/components/label";
+import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import {
   determineImageUploaderVisibility,
   getChoiceLabel,
@@ -155,9 +155,7 @@ export const QuestionFormInput = ({
   ]);
 
   const [text, setText] = useState(elementText);
-  const [showImageUploader, setShowImageUploader] = useState<boolean>(
-    determineImageUploaderVisibility(questionIdx, localSurvey)
-  );
+  const showImageUploader = determineImageUploaderVisibility(questionIdx, localSurvey);
 
   const highlightContainerRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -404,22 +402,6 @@ export const QuestionFormInput = ({
                       </div>
 
                       <>
-                        {id === "headline" && !isWelcomeCard && (
-                          <TooltipRenderer tooltipContent={t("environments.surveys.edit.add_photo_or_video")}>
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              aria-label="Toggle image uploader"
-                              data-testid="toggle-image-uploader-button"
-                              className="ml-2"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setShowImageUploader((prev) => !prev);
-                              }}>
-                              <ImagePlusIcon />
-                            </Button>
-                          </TooltipRenderer>
-                        )}
                         {renderRemoveDescriptionButton ? (
                           <TooltipRenderer tooltipContent={t("environments.surveys.edit.remove_description")}>
                             <Button

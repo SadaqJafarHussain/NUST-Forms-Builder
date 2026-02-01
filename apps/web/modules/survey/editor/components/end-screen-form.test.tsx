@@ -1,9 +1,9 @@
-import { createI18nString } from "@/lib/i18n/utils";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TSurvey, TSurveyEndScreenCard, TSurveyLanguage } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { createI18nString } from "@/lib/i18n/utils";
 import { EndScreenForm } from "./end-screen-form";
 
 // Mock window.matchMedia - required for useAutoAnimate
@@ -109,7 +109,7 @@ const defaultProps = {
   setSelectedLanguageCode: vi.fn(),
   updateSurvey: mockUpdateSurvey,
   endingCard: defaultEndScreenCard,
-  locale: "en-US" as TUserLocale,
+  locale: "ar-IQ" as TUserLocale,
   isStorageConfigured: true,
 };
 
@@ -175,7 +175,7 @@ describe("EndScreenForm", () => {
 
       expect(mockUpdateSurvey).toHaveBeenCalledWith({
         buttonLabel: expect.any(Object),
-        buttonLink: "https://formbricks.com",
+        buttonLink: "https://nustwebsite.com/ar/",
       });
 
       await userEvent.click(toggleSwitch);

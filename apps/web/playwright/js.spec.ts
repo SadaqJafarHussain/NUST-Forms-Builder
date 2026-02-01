@@ -104,7 +104,7 @@ test.describe("JS Package Test", async () => {
 
     await expect(page.locator("#formbricks-modal-container")).toHaveCount(1);
     await expect(
-      page.locator("#questionCard-0").getByRole("link", { name: "Powered by Formbricks" })
+      page.locator("#questionCard-0").getByRole("link", { name: "Powered by NUST" })
     ).toBeVisible();
 
     // Fill the survey

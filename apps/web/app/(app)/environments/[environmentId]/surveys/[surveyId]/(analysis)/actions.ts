@@ -1,13 +1,13 @@
 "use server";
 
-import { getResponseCountBySurveyId, getResponses } from "@/lib/response/service";
-import { authenticatedActionClient } from "@/lib/utils/action-client";
-import { checkAuthorizationUpdated } from "@/lib/utils/action-client/action-client-middleware";
-import { getOrganizationIdFromSurveyId, getProjectIdFromSurveyId } from "@/lib/utils/helper";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ZId } from "@formbricks/types/common";
 import { ZResponseFilterCriteria } from "@formbricks/types/responses";
+import { getResponseCountBySurveyId, getResponses } from "@/lib/response/service";
+import { authenticatedActionClient } from "@/lib/utils/action-client";
+import { checkAuthorizationUpdated } from "@/lib/utils/action-client/action-client-middleware";
+import { getOrganizationIdFromSurveyId, getProjectIdFromSurveyId } from "@/lib/utils/helper";
 import { getSurveySummary } from "./summary/lib/surveySummary";
 
 export const revalidateSurveyIdPath = async (environmentId: string, surveyId: string) => {
@@ -32,7 +32,7 @@ export const getResponsesAction = authenticatedActionClient
           type: "organization",
           schema: ZResponseFilterCriteria,
           data: parsedInput.filterCriteria,
-          roles: ["owner", "manager"],
+          roles: ["owner", "manager", "member", "viewer"],
         },
         {
           type: "projectTeam",
@@ -66,7 +66,7 @@ export const getSurveySummaryAction = authenticatedActionClient
           type: "organization",
           schema: ZResponseFilterCriteria,
           data: parsedInput.filterCriteria,
-          roles: ["owner", "manager"],
+          roles: ["owner", "manager", "member", "viewer"],
         },
         {
           type: "projectTeam",
@@ -94,7 +94,7 @@ export const getResponseCountAction = authenticatedActionClient
           type: "organization",
           schema: ZResponseFilterCriteria,
           data: parsedInput.filterCriteria,
-          roles: ["owner", "manager"],
+          roles: ["owner", "manager", "member", "viewer"],
         },
         {
           type: "projectTeam",

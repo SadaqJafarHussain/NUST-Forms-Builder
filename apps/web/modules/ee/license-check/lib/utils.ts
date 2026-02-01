@@ -1,26 +1,16 @@
 import "server-only";
-import {
-  AUDIT_LOG_ENABLED,
-  IS_FORMBRICKS_CLOUD,
-  IS_RECAPTCHA_CONFIGURED,
-  PROJECT_FEATURE_KEYS,
-} from "@/lib/constants";
-import { TEnterpriseLicenseFeatures } from "@/modules/ee/license-check/types/enterprise-license";
 import { Organization } from "@prisma/client";
-import { getEnterpriseLicense, getLicenseFeatures } from "./license";
+import { IS_RECAPTCHA_CONFIGURED } from "@/lib/constants";
+import { TEnterpriseLicenseFeatures } from "@/modules/ee/license-check/types/enterprise-license";
 
 // Helper function for feature permissions (e.g., removeBranding, whitelabel)
+// All features unlocked - no license required
 const getFeaturePermission = async (
-  billingPlan: Organization["billing"]["plan"],
-  featureKey: keyof Pick<TEnterpriseLicenseFeatures, "removeBranding" | "whitelabel">
+  _billingPlan: Organization["billing"]["plan"],
+  _featureKey: keyof Pick<TEnterpriseLicenseFeatures, "removeBranding" | "whitelabel">
 ): Promise<boolean> => {
-  const license = await getEnterpriseLicense();
-
-  if (IS_FORMBRICKS_CLOUD) {
-    return license.active && billingPlan !== PROJECT_FEATURE_KEYS.FREE;
-  } else {
-    return license.active && !!license.features?.[featureKey];
-  }
+  // All features unlocked
+  return true;
 };
 
 export const getRemoveBrandingPermission = async (
@@ -36,17 +26,15 @@ export const getWhiteLabelPermission = async (
 };
 
 export const getBiggerUploadFileSizePermission = async (
-  billingPlan: Organization["billing"]["plan"]
+  _billingPlan: Organization["billing"]["plan"]
 ): Promise<boolean> => {
-  const license = await getEnterpriseLicense();
-
-  if (IS_FORMBRICKS_CLOUD) return billingPlan !== PROJECT_FEATURE_KEYS.FREE && license.active;
-  else if (!IS_FORMBRICKS_CLOUD) return license.active;
-  return false;
+  // All features unlocked
+  return true;
 };
 
+// All features unlocked - no license required
 const getSpecificFeatureFlag = async (
-  featureKey: keyof Pick<
+  _featureKey: keyof Pick<
     TEnterpriseLicenseFeatures,
     | "isMultiOrgEnabled"
     | "contacts"
@@ -58,9 +46,8 @@ const getSpecificFeatureFlag = async (
     | "quotas"
   >
 ): Promise<boolean> => {
-  const licenseFeatures = await getLicenseFeatures();
-  if (!licenseFeatures) return false;
-  return typeof licenseFeatures[featureKey] === "boolean" ? licenseFeatures[featureKey] : false;
+  // All features unlocked
+  return true;
 };
 
 export const getIsMultiOrgEnabled = async (): Promise<boolean> => {
@@ -89,46 +76,26 @@ export const getIsQuotasEnabled = async (billingPlan: Organization["billing"]["p
 };
 
 export const getIsAuditLogsEnabled = async (): Promise<boolean> => {
-  if (!AUDIT_LOG_ENABLED) return false;
-  return getSpecificFeatureFlag("auditLogs");
+  // All features unlocked
+  return true;
 };
 
 export const getIsSamlSsoEnabled = async (): Promise<boolean> => {
-  if (IS_FORMBRICKS_CLOUD) {
-    return false;
-  }
-  const licenseFeatures = await getLicenseFeatures();
-  if (!licenseFeatures) return false;
-  return licenseFeatures.sso && licenseFeatures.saml;
+  // All features unlocked
+  return true;
 };
 
 export const getIsSpamProtectionEnabled = async (
-  billingPlan: Organization["billing"]["plan"]
+  _billingPlan: Organization["billing"]["plan"]
 ): Promise<boolean> => {
   if (!IS_RECAPTCHA_CONFIGURED) return false;
-
-  const license = await getEnterpriseLicense();
-
-  if (IS_FORMBRICKS_CLOUD) {
-    return (
-      license.active &&
-      !!license.features?.spamProtection &&
-      (billingPlan === PROJECT_FEATURE_KEYS.SCALE || billingPlan === PROJECT_FEATURE_KEYS.ENTERPRISE)
-    );
-  }
-
-  return license.active && !!license.features?.spamProtection;
+  // All features unlocked
+  return true;
 };
 
-const featureFlagFallback = async (billingPlan: Organization["billing"]["plan"]): Promise<boolean> => {
-  const license = await getEnterpriseLicense();
-  if (IS_FORMBRICKS_CLOUD)
-    return (
-      license.active &&
-      (billingPlan === PROJECT_FEATURE_KEYS.SCALE || billingPlan === PROJECT_FEATURE_KEYS.ENTERPRISE)
-    );
-  else if (!IS_FORMBRICKS_CLOUD) return license.active;
-  return false;
+const featureFlagFallback = async (_billingPlan: Organization["billing"]["plan"]): Promise<boolean> => {
+  // All features unlocked
+  return true;
 };
 
 export const getMultiLanguagePermission = async (
@@ -154,16 +121,8 @@ export const getAccessControlPermission = async (
 };
 
 export const getOrganizationProjectsLimit = async (
-  limits: Organization["billing"]["limits"]
+  _limits: Organization["billing"]["limits"]
 ): Promise<number> => {
-  const license = await getEnterpriseLicense();
-
-  let limit: number;
-
-  if (IS_FORMBRICKS_CLOUD) {
-    limit = license.active ? (limits.projects ?? Infinity) : 3;
-  } else {
-    limit = license.active && license.features?.projects != null ? license.features.projects : 3;
-  }
-  return limit;
+  // Unlimited projects
+  return Infinity;
 };

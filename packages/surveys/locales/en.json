@@ -59,6 +59,9 @@
       "title": "This device doesn’t support spam protection."
     },
     "please_book_an_appointment": "Please book an appointment",
+    "please_enter_a_valid_email": "Please enter a valid email address",
+    "please_enter_a_valid_iraq_phone_number": "Please enter a valid Iraq phone number (e.g., 07XXXXXXXXX)",
+    "please_enter_a_valid_number": "Please enter a valid number",
     "please_enter_a_valid_phone_number": "Please enter a valid phone number",
     "please_fill_out_this_field": "Please fill out this field",
     "please_rank_all_items_before_submitting": "Please rank all items before submitting",

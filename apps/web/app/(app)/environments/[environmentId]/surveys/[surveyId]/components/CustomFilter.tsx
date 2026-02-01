@@ -1,21 +1,5 @@
 "use client";
 
-import {
-  DateRange,
-  useResponseFilter,
-} from "@/app/(app)/environments/[environmentId]/components/ResponseFilterContext";
-import { getResponsesDownloadUrlAction } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/actions";
-import { downloadResponsesFile } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/utils";
-import { getFormattedFilters, getTodayDate } from "@/app/lib/surveys/surveys";
-import { useClickOutside } from "@/lib/utils/hooks/useClickOutside";
-import { Calendar } from "@/modules/ui/components/calendar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/modules/ui/components/dropdown-menu";
-import { cn } from "@/modules/ui/lib/utils";
 import * as Sentry from "@sentry/nextjs";
 import { TFnType, useTranslate } from "@tolgee/react";
 import {
@@ -37,6 +21,23 @@ import { ArrowDownToLineIcon, ChevronDown, ChevronUp, DownloadIcon, Loader2Icon 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { TSurvey } from "@formbricks/types/surveys/types";
+import { TUserLocale } from "@formbricks/types/user";
+import {
+  DateRange,
+  useResponseFilter,
+} from "@/app/(app)/environments/[environmentId]/components/ResponseFilterContext";
+import { getResponsesDownloadUrlAction } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/actions";
+import { downloadResponsesFile } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/utils";
+import { getFormattedFilters, getTodayDate } from "@/app/lib/surveys/surveys";
+import { useClickOutside } from "@/lib/utils/hooks/useClickOutside";
+import { Calendar } from "@/modules/ui/components/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/modules/ui/components/dropdown-menu";
+import { cn } from "@/modules/ui/lib/utils";
 import { ResponseFilter } from "./ResponseFilter";
 
 enum DateSelected {
@@ -65,6 +66,7 @@ const getFilterDropDownLabels = (t: TFnType) => ({
 
 interface CustomFilterProps {
   survey: TSurvey;
+  locale: TUserLocale;
 }
 
 const getDateRangeLabel = (from: Date, to: Date, t: TFnType) => {
@@ -125,7 +127,7 @@ const getDateRangeLabel = (from: Date, to: Date, t: TFnType) => {
   return matchedRange ? matchedRange.label : getFilterDropDownLabels(t).CUSTOM_RANGE;
 };
 
-export const CustomFilter = ({ survey }: CustomFilterProps) => {
+export const CustomFilter = ({ survey, locale }: CustomFilterProps) => {
   const { t } = useTranslate();
   const { selectedFilter, dateRange, setDateRange, resetState } = useResponseFilter();
   const [filterRange, setFilterRange] = useState(
@@ -248,6 +250,7 @@ export const CustomFilter = ({ survey }: CustomFilterProps) => {
         surveyId: survey.id,
         format: fileType,
         filterCriteria: responseFilters,
+        locale: locale,
       });
 
       if (responsesDownloadUrlResponse?.data) {

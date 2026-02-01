@@ -1,5 +1,11 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useTranslate } from "@tolgee/react";
+import { BuildingIcon, ChevronDownIcon, ChevronRightIcon, Loader2, PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { logger } from "@formbricks/logger";
 import { CreateOrganizationModal } from "@/modules/organization/components/CreateOrganizationModal";
 import { BreadcrumbItem } from "@/modules/ui/components/breadcrumb";
 import {
@@ -7,46 +13,23 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/modules/ui/components/dropdown-menu";
-import * as Sentry from "@sentry/nextjs";
-import { useTranslate } from "@tolgee/react";
-import {
-  BuildingIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  Loader2,
-  PlusIcon,
-  SettingsIcon,
-} from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { logger } from "@formbricks/logger";
 
 interface OrganizationBreadcrumbProps {
   currentOrganizationId: string;
   organizations: { id: string; name: string }[];
   isMultiOrgEnabled: boolean;
-  currentEnvironmentId?: string;
-  isFormbricksCloud: boolean;
-  isMember: boolean;
-  isOwnerOrManager: boolean;
 }
 
 export const OrganizationBreadcrumb = ({
   currentOrganizationId,
   organizations,
   isMultiOrgEnabled,
-  currentEnvironmentId,
-  isFormbricksCloud,
-  isMember,
-  isOwnerOrManager,
 }: OrganizationBreadcrumbProps) => {
   const { t } = useTranslate();
   const [isOrganizationDropdownOpen, setIsOrganizationDropdownOpen] = useState(false);
   const [openCreateOrganizationModal, setOpenCreateOrganizationModal] = useState(false);
-  const pathname = usePathname();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const currentOrganization = organizations.find((org) => org.id === currentOrganizationId);
@@ -66,37 +49,6 @@ export const OrganizationBreadcrumb = ({
 
   // Hide organization dropdown for single org setups (on-premise)
   const showOrganizationDropdown = isMultiOrgEnabled || organizations.length > 1;
-
-  const organizationSettings = [
-    {
-      id: "general",
-      label: t("common.general"),
-      href: `/environments/${currentEnvironmentId}/settings/general`,
-    },
-    {
-      id: "teams",
-      label: t("common.teams"),
-      href: `/environments/${currentEnvironmentId}/settings/teams`,
-    },
-    {
-      id: "api-keys",
-      label: t("common.api_keys"),
-      href: `/environments/${currentEnvironmentId}/settings/api-keys`,
-      hidden: !isOwnerOrManager,
-    },
-    {
-      id: "billing",
-      label: t("common.billing"),
-      href: `/environments/${currentEnvironmentId}/settings/billing`,
-      hidden: !isFormbricksCloud,
-    },
-    {
-      id: "enterprise",
-      label: t("common.enterprise_license"),
-      href: `/environments/${currentEnvironmentId}/settings/enterprise`,
-      hidden: isFormbricksCloud || isMember,
-    },
-  ];
 
   return (
     <BreadcrumbItem isActive={isOrganizationDropdownOpen}>
@@ -143,28 +95,6 @@ export const OrganizationBreadcrumb = ({
                 </DropdownMenuCheckboxItem>
               )}
             </>
-          )}
-          {currentEnvironmentId && (
-            <div>
-              <DropdownMenuSeparator />
-              <div className="px-2 py-1.5 text-sm font-medium text-slate-500">
-                <SettingsIcon className="mr-2 inline h-4 w-4" />
-                {t("common.organization_settings")}
-              </div>
-
-              {organizationSettings.map((setting) => {
-                return setting.hidden ? null : (
-                  <DropdownMenuCheckboxItem
-                    key={setting.id}
-                    checked={pathname.includes(setting.id)}
-                    hidden={setting.hidden}
-                    onClick={() => router.push(setting.href)}
-                    className="cursor-pointer">
-                    {setting.label}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-            </div>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

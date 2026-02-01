@@ -91,3 +91,34 @@ export const createMembership = async (
     throw error;
   }
 };
+
+export const updateMembership = async (
+  userId: string,
+  organizationId: string,
+  data: Partial<TMembership>
+): Promise<TMembership> => {
+  validateInputs([userId, ZString], [organizationId, ZString], [data, ZMembership.partial()]);
+
+  try {
+    const membership = await prisma.membership.update({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId,
+        },
+      },
+      data: {
+        role: data.role as TMembership["role"],
+        accepted: data.accepted,
+      },
+    });
+
+    return membership;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      throw new DatabaseError(error.message);
+    }
+
+    throw error;
+  }
+};

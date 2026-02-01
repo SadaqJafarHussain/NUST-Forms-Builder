@@ -1,8 +1,8 @@
-import { INVISIBLE_REGEX } from "@/lib/i18n/constants";
-import { structuredClone } from "@/lib/pollyfills/structuredClone";
 import { iso639Languages } from "@formbricks/i18n-utils/src/utils";
 import { TLanguage } from "@formbricks/types/project";
 import { TI18nString, TSurveyLanguage } from "@formbricks/types/surveys/types";
+import { INVISIBLE_REGEX } from "@/lib/i18n/constants";
+import { structuredClone } from "@/lib/pollyfills/structuredClone";
 
 // https://github.com/tolgee/tolgee-js/blob/main/packages/web/src/package/observers/invisible/secret.ts
 const removeTolgeeInvisibleMarks = (str: string) => {
@@ -130,132 +130,23 @@ export const addMultiLanguageLabels = (object: any, languageSymbols: string[]): 
   return object;
 };
 
+// Arabic-only language configuration
 export const appLanguages = [
   {
-    code: "en-US",
+    code: "ar-IQ",
     label: {
-      "en-US": "English (US)",
-      "de-DE": "Englisch (US)",
-      "pt-BR": "Inglês (EUA)",
-      "fr-FR": "Anglais (États-Unis)",
-      "zh-Hant-TW": "英文 (美國)",
-      "pt-PT": "Inglês (EUA)",
-      "ro-RO": "Engleză (SUA)",
-      "ja-JP": "英語（米国）",
-      "zh-Hans-CN": "英语（美国）",
-    },
-  },
-  {
-    code: "de-DE",
-    label: {
-      "en-US": "German",
-      "de-DE": "Deutsch",
-      "pt-BR": "Alemão",
-      "fr-FR": "Allemand",
-      "zh-Hant-TW": "德語",
-      "pt-PT": "Alemão",
-      "ro-RO": "Germană",
-      "ja-JP": "ドイツ語",
-      "zh-Hans-CN": "德语",
-    },
-  },
-  {
-    code: "pt-BR",
-    label: {
-      "en-US": "Portuguese (Brazil)",
-      "de-DE": "Portugiesisch (Brasilien)",
-      "pt-BR": "Português (Brasil)",
-      "fr-FR": "Portugais (Brésil)",
-      "zh-Hant-TW": "葡萄牙語 (巴西)",
-      "pt-PT": "Português (Brasil)",
-      "ro-RO": "Portugheză (Brazilia)",
-      "ja-JP": "ポルトガル語（ブラジル）",
-      "zh-Hans-CN": "葡萄牙语（巴西）",
-    },
-  },
-  {
-    code: "fr-FR",
-    label: {
-      "en-US": "French",
-      "de-DE": "Französisch",
-      "pt-BR": "Francês",
-      "fr-FR": "Français",
-      "zh-Hant-TW": "法語",
-      "pt-PT": "Francês",
-      "ro-RO": "Franceză",
-      "ja-JP": "フランス語",
-      "zh-Hans-CN": "法语",
-    },
-  },
-  {
-    code: "zh-Hant-TW",
-    label: {
-      "en-US": "Chinese (Traditional)",
-      "de-DE": "Chinesisch (Traditionell)",
-      "pt-BR": "Chinês (Tradicional)",
-      "fr-FR": "Chinois (Traditionnel)",
-      "zh-Hant-TW": "繁體中文",
-      "pt-PT": "Chinês (Tradicional)",
-      "ro-RO": "Chineză (Tradicională)",
-      "ja-JP": "中国語（繁体字）",
-      "zh-Hans-CN": "繁体中文",
-    },
-  },
-  {
-    code: "pt-PT",
-    label: {
-      "en-US": "Portuguese (Portugal)",
-      "de-DE": "Portugiesisch (Portugal)",
-      "pt-BR": "Português (Portugal)",
-      "fr-FR": "Portugais (Portugal)",
-      "zh-Hant-TW": "葡萄牙語 (葡萄牙)",
-      "pt-PT": "Português (Portugal)",
-      "ro-RO": "Portugheză (Portugalia)",
-      "ja-JP": "ポルトガル語（ポルトガル）",
-      "zh-Hans-CN": "葡萄牙语（葡萄牙）",
-    },
-  },
-  {
-    code: "ro-RO",
-    label: {
-      "en-US": "Romanian",
-      "de-DE": "Rumänisch",
-      "pt-BR": "Romeno",
-      "fr-FR": "Roumain",
-      "zh-Hant-TW": "羅馬尼亞語",
-      "pt-PT": "Romeno",
-      "ro-RO": "Română",
-      "ja-JP": "ルーマニア語",
-      "zh-Hans-CN": "罗马尼亚语",
-    },
-  },
-  {
-    code: "ja-JP",
-    label: {
-      "en-US": "Japanese",
-      "de-DE": "Japanisch",
-      "pt-BR": "Japonês",
-      "fr-FR": "Japonais",
-      "zh-Hant-TW": "日語",
-      "pt-PT": "Japonês",
-      "ro-RO": "Japoneză",
-      "ja-JP": "日本語",
-      "zh-Hans-CN": "日语",
-    },
-  },
-  {
-    code: "zh-Hans-CN",
-    label: {
-      "en-US": "Chinese (Simplified)",
-      "de-DE": "Chinesisch (Vereinfacht)",
-      "pt-BR": "Chinês (Simplificado)",
-      "fr-FR": "Chinois (Simplifié)",
-      "zh-Hant-TW": "簡體中文",
-      "pt-PT": "Chinês (Simplificado)",
-      "ro-RO": "Chineză (Simplificată)",
-      "ja-JP": "中国語（簡体字）",
-      "zh-Hans-CN": "简体中文",
+      "ar-IQ": "العربية",
     },
   },
 ];
+
+// Helper function to get RTL languages
+export const getRTLLanguages = (): string[] => {
+  return ["ar-IQ", "ar", "he", "fa", "ur"];
+};
+
+// Helper function to check if a language is RTL
+export const isRTLLanguage = (languageCode: string): boolean => {
+  return getRTLLanguages().includes(languageCode);
+};
 export { iso639Languages };

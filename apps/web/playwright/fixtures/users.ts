@@ -72,7 +72,7 @@ export const createUsersFixture = (page: Page, workerInfo: TestInfo): UsersFixtu
           name: uname,
           email: userEmail,
           password: hashedPassword,
-          locale: "en-US",
+          locale: "ar-IQ",
           memberships: {
             create: {
               organization: {

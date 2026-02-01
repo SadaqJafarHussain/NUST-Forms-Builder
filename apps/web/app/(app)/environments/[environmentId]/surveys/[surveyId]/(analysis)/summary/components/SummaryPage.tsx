@@ -1,5 +1,10 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { TEnvironment } from "@formbricks/types/environment";
+import { TSurvey, TSurveySummary } from "@formbricks/types/surveys/types";
+import { TUserLocale } from "@formbricks/types/user";
 import { useResponseFilter } from "@/app/(app)/environments/[environmentId]/components/ResponseFilterContext";
 import { getSurveySummaryAction } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/actions";
 import ScrollToTop from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/ScrollToTop";
@@ -8,11 +13,6 @@ import { CustomFilter } from "@/app/(app)/environments/[environmentId]/surveys/[
 import { getFormattedFilters } from "@/app/lib/surveys/surveys";
 import { replaceHeadlineRecall } from "@/lib/utils/recall";
 import { QuotasSummary } from "@/modules/ee/quotas/components/quotas-summary";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { TEnvironment } from "@formbricks/types/environment";
-import { TSurvey, TSurveySummary } from "@formbricks/types/surveys/types";
-import { TUserLocale } from "@formbricks/types/user";
 import { SummaryList } from "./SummaryList";
 import { SummaryMetadata } from "./SummaryMetadata";
 
@@ -123,7 +123,7 @@ export const SummaryPage = ({
       {tab === "dropOffs" && <SummaryDropOffs dropOff={surveySummary.dropOff} survey={surveyMemoized} />}
       {isQuotasAllowed && tab === "quotas" && <QuotasSummary quotas={surveySummary.quotas} />}
       <div className="flex gap-1.5">
-        <CustomFilter survey={surveyMemoized} />
+        <CustomFilter survey={surveyMemoized} locale={locale} />
       </div>
       <ScrollToTop containerId="mainContent" />
       <SummaryList

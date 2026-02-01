@@ -1,32 +1,16 @@
 "use client";
 
-import { NavigationLink } from "@/app/(app)/environments/[environmentId]/components/NavigationLink";
-import { isNewerVersion } from "@/app/(app)/environments/[environmentId]/lib/utils";
-import FBLogo from "@/images/formbricks-wordmark.svg";
-import { cn } from "@/lib/cn";
-import { getAccessFlags } from "@/lib/membership/utils";
-import { useSignOut } from "@/modules/auth/hooks/use-sign-out";
-import { getLatestStableFbReleaseAction } from "@/modules/projects/settings/(setup)/app-connection/actions";
-import { ProfileAvatar } from "@/modules/ui/components/avatars";
-import { Button } from "@/modules/ui/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/modules/ui/components/dropdown-menu";
 import { useTranslate } from "@tolgee/react";
 import {
-  ArrowUpRightIcon,
+  BuildingIcon,
   ChevronRightIcon,
   Cog,
+  FolderPlusIcon,
   LogOutIcon,
   MessageCircle,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
-  RocketIcon,
   UserCircleIcon,
-  UserIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,7 +20,22 @@ import { TEnvironment } from "@formbricks/types/environment";
 import { TOrganizationRole } from "@formbricks/types/memberships";
 import { TOrganization } from "@formbricks/types/organizations";
 import { TUser } from "@formbricks/types/user";
-import packageJson from "../../../../../package.json";
+import { NavigationLink } from "@/app/(app)/environments/[environmentId]/components/NavigationLink";
+import FBLogo from "@/images/formbricks-wordmark.svg";
+import { cn } from "@/lib/cn";
+import { getAccessFlags } from "@/lib/membership/utils";
+import { useSignOut } from "@/modules/auth/hooks/use-sign-out";
+import { CreateProjectModal } from "@/modules/projects/components/create-project-modal";
+import { ProjectLimitModal } from "@/modules/projects/components/project-limit-modal";
+import { ProfileAvatar } from "@/modules/ui/components/avatars";
+import { Button } from "@/modules/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/modules/ui/components/dropdown-menu";
+import { ModalButton } from "@/modules/ui/components/upgrade-prompt";
 
 interface NavigationProps {
   environment: TEnvironment;
@@ -44,8 +43,10 @@ interface NavigationProps {
   organization: TOrganization;
   projects: { id: string; name: string }[];
   isFormbricksCloud: boolean;
-  isDevelopment: boolean;
   membershipRole?: TOrganizationRole;
+  organizationProjectsLimit: number;
+  isLicenseActive: boolean;
+  isAccessControlAllowed: boolean;
 }
 
 export const MainNavigation = ({
@@ -55,20 +56,59 @@ export const MainNavigation = ({
   projects,
   membershipRole,
   isFormbricksCloud,
-  isDevelopment,
+  organizationProjectsLimit,
+  isLicenseActive: _isLicenseActive,
+  isAccessControlAllowed,
 }: NavigationProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslate();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isTextVisible, setIsTextVisible] = useState(true);
-  const [latestVersion, setLatestVersion] = useState("");
   const { signOut: signOutWithAudit } = useSignOut({ id: user.id, email: user.email });
 
   const project = projects.find((project) => project.id === environment.projectId);
-  const { isManager, isOwner, isBilling } = getAccessFlags(membershipRole);
+  const { isManager, isOwner, isBilling, isMember } = getAccessFlags(membershipRole);
 
   const isOwnerOrManager = isManager || isOwner;
+
+  // State for project creation modals
+  const [openCreateProjectModal, setOpenCreateProjectModal] = useState(false);
+  const [openLimitModal, setOpenLimitModal] = useState(false);
+
+  const handleAddProject = () => {
+    if (projects.length >= organizationProjectsLimit) {
+      setOpenLimitModal(true);
+      return;
+    }
+    setOpenCreateProjectModal(true);
+  };
+
+  const LimitModalButtons = (): [ModalButton, ModalButton] => {
+    if (isFormbricksCloud) {
+      return [
+        {
+          text: t("environments.settings.billing.upgrade"),
+          href: `/environments/${environment.id}/settings/billing`,
+        },
+        {
+          text: t("common.cancel"),
+          onClick: () => setOpenLimitModal(false),
+        },
+      ];
+    }
+
+    return [
+      {
+        text: t("common.cancel"),
+        onClick: () => setOpenLimitModal(false),
+      },
+      {
+        text: t("common.cancel"),
+        onClick: () => setOpenLimitModal(false),
+      },
+    ];
+  };
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -105,55 +145,23 @@ export const MainNavigation = ({
         isHidden: false,
       },
       {
-        href: `/environments/${environment.id}/contacts`,
-        name: t("common.contacts"),
-        icon: UserIcon,
-        isActive: pathname?.includes("/contacts") || pathname?.includes("/segments"),
-      },
-      {
         name: t("common.configuration"),
         href: `/environments/${environment.id}/project/general`,
         icon: Cog,
         isActive: pathname?.includes("/project"),
+        isHidden: isMember, // Hide configuration for members
       },
     ],
-    [t, environment.id, pathname]
+    [t, environment.id, pathname, isMember]
   );
 
   const dropdownNavigation = [
     {
-      label: t("common.account"),
-      href: `/environments/${environment.id}/settings/profile`,
+      label: t("common.settings"),
+      href: `/environments/${environment.id}/settings/general`,
       icon: UserCircleIcon,
     },
-    {
-      label: t("common.documentation"),
-      href: "https://formbricks.com/docs",
-      target: "_blank",
-      icon: ArrowUpRightIcon,
-    },
-    {
-      label: t("common.share_feedback"),
-      href: "https://github.com/formbricks/formbricks/issues",
-      target: "_blank",
-      icon: ArrowUpRightIcon,
-    },
   ];
-
-  useEffect(() => {
-    async function loadReleases() {
-      const res = await getLatestStableFbReleaseAction();
-      if (res?.data) {
-        const latestVersionTag = res.data;
-        const currentVersionTag = `v${packageJson.version}`;
-
-        if (isNewerVersion(currentVersionTag, latestVersionTag)) {
-          setLatestVersion(latestVersionTag);
-        }
-      }
-    }
-    if (isOwnerOrManager) loadReleases();
-  }, [isOwnerOrManager]);
 
   const mainNavigationLink = `/environments/${environment.id}/${isBilling ? "settings/billing/" : "surveys/"}`;
 
@@ -213,22 +221,46 @@ export const MainNavigation = ({
                 )}
               </ul>
             )}
+
+            {/* Admin Section - Only for owners/managers */}
+            {isOwnerOrManager && !isBilling && (
+              <div className="mt-4 border-t border-slate-200 pt-4">
+                <ul>
+                  {/* Create New Project */}
+                  <li>
+                    <button
+                      onClick={handleAddProject}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md px-4 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900",
+                        isCollapsed ? "justify-center px-2" : "px-4"
+                      )}>
+                      <FolderPlusIcon className="h-5 w-5" strokeWidth={1.5} />
+                      {!isCollapsed && !isTextVisible && (
+                        <span className="text-sm">{t("common.add_new_project")}</span>
+                      )}
+                    </button>
+                  </li>
+                  {/* Organization Settings */}
+                  <li>
+                    <Link
+                      href={`/environments/${environment.id}/settings/general`}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md px-4 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900",
+                        isCollapsed ? "justify-center px-2" : "px-4",
+                        pathname?.includes("/settings/general") && "bg-slate-100 text-slate-900"
+                      )}>
+                      <BuildingIcon className="h-5 w-5" strokeWidth={1.5} />
+                      {!isCollapsed && !isTextVisible && (
+                        <span className="text-sm">{t("common.organization_settings")}</span>
+                      )}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
 
           <div>
-            {/* New Version Available */}
-            {!isCollapsed && isOwnerOrManager && latestVersion && !isFormbricksCloud && !isDevelopment && (
-              <Link
-                href="https://github.com/formbricks/formbricks/releases"
-                target="_blank"
-                className="m-2 flex items-center space-x-4 rounded-lg border border-slate-200 bg-slate-100 p-2 text-sm text-slate-800 hover:border-slate-300 hover:bg-slate-200">
-                <p className="flex items-center justify-center gap-x-2 text-xs">
-                  <RocketIcon strokeWidth={1.5} className="mx-1 h-6 w-6 text-slate-900" />
-                  {t("common.new_version_available", { version: latestVersion })}
-                </p>
-              </Link>
-            )}
-
             {/* User Switch */}
             <div className="flex items-center">
               <DropdownMenu>
@@ -272,12 +304,7 @@ export const MainNavigation = ({
                   {/* Dropdown Items */}
 
                   {dropdownNavigation.map((link) => (
-                    <Link
-                      href={link.href}
-                      target={link.target}
-                      className="flex w-full items-center"
-                      key={link.label}
-                      rel={link.target === "_blank" ? "noopener noreferrer" : undefined}>
+                    <Link href={link.href} className="flex w-full items-center" key={link.label}>
                       <DropdownMenuItem>
                         <link.icon className="mr-2 h-4 w-4" strokeWidth={1.5} />
                         {link.label}
@@ -305,6 +332,24 @@ export const MainNavigation = ({
             </div>
           </div>
         </aside>
+      )}
+
+      {/* Project Creation Modals */}
+      {openLimitModal && (
+        <ProjectLimitModal
+          open={openLimitModal}
+          setOpen={setOpenLimitModal}
+          buttons={LimitModalButtons()}
+          projectLimit={organizationProjectsLimit}
+        />
+      )}
+      {openCreateProjectModal && (
+        <CreateProjectModal
+          open={openCreateProjectModal}
+          setOpen={setOpenCreateProjectModal}
+          organizationId={organization.id}
+          isAccessControlAllowed={isAccessControlAllowed}
+        />
       )}
     </>
   );

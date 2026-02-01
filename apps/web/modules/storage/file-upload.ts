@@ -6,16 +6,6 @@ export enum FileUploadError {
   INVALID_FILE_NAME = "Invalid file name. Please rename your file and try again.",
 }
 
-export const toBase64 = (file: File) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      resolve(reader.result);
-    };
-    reader.onerror = reject;
-  });
-
 export const handleFileUpload = async (
   file: File,
   environmentId: string,
@@ -78,36 +68,18 @@ export const handleFileUpload = async (
     const json = await response.json();
     const { data } = json;
 
-    const { signedUrl, fileUrl, presignedFields } = data as {
+    const { signedUrl, fileUrl } = data as {
       signedUrl: string;
-      presignedFields: Record<string, string>;
       fileUrl: string;
     };
 
-    const fileBase64 = (await toBase64(file)) as string;
-    const formDataForS3 = new FormData();
-
-    Object.entries(presignedFields).forEach(([key, value]) => {
-      formDataForS3.append(key, value);
-    });
-
-    try {
-      const binaryString = atob(fileBase64.split(",")[1]);
-      const uint8Array = Uint8Array.from([...binaryString].map((char) => char.charCodeAt(0)));
-      const blob = new Blob([uint8Array], { type: file.type });
-
-      formDataForS3.append("file", blob);
-    } catch (err) {
-      console.error("Error in uploading file: ", err);
-      return {
-        error: FileUploadError.UPLOAD_FAILED,
-        url: "",
-      };
-    }
-
+    // Use PUT method with raw file body for R2/S3 compatibility
     const uploadResponse = await fetch(signedUrl, {
-      method: "POST",
-      body: formDataForS3,
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
     });
 
     if (!uploadResponse.ok) {

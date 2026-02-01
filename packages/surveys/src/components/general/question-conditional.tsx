@@ -1,19 +1,3 @@
-import { AddressQuestion } from "@/components/questions/address-question";
-import { CalQuestion } from "@/components/questions/cal-question";
-import { ConsentQuestion } from "@/components/questions/consent-question";
-import { ContactInfoQuestion } from "@/components/questions/contact-info-question";
-import { CTAQuestion } from "@/components/questions/cta-question";
-import { DateQuestion } from "@/components/questions/date-question";
-import { FileUploadQuestion } from "@/components/questions/file-upload-question";
-import { MatrixQuestion } from "@/components/questions/matrix-question";
-import { MultipleChoiceMultiQuestion } from "@/components/questions/multiple-choice-multi-question";
-import { MultipleChoiceSingleQuestion } from "@/components/questions/multiple-choice-single-question";
-import { NPSQuestion } from "@/components/questions/nps-question";
-import { OpenTextQuestion } from "@/components/questions/open-text-question";
-import { PictureSelectionQuestion } from "@/components/questions/picture-selection-question";
-import { RankingQuestion } from "@/components/questions/ranking-question";
-import { RatingQuestion } from "@/components/questions/rating-question";
-import { getLocalizedValue } from "@/lib/i18n";
 import { useEffect } from "react";
 import { type TJsFileUploadParams } from "@formbricks/types/js";
 import { type TResponseData, type TResponseDataValue, type TResponseTtc } from "@formbricks/types/responses";
@@ -24,6 +8,24 @@ import {
   type TSurveyQuestionId,
   TSurveyQuestionTypeEnum,
 } from "@formbricks/types/surveys/types";
+import { AddressQuestion } from "@/components/questions/address-question";
+import { CalQuestion } from "@/components/questions/cal-question";
+import { ConsentQuestion } from "@/components/questions/consent-question";
+import { ContactInfoQuestion } from "@/components/questions/contact-info-question";
+import { CTAQuestion } from "@/components/questions/cta-question";
+import { DateQuestion } from "@/components/questions/date-question";
+import { FileUploadQuestion } from "@/components/questions/file-upload-question";
+// ← ADD THIS LINE
+import { MatrixQuestion } from "@/components/questions/matrix-question";
+import { MultipleChoiceMultiQuestion } from "@/components/questions/multiple-choice-multi-question";
+import { MultipleChoiceSingleQuestion } from "@/components/questions/multiple-choice-single-question";
+import { NPSQuestion } from "@/components/questions/nps-question";
+import { OpenTextQuestion } from "@/components/questions/open-text-question";
+import { PictureSelectionQuestion } from "@/components/questions/picture-selection-question";
+import { RankingQuestion } from "@/components/questions/ranking-question";
+import { RatingQuestion } from "@/components/questions/rating-question";
+import { getLocalizedValue } from "@/lib/i18n";
+import { IraqLocationQuestion } from "../questions/iraq-location-question";
 
 interface QuestionConditionalProps {
   question: TSurveyQuestion;
@@ -337,6 +339,23 @@ export function QuestionConditional({
     <ContactInfoQuestion
       question={question}
       value={Array.isArray(value) ? value : undefined}
+      onChange={onChange}
+      onSubmit={onSubmit}
+      onBack={onBack}
+      isFirstQuestion={isFirstQuestion}
+      isLastQuestion={isLastQuestion}
+      languageCode={languageCode}
+      ttc={ttc}
+      setTtc={setTtc}
+      currentQuestionId={currentQuestionId}
+      autoFocusEnabled={autoFocusEnabled}
+      isBackButtonHidden={isBackButtonHidden}
+      dir={dir}
+    />
+  ) : question.type === TSurveyQuestionTypeEnum.IraqLocation ? (
+    <IraqLocationQuestion
+      question={question}
+      value={typeof value === "string" ? value : undefined}
       onChange={onChange}
       onSubmit={onSubmit}
       onBack={onBack}

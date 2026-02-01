@@ -27,7 +27,7 @@ describe("updateUser", () => {
     updatedAt: new Date(),
     twoFactorEnabled: false,
     identityProvider: "email",
-    locale: "en-US",
+    locale: "ar-IQ",
     lastLoginAt: new Date(),
     isActive: true,
   } as unknown as TUser;

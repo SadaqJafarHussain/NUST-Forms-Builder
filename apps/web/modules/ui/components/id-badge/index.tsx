@@ -30,7 +30,6 @@ export const IdBadge: React.FC<IdBadgeProps> = ({
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     try {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(String(id));
@@ -77,7 +76,9 @@ export const IdBadge: React.FC<IdBadgeProps> = ({
   if (variant === "column") {
     return (
       <div className="flex flex-col items-start gap-1">
-        <span className="font-regular text-xs text-slate-700">{label}</span>
+        <span className="font-regular text-xs text-slate-700" suppressHydrationWarning>
+          {label}
+        </span>
         <BadgeContent
           id={id}
           isCopyEnabled={isCopyEnabled}
@@ -95,7 +96,9 @@ export const IdBadge: React.FC<IdBadgeProps> = ({
   // Row variant (default)
   return (
     <div className="flex items-center gap-2">
-      <span className="font-regular text-xs text-slate-700">{label}</span>
+      <span className="font-regular text-xs text-slate-700" suppressHydrationWarning>
+        {label}
+      </span>
       <BadgeContent
         id={id}
         isCopyEnabled={isCopyEnabled}

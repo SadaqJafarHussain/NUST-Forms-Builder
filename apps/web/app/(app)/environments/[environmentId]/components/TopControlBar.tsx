@@ -1,10 +1,8 @@
 "use client";
 
+import { TEnvironment } from "@formbricks/types/environment";
 import { ProjectAndOrgSwitch } from "@/app/(app)/environments/[environmentId]/components/project-and-org-switch";
 import { useEnvironment } from "@/app/(app)/environments/[environmentId]/context/environment-context";
-import { getAccessFlags } from "@/lib/membership/utils";
-import { TEnvironment } from "@formbricks/types/environment";
-import { TOrganizationRole } from "@formbricks/types/memberships";
 
 interface TopControlBarProps {
   environments: TEnvironment[];
@@ -13,12 +11,6 @@ interface TopControlBarProps {
   currentProjectId: string;
   projects: { id: string; name: string }[];
   isMultiOrgEnabled: boolean;
-  organizationProjectsLimit: number;
-  isFormbricksCloud: boolean;
-  isLicenseActive: boolean;
-  isOwnerOrManager: boolean;
-  isAccessControlAllowed: boolean;
-  membershipRole?: TOrganizationRole;
 }
 
 export const TopControlBar = ({
@@ -28,14 +20,7 @@ export const TopControlBar = ({
   currentProjectId,
   projects,
   isMultiOrgEnabled,
-  organizationProjectsLimit,
-  isFormbricksCloud,
-  isLicenseActive,
-  isOwnerOrManager,
-  isAccessControlAllowed,
-  membershipRole,
 }: TopControlBarProps) => {
-  const { isMember } = getAccessFlags(membershipRole);
   const { environment } = useEnvironment();
 
   return (
@@ -50,12 +35,6 @@ export const TopControlBar = ({
         currentProjectId={currentProjectId}
         projects={projects}
         isMultiOrgEnabled={isMultiOrgEnabled}
-        organizationProjectsLimit={organizationProjectsLimit}
-        isFormbricksCloud={isFormbricksCloud}
-        isLicenseActive={isLicenseActive}
-        isOwnerOrManager={isOwnerOrManager}
-        isMember={isMember}
-        isAccessControlAllowed={isAccessControlAllowed}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import {
   AZURE_OAUTH_ENABLED,
   EMAIL_AUTH_ENABLED,
@@ -18,7 +19,6 @@ import {
   getIsSamlSsoEnabled,
   getIsSsoEnabled,
 } from "@/modules/ee/license-check/lib/utils";
-import { Metadata } from "next";
 import { LoginForm } from "./components/login-form";
 
 export const metadata: Metadata = {
@@ -34,8 +34,11 @@ export const LoginPage = async () => {
   ]);
 
   const samlSsoEnabled = isSamlSsoEnabled && SAML_OAUTH_ENABLED;
+
   return (
-    <div className="grid min-h-screen w-full bg-gradient-to-tr from-slate-100 to-slate-50 lg:grid-cols-5">
+    <div
+      dir="ltr"
+      className="grid min-h-screen w-full bg-gradient-to-tr from-slate-100 to-slate-50 lg:grid-cols-5">
       <div className="col-span-2 hidden lg:flex">
         <Testimonial />
       </div>

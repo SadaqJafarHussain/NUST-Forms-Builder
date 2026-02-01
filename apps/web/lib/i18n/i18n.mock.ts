@@ -1,4 +1,3 @@
-import { mockSurveyLanguages } from "@/lib/survey/__mock__/survey.mock";
 import {
   TSurvey,
   TSurveyCTAQuestion,
@@ -15,6 +14,7 @@ import {
   TSurveyRatingQuestion,
   TSurveyWelcomeCard,
 } from "@formbricks/types/surveys/types";
+import { mockSurveyLanguages } from "@/lib/survey/__mock__/survey.mock";
 
 export const mockWelcomeCard: TSurveyWelcomeCard = {
   html: {
@@ -250,7 +250,7 @@ export const mockEndings = [
     subheader: {
       default: "We appreciate your feedback.",
     },
-    buttonLink: "https://formbricks.com",
+    buttonLink: "https://nustwebsite.com/ar/",
     buttonLabel: { default: "Create your own Survey" },
   } as TSurveyEndScreenCard,
 ];
@@ -289,7 +289,7 @@ export const mockSurvey: TSurvey = {
       subheader: {
         default: "We appreciate your feedback.",
       },
-      buttonLink: "https://formbricks.com",
+      buttonLink: "https://nustwebsite.com/ar/",
       buttonLabel: { default: "Create your own Survey" },
     },
   ],

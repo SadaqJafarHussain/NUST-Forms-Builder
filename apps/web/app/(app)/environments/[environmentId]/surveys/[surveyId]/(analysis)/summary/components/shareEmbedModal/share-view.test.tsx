@@ -361,7 +361,7 @@ const mockTabs = [
     label: "Link Settings",
     icon: () => <div data-testid="link-settings-tab-icon" />,
     componentType: MockLinkSettingsTab,
-    componentProps: { survey: mockSurvey, isReadOnly: false, locale: "en-US" },
+    componentProps: { survey: mockSurvey, isReadOnly: false, locale: "ar-IQ" },
     title: "Link Settings",
     description: "Configure link settings",
   },

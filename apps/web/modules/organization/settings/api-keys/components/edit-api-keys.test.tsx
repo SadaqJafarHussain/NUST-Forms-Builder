@@ -145,7 +145,7 @@ describe("EditAPIKeys", () => {
   const defaultProps = {
     organizationId: "org1",
     apiKeys: mockApiKeys,
-    locale: "en-US" as const,
+    locale: "ar-IQ" as const,
     isReadOnly: false,
     projects: mockProjects,
   };

@@ -1,5 +1,13 @@
 "use client";
 
+import { ActionClass, Environment, OrganizationRole, Project } from "@prisma/client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { TContactAttributeKey } from "@formbricks/types/contact-attribute-key";
+import { TOrganizationBillingPlan } from "@formbricks/types/organizations";
+import { TSurveyQuota } from "@formbricks/types/quota";
+import { TSegment } from "@formbricks/types/segment";
+import { TSurvey, TSurveyEditorTabs, TSurveyStyling } from "@formbricks/types/surveys/types";
+import { TUserLocale } from "@formbricks/types/user";
 import { extractLanguageCodes, getEnabledLanguages } from "@/lib/i18n/utils";
 import { structuredClone } from "@/lib/pollyfills/structuredClone";
 import { useDocumentVisibility } from "@/lib/useDocumentVisibility";
@@ -14,14 +22,6 @@ import { SurveyMenuBar } from "@/modules/survey/editor/components/survey-menu-ba
 import { TFollowUpEmailToUser } from "@/modules/survey/editor/types/survey-follow-up";
 import { FollowUpsView } from "@/modules/survey/follow-ups/components/follow-ups-view";
 import { PreviewSurvey } from "@/modules/ui/components/preview-survey";
-import { ActionClass, Environment, Language, OrganizationRole, Project } from "@prisma/client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { TContactAttributeKey } from "@formbricks/types/contact-attribute-key";
-import { TOrganizationBillingPlan } from "@formbricks/types/organizations";
-import { TSurveyQuota } from "@formbricks/types/quota";
-import { TSegment } from "@formbricks/types/segment";
-import { TSurvey, TSurveyEditorTabs, TSurveyStyling } from "@formbricks/types/surveys/types";
-import { TUserLocale } from "@formbricks/types/user";
 import { refetchProjectAction } from "../actions";
 
 interface SurveyEditorProps {
@@ -35,7 +35,6 @@ interface SurveyEditorProps {
   membershipRole?: OrganizationRole;
   colors: string[];
   isUserTargetingAllowed?: boolean;
-  isMultiLanguageAllowed?: boolean;
   isSpamProtectionAllowed?: boolean;
   isFormbricksCloud: boolean;
   isUnsplashConfigured: boolean;
@@ -44,7 +43,6 @@ interface SurveyEditorProps {
   locale: TUserLocale;
   projectPermission: TTeamPermission | null;
   mailFrom: string;
-  projectLanguages: Language[];
   isSurveyFollowUpsAllowed: boolean;
   userEmail: string;
   teamMemberDetails: TFollowUpEmailToUser[];
@@ -56,7 +54,6 @@ interface SurveyEditorProps {
 export const SurveyEditor = ({
   survey,
   project,
-  projectLanguages,
   environment,
   actionClasses,
   contactAttributeKeys,
@@ -64,7 +61,6 @@ export const SurveyEditor = ({
   responseCount,
   membershipRole,
   colors,
-  isMultiLanguageAllowed,
   isUserTargetingAllowed = false,
   isSpamProtectionAllowed = false,
   isFormbricksCloud,
@@ -194,12 +190,10 @@ export const SurveyEditor = ({
               activeQuestionId={activeQuestionId}
               setActiveQuestionId={setActiveQuestionId}
               project={localProject}
-              projectLanguages={projectLanguages}
               invalidQuestions={invalidQuestions}
               setInvalidQuestions={setInvalidQuestions}
               selectedLanguageCode={selectedLanguageCode ? selectedLanguageCode : "default"}
               setSelectedLanguageCode={setSelectedLanguageCode}
-              isMultiLanguageAllowed={isMultiLanguageAllowed}
               isFormbricksCloud={isFormbricksCloud}
               plan={plan}
               isCxMode={isCxMode}

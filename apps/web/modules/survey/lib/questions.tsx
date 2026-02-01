@@ -1,5 +1,3 @@
-import { createI18nString } from "@/lib/i18n/utils";
-import { replaceQuestionPresetPlaceholders } from "@/lib/utils/templates";
 import { createId } from "@paralleldrive/cuid2";
 import { TFnType } from "@tolgee/react";
 import {
@@ -31,6 +29,7 @@ import {
   TSurveyContactInfoQuestion,
   TSurveyDateQuestion,
   TSurveyFileUploadQuestion,
+  TSurveyIraqLocationQuestion,
   TSurveyMatrixQuestion,
   TSurveyMultipleChoiceQuestion,
   TSurveyNPSQuestion,
@@ -40,6 +39,8 @@ import {
   TSurveyRankingQuestion,
   TSurveyRatingQuestion,
 } from "@formbricks/types/surveys/types";
+import { createI18nString } from "@/lib/i18n/utils";
+import { replaceQuestionPresetPlaceholders } from "@/lib/utils/templates";
 
 export type TQuestion = {
   id: string;
@@ -289,6 +290,46 @@ export const getQuestionTypes = (t: TFnType): TQuestion[] => [
       buttonLabel: createI18nString(t("templates.next"), []),
       backButtonLabel: createI18nString(t("templates.back"), []),
     } as Partial<TSurveyContactInfoQuestion>,
+  },
+  {
+    id: QuestionId.IraqLocation,
+    label: t("templates.iraq_location"),
+    description: t("templates.iraq_location_description"),
+    icon: HomeIcon,
+    preset: {
+      headline: createI18nString(t("templates.iraq_location_headline"), []),
+      subheader: createI18nString("", []), // Add empty subheader
+      required: false, // Default to not required
+      province: {
+        label: createI18nString(t("templates.iraq_location_province_label") || "Province", []),
+        placeholder: createI18nString(
+          t("templates.iraq_location_province_placeholder") || "Select province",
+          []
+        ),
+        required: true,
+        allowOther: true,
+        otherLabel: createI18nString(t("templates.iraq_location_other_label") || "Other", []),
+      },
+      judiciary: {
+        label: createI18nString(t("templates.iraq_location_judiciary_label") || "District", []),
+        placeholder: createI18nString(
+          t("templates.iraq_location_judiciary_placeholder") || "Select district",
+          []
+        ),
+        required: true,
+        allowOther: true,
+        otherLabel: createI18nString(t("templates.iraq_location_other_label") || "Other", []),
+      },
+      area: {
+        label: createI18nString(t("templates.iraq_location_area_label") || "Area", []),
+        placeholder: createI18nString(t("templates.iraq_location_area_placeholder") || "Select area", []),
+        required: true,
+        allowOther: true,
+        otherLabel: createI18nString(t("templates.iraq_location_other_label") || "Other", []),
+      },
+      buttonLabel: createI18nString(t("templates.next"), []),
+      backButtonLabel: createI18nString(t("templates.back"), []),
+    } as Partial<TSurveyIraqLocationQuestion>,
   },
 ];
 

@@ -23,6 +23,9 @@ type Props = {
 
 const tolgee = TolgeeBase().init({
   tagNewKeys: branchName ? [`draft:${branchName}`] : [],
+  observerOptions: {
+    fullKeyEncode: true,
+  },
 });
 
 export const TolgeeNextProvider = ({ language, staticData, children }: Props) => {
@@ -33,6 +36,7 @@ export const TolgeeNextProvider = ({ language, staticData, children }: Props) =>
     const { unsubscribe } = tolgee.on("permanentChange", () => {
       router.refresh();
     });
+
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tolgee, router]);

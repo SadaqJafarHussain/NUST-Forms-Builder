@@ -12,11 +12,9 @@ import {
   getIsContactsEnabled,
   getIsQuotasEnabled,
   getIsSpamProtectionEnabled,
-  getMultiLanguagePermission,
 } from "@/modules/ee/license-check/lib/utils";
 import { getQuotas } from "@/modules/ee/quotas/lib/quotas";
 import { getEnvironmentAuth } from "@/modules/environments/lib/utils";
-import { getProjectLanguages } from "@/modules/survey/editor/lib/project";
 import { getTeamMemberDetails } from "@/modules/survey/editor/lib/team";
 import { getUserEmail } from "@/modules/survey/editor/lib/user";
 import { getSurveyFollowUpsPermission } from "@/modules/survey/follow-ups/lib/utils";
@@ -71,19 +69,14 @@ export const SurveyEditorPage = async (props) => {
   ]);
 
   const isUserTargetingAllowed = await getIsContactsEnabled();
-  const [isMultiLanguageAllowed, isSurveyFollowUpsAllowed, isSpamProtectionAllowed, isQuotasAllowed] =
-    await Promise.all([
-      getMultiLanguagePermission(organizationBilling.plan),
-      getSurveyFollowUpsPermission(organizationBilling.plan),
-      getIsSpamProtectionEnabled(organizationBilling.plan),
-      getIsQuotasEnabled(organizationBilling.plan),
-    ]);
+  const [isSurveyFollowUpsAllowed, isSpamProtectionAllowed, isQuotasAllowed] = await Promise.all([
+    getSurveyFollowUpsPermission(organizationBilling.plan),
+    getIsSpamProtectionEnabled(organizationBilling.plan),
+    getIsQuotasEnabled(organizationBilling.plan),
+  ]);
 
   const quotas = isQuotasAllowed && survey ? await getQuotas(survey.id) : [];
-  const [projectLanguages, teamMemberDetails] = await Promise.all([
-    getProjectLanguages(projectWithTeamIds.id),
-    getTeamMemberDetails(projectWithTeamIds.teamIds),
-  ]);
+  const teamMemberDetails = await getTeamMemberDetails(projectWithTeamIds.teamIds);
 
   if (
     !survey ||
@@ -112,9 +105,7 @@ export const SurveyEditorPage = async (props) => {
       colors={SURVEY_BG_COLORS}
       segments={segments}
       isUserTargetingAllowed={isUserTargetingAllowed}
-      isMultiLanguageAllowed={isMultiLanguageAllowed}
       isSpamProtectionAllowed={isSpamProtectionAllowed}
-      projectLanguages={projectLanguages}
       plan={organizationBilling.plan}
       isFormbricksCloud={IS_FORMBRICKS_CLOUD}
       isUnsplashConfigured={!!UNSPLASH_ACCESS_KEY}

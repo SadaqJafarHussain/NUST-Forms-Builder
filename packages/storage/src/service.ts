@@ -4,13 +4,9 @@ import {
   type DeleteObjectsCommandOutput,
   GetObjectCommand,
   HeadObjectCommand,
+  PutObjectCommand,
   paginateListObjectsV2,
 } from "@aws-sdk/client-s3";
-import {
-  type PresignedPost,
-  type PresignedPostOptions,
-  createPresignedPost,
-} from "@aws-sdk/s3-presigned-post";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logger } from "@formbricks/logger";
 import { type Result, type StorageError, StorageErrorCode, err, ok } from "../types/error";
@@ -18,23 +14,28 @@ import { createS3Client } from "./client";
 import { S3_BUCKET_NAME } from "./constants";
 
 /**
- * Get a signed URL for uploading a file to S3
+ * Get a signed URL for uploading a file to S3/R2 using PUT method
  * @param fileName - The name of the file to upload
  * @param contentType - The content type of the file
  * @param filePath - The path to the file in S3
- * @param maxSize - The maximum size of the file to upload or undefined if no limit is desired
- * @returns A Result containing the signed URL and presigned fields or an error: StorageError
+ * @param maxSize - The maximum size of the file to upload (used for client-side validation, not enforced by URL)
+ * @returns A Result containing the signed URL and file key or an error: StorageError
  */
 export const getSignedUploadUrl = async (
   fileName: string,
   contentType: string,
   filePath: string,
-  maxSize: number = 1024 * 1024 * 10 // 10MB
+  _maxSize: number = 1024 * 1024 * 10 // 10MB - kept for API compatibility, not enforced by presigned URL
 ): Promise<
   Result<
     {
       signedUrl: string;
-      presignedFields: PresignedPost["fields"];
+      fileKey: string;
+      signingData: {
+        signature: string;
+        timestamp: number;
+        uuid: string;
+      };
     },
     StorageError
   >
@@ -49,10 +50,6 @@ export const getSignedUploadUrl = async (
       });
     }
 
-    const postConditions: PresignedPostOptions["Conditions"] = maxSize
-      ? [["content-length-range", 0, maxSize]]
-      : undefined;
-
     if (!S3_BUCKET_NAME) {
       logger.error("Failed to get signed upload URL: S3 bucket name is not set");
       return err({
@@ -60,20 +57,26 @@ export const getSignedUploadUrl = async (
       });
     }
 
-    const { fields, url } = await createPresignedPost(s3Client, {
-      Expires: 2 * 60, // 2 minutes
+    const fileKey = `${filePath}/${fileName}`;
+
+    const putObjectCommand = new PutObjectCommand({
       Bucket: S3_BUCKET_NAME,
-      Key: `${filePath}/${fileName}`,
-      Fields: {
-        "Content-Type": contentType,
-        // "Content-Encoding": "base64",
-      },
-      Conditions: postConditions,
+      Key: fileKey,
+      ContentType: contentType,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client, putObjectCommand, {
+      expiresIn: 2 * 60, // 2 minutes
     });
 
     return ok({
-      signedUrl: url,
-      presignedFields: fields,
+      signedUrl,
+      fileKey,
+      signingData: {
+        signature: "",
+        timestamp: Date.now(),
+        uuid: fileName,
+      },
     });
   } catch (error) {
     logger.error({ error }, "Failed to get signed upload URL");

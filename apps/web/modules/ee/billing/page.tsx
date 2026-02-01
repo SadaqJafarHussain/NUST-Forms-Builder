@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { OrganizationSettingsNavbar } from "@/app/(app)/environments/[environmentId]/settings/(organization)/components/OrganizationSettingsNavbar";
 import { IS_FORMBRICKS_CLOUD } from "@/lib/constants";
 import { PROJECT_FEATURE_KEYS, STRIPE_PRICE_LOOKUP_KEYS } from "@/lib/constants";
@@ -10,14 +11,13 @@ import { getEnvironmentAuth } from "@/modules/environments/lib/utils";
 import { PageContentWrapper } from "@/modules/ui/components/page-content-wrapper";
 import { PageHeader } from "@/modules/ui/components/page-header";
 import { getTranslate } from "@/tolgee/server";
-import { notFound } from "next/navigation";
 import { PricingTable } from "./components/pricing-table";
 
 export const PricingPage = async (props) => {
   const params = await props.params;
   const t = await getTranslate();
 
-  const { organization, isMember, currentUserMembership } = await getEnvironmentAuth(params.environmentId);
+  const { organization, isMember } = await getEnvironmentAuth(params.environmentId);
 
   if (!IS_FORMBRICKS_CLOUD) {
     notFound();
@@ -34,12 +34,7 @@ export const PricingPage = async (props) => {
   return (
     <PageContentWrapper>
       <PageHeader pageTitle={t("environments.settings.general.organization_settings")}>
-        <OrganizationSettingsNavbar
-          environmentId={params.environmentId}
-          isFormbricksCloud={IS_FORMBRICKS_CLOUD}
-          membershipRole={currentUserMembership?.role}
-          activeId="billing"
-        />
+        <OrganizationSettingsNavbar environmentId={params.environmentId} activeId="billing" />
       </PageHeader>
 
       <PricingTable

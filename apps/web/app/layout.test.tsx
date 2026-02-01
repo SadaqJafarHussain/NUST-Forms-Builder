@@ -1,10 +1,10 @@
-import { getLocale } from "@/tolgee/language";
-import { getTolgee } from "@/tolgee/server";
 import { cleanup } from "@testing-library/react";
 import { TolgeeInstance } from "@tolgee/react";
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { getLocale } from "@/tolgee/language";
+import { getTolgee } from "@/tolgee/server";
 import RootLayout, { metadata } from "./layout";
 
 // Mock dependencies for the layout
@@ -115,7 +115,7 @@ describe("RootLayout", () => {
   });
 
   test("renders with different locale", async () => {
-    const fakeLocale = "de-DE";
+    const fakeLocale = "ar-IQ";
     vi.mocked(getLocale).mockResolvedValue(fakeLocale);
 
     const fakeStaticData = { key: "value" };
@@ -142,7 +142,7 @@ describe("RootLayout", () => {
     expect(metadata).toEqual({
       title: {
         template: "%s | Formbricks",
-        default: "Formbricks",
+        default: "NUSTForms",
       },
       description: "Open-Source Survey Suite",
     });

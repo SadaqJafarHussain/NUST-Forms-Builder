@@ -1,5 +1,20 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import {
+  ArrowUpFromLineIcon,
+  CopyIcon,
+  EyeIcon,
+  LinkIcon,
+  MoreVertical,
+  SquarePenIcon,
+  TrashIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { logger } from "@formbricks/logger";
 import { cn } from "@/lib/cn";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import { EditPublicSurveyAlertDialog } from "@/modules/survey/components/edit-public-survey-alert-dialog";
@@ -18,21 +33,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/modules/ui/components/dropdown-menu";
-import { useTranslate } from "@tolgee/react";
-import {
-  ArrowUpFromLineIcon,
-  CopyIcon,
-  EyeIcon,
-  LinkIcon,
-  MoreVertical,
-  SquarePenIcon,
-  TrashIcon,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
-import { logger } from "@formbricks/logger";
 import { CopySurveyModal } from "./copy-survey-modal";
 
 interface SurveyDropDownMenuProps {
@@ -157,7 +157,11 @@ export const SurveyDropDownMenu = ({
             <MoreVertical className="h-4 w-4" aria-hidden="true" />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="inline-block w-auto min-w-max">
+        <DropdownMenuContent
+          className="inline-block w-auto min-w-max"
+          side="bottom"
+          align="start" // This will align to start (left in LTR, right in RTL)
+        >
           <DropdownMenuGroup>
             {!isSurveyCreationDeletionDisabled && (
               <>
@@ -166,7 +170,7 @@ export const SurveyDropDownMenu = ({
                     className="flex w-full items-center"
                     href={`/environments/${environmentId}/surveys/${survey.id}/edit`}
                     onClick={survey.responseCount > 0 ? handleEditforActiveSurvey : undefined}>
-                    <SquarePenIcon className="mr-2 size-4" />
+                    <SquarePenIcon className="mr-2 size-4 rtl:ml-2 rtl:mr-0" />
                     {t("common.edit")}
                   </Link>
                 </DropdownMenuItem>
@@ -180,7 +184,7 @@ export const SurveyDropDownMenu = ({
                       setIsDropDownOpen(false);
                       duplicateSurveyAndRefresh(survey.id);
                     }}>
-                    <CopyIcon className="mr-2 h-4 w-4" />
+                    <CopyIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                     {t("common.duplicate")}
                   </button>
                 </DropdownMenuItem>
@@ -197,7 +201,7 @@ export const SurveyDropDownMenu = ({
                     setIsDropDownOpen(false);
                     setIsCopyFormOpen(true);
                   }}>
-                  <ArrowUpFromLineIcon className="mr-2 h-4 w-4" />
+                  <ArrowUpFromLineIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t("common.copy")}...
                 </button>
               </DropdownMenuItem>
@@ -215,7 +219,7 @@ export const SurveyDropDownMenu = ({
                         surveyLink + (newId ? `?suId=${newId}&preview=true` : "?preview=true");
                       window.open(previewUrl, "_blank");
                     }}>
-                    <EyeIcon className="mr-2 h-4 w-4" />
+                    <EyeIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                     {t("common.preview_survey")}
                   </button>
                 </DropdownMenuItem>
@@ -226,7 +230,7 @@ export const SurveyDropDownMenu = ({
                       data-testid="copy-link"
                       className="flex w-full items-center"
                       onClick={async (e) => handleCopyLink(e)}>
-                      <LinkIcon className="mr-2 h-4 w-4" />
+                      <LinkIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                       {t("common.copy_link")}
                     </button>
                   </DropdownMenuItem>
@@ -243,7 +247,7 @@ export const SurveyDropDownMenu = ({
                     setIsDropDownOpen(false);
                     setDeleteDialogOpen(true);
                   }}>
-                  <TrashIcon className="mr-2 h-4 w-4" />
+                  <TrashIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t("common.delete")}
                 </button>
               </DropdownMenuItem>

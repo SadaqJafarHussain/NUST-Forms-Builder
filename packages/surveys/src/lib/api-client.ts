@@ -1,10 +1,10 @@
-import { makeRequest } from "@/lib/utils";
 import { TDisplayCreateInput } from "@formbricks/types/displays";
 import { Result } from "@formbricks/types/error-handlers";
 import { ApiErrorResponse } from "@formbricks/types/errors";
 import { TSurveyQuotaAction } from "@formbricks/types/quota";
 import { TResponseInput, TResponseUpdateInput } from "@formbricks/types/responses";
 import { TUploadFileConfig, TUploadFileResponse } from "@formbricks/types/storage";
+import { makeRequest } from "@/lib/utils";
 
 type TResponseCreateResponseQuotaFull = {
   quotaFull: true;
@@ -127,39 +127,36 @@ export class ApiClient {
 
     const { data } = json;
 
-    const { signedUrl, fileUrl, presignedFields } = data as {
+    const { signedUrl, fileUrl } = data as {
       signedUrl: string;
-      presignedFields: Record<string, string>;
       fileUrl: string;
     };
 
-    if (!signedUrl || !presignedFields || !fileUrl) {
+    if (!signedUrl || !fileUrl) {
       throw new Error("Invalid response");
     }
 
-    const formData = new FormData();
-
-    Object.entries(presignedFields).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-
+    // Convert base64 to blob for upload
+    let blob: Blob;
     try {
       const binaryString = atob(file.base64.split(",")[1]);
       const uint8Array = Uint8Array.from([...binaryString].map((char) => char.charCodeAt(0)));
-      const blob = new Blob([uint8Array], { type: file.type });
-
-      formData.append("file", blob);
+      blob = new Blob([uint8Array], { type: file.type });
     } catch (err) {
       console.error(err);
-      throw new Error("Error uploading file");
+      throw new Error("Error processing file");
     }
 
     let uploadResponse: Response;
 
     try {
+      // Use PUT method with raw file body for R2/S3 compatibility
       uploadResponse = await fetch(signedUrl, {
-        method: "POST",
-        body: formData,
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: blob,
       });
     } catch (err) {
       console.error("Error uploading file", err);
@@ -169,7 +166,7 @@ export class ApiClient {
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
 
-      if (presignedFields && errorText.includes("EntityTooLarge")) {
+      if (errorText.includes("EntityTooLarge")) {
         const error = new Error("File size exceeds the size limit for your plan");
         error.name = "FileTooLargeError";
         throw error;

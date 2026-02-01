@@ -119,7 +119,7 @@ describe("ApiKeyList", () => {
 
     const props = {
       organizationId: "org1",
-      locale: "en-US" as const,
+      locale: "ar-IQ" as const,
       isReadOnly: false,
       projects: mockProjects,
     };
@@ -137,7 +137,7 @@ describe("ApiKeyList", () => {
 
     const props = {
       organizationId: "org1",
-      locale: "en-US" as const,
+      locale: "ar-IQ" as const,
       isReadOnly: false,
       projects: mockProjects,
     };
@@ -156,7 +156,7 @@ describe("ApiKeyList", () => {
 
     const props = {
       organizationId: "org1",
-      locale: "en-US" as const,
+      locale: "ar-IQ" as const,
       isReadOnly: true,
       projects: mockProjects,
     };

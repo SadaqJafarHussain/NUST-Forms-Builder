@@ -1,12 +1,4 @@
 import "server-only";
-import { getQuotasSummary } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/lib/survey";
-import { RESPONSES_PER_PAGE } from "@/lib/constants";
-import { getDisplayCountBySurveyId } from "@/lib/display/service";
-import { getLocalizedValue } from "@/lib/i18n/utils";
-import { buildWhereClause } from "@/lib/response/utils";
-import { getSurvey } from "@/lib/survey/service";
-import { evaluateLogic, performActions } from "@/lib/surveyLogic/utils";
-import { validateInputs } from "@/lib/utils/validate";
 import { Prisma } from "@prisma/client";
 import { cache as reactCache } from "react";
 import { z } from "zod";
@@ -25,6 +17,7 @@ import {
 import {
   TSurvey,
   TSurveyContactInfoQuestion,
+  TSurveyIraqLocationQuestion,
   TSurveyLanguage,
   TSurveyMultipleChoiceQuestion,
   TSurveyQuestion,
@@ -33,6 +26,7 @@ import {
   TSurveyQuestionSummaryDate,
   TSurveyQuestionSummaryFileUpload,
   TSurveyQuestionSummaryHiddenFields,
+  TSurveyQuestionSummaryIraqLocation,
   TSurveyQuestionSummaryMultipleChoice,
   TSurveyQuestionSummaryOpenText,
   TSurveyQuestionSummaryPictureSelection,
@@ -41,6 +35,14 @@ import {
   TSurveyQuestionTypeEnum,
   TSurveySummary,
 } from "@formbricks/types/surveys/types";
+import { getQuotasSummary } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/lib/survey";
+import { RESPONSES_PER_PAGE } from "@/lib/constants";
+import { getDisplayCountBySurveyId } from "@/lib/display/service";
+import { getLocalizedValue } from "@/lib/i18n/utils";
+import { buildWhereClause } from "@/lib/response/utils";
+import { getSurvey } from "@/lib/survey/service";
+import { evaluateLogic, performActions } from "@/lib/surveyLogic/utils";
+import { validateInputs } from "@/lib/utils/validate";
 import { convertFloatTo2Decimal } from "./utils";
 
 interface TSurveySummaryResponse {
@@ -875,6 +877,108 @@ export const getQuestionSummary = async (
           question,
           responseCount: totalResponseCount,
           choices: values,
+        });
+
+        break;
+      }
+      case TSurveyQuestionTypeEnum.IraqLocation: {
+        let samples: TSurveyQuestionSummaryIraqLocation["samples"] = [];
+        const provinceCountMap: Record<string, number> = {};
+        const judiciaryCountMap: Record<string, number> = {};
+        const areaCountMap: Record<string, number> = {};
+        let totalResponseCount = 0;
+
+        responses.forEach((response) => {
+          const answer = response.data[question.id];
+          if (answer) {
+            // Handle the response data - it could be a JSON string or already parsed object
+            let parsedAnswer: {
+              province: { id: number | null; name: string; isOther: boolean };
+              judiciary: { id: number | null; name: string; isOther: boolean };
+              area: { id: number | null; name: string; isOther: boolean };
+            } | null = null;
+
+            if (typeof answer === "string") {
+              try {
+                parsedAnswer = JSON.parse(answer);
+              } catch {
+                return; // Skip invalid JSON
+              }
+            } else if (typeof answer === "object" && !Array.isArray(answer)) {
+              // Type guard to ensure the object has the expected structure
+              const obj = answer as Record<string, unknown>;
+              if (obj.province && obj.judiciary && obj.area) {
+                parsedAnswer = obj as unknown as typeof parsedAnswer;
+              }
+            }
+
+            if (!parsedAnswer) {
+              return;
+            }
+
+            if (parsedAnswer.province && parsedAnswer.judiciary && parsedAnswer.area) {
+              totalResponseCount++;
+
+              // Count province distribution
+              const provinceName = parsedAnswer.province.name;
+              provinceCountMap[provinceName] = (provinceCountMap[provinceName] || 0) + 1;
+
+              // Count judiciary distribution
+              const judiciaryName = parsedAnswer.judiciary.name;
+              judiciaryCountMap[judiciaryName] = (judiciaryCountMap[judiciaryName] || 0) + 1;
+
+              // Count area distribution
+              const areaName = parsedAnswer.area.name;
+              areaCountMap[areaName] = (areaCountMap[areaName] || 0) + 1;
+
+              // Add to samples
+              samples.push({
+                id: response.id,
+                updatedAt: response.updatedAt,
+                value: parsedAnswer,
+                contact: response.contact,
+                contactAttributes: response.contactAttributes,
+              });
+            }
+          }
+        });
+
+        // Convert count maps to distribution arrays with percentages
+        const provinceDistribution = Object.entries(provinceCountMap)
+          .map(([province, count]) => ({
+            province,
+            count,
+            percentage:
+              totalResponseCount > 0 ? convertFloatTo2Decimal((count / totalResponseCount) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        const judiciaryDistribution = Object.entries(judiciaryCountMap)
+          .map(([judiciary, count]) => ({
+            judiciary,
+            count,
+            percentage:
+              totalResponseCount > 0 ? convertFloatTo2Decimal((count / totalResponseCount) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        const areaDistribution = Object.entries(areaCountMap)
+          .map(([area, count]) => ({
+            area,
+            count,
+            percentage:
+              totalResponseCount > 0 ? convertFloatTo2Decimal((count / totalResponseCount) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        summary.push({
+          type: "iraqLocation" as const,
+          question: question as TSurveyIraqLocationQuestion,
+          responseCount: totalResponseCount,
+          samples: samples.slice(0, VALUES_LIMIT),
+          provinceDistribution,
+          judiciaryDistribution,
+          areaDistribution,
         });
 
         break;

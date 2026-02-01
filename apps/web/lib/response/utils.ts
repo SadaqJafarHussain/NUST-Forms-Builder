@@ -1,4 +1,3 @@
-import { getLocalizedValue } from "@/lib/i18n/utils";
 import { Prisma } from "@prisma/client";
 import {
   TResponse,
@@ -17,6 +16,7 @@ import {
   TSurveyQuestion,
   TSurveyRankingQuestion,
 } from "@formbricks/types/surveys/types";
+import { getLocalizedValue } from "@/lib/i18n/utils";
 import { processResponseData } from "../responses";
 import { getTodaysDateTimeFormatted } from "../time";
 import { getFormattedDateTimeString } from "../utils/datetime";
@@ -686,42 +686,117 @@ export const extractSurveyDetails = (survey: TSurvey, responses: TResponse[]) =>
   return { metaDataFields, questions, hiddenFields, variables, userAttributes };
 };
 
+// Format Iraq location data for export
+const formatIraqLocationForExport = (answer: TResponseDataValue, locale: string): string => {
+  if (!answer) {
+    return "";
+  }
+
+  // Parse the answer if it's a JSON string (stored as escaped JSON in database)
+  let locationData: Record<string, unknown>;
+  if (typeof answer === "string") {
+    try {
+      locationData = JSON.parse(answer);
+    } catch {
+      return answer; // Return as-is if not valid JSON
+    }
+  } else if (typeof answer === "object" && !Array.isArray(answer)) {
+    locationData = answer as Record<string, unknown>;
+  } else {
+    return "";
+  }
+
+  const parts: string[] = [];
+
+  // Extract province name
+  if (locationData.province && typeof locationData.province === "object") {
+    const province = locationData.province as { name?: string };
+    if (province.name) {
+      parts.push(province.name);
+    }
+  }
+
+  // Extract judiciary/district name
+  if (locationData.judiciary && typeof locationData.judiciary === "object") {
+    const judiciary = locationData.judiciary as { name?: string };
+    if (judiciary.name) {
+      parts.push(judiciary.name);
+    }
+  }
+
+  // Extract area name
+  if (locationData.area && typeof locationData.area === "object") {
+    const area = locationData.area as { name?: string };
+    if (area.name) {
+      parts.push(area.name);
+    }
+  }
+
+  // Join with appropriate separator based on locale
+  if (parts.length === 0) {
+    return "";
+  }
+
+  // Use Arabic separator for Arabic locales
+  const separator = locale.startsWith("ar") ? " - " : " - ";
+  return parts.join(separator);
+};
+
+// Export translations for JSON data
+const getExportDataTranslations = (locale: string) => {
+  const translations: Record<string, Record<string, string>> = {
+    en: {
+      "No.": "No.",
+      "Response ID": "Response ID",
+      Timestamp: "Timestamp",
+      Finished: "Finished",
+      Quotas: "Quotas",
+      "Survey ID": "Survey ID",
+      "Formbricks ID (internal)": "Formbricks ID (internal)",
+      "User ID": "User ID",
+      Tags: "Tags",
+      "Verified Email": "Verified Email",
+      Yes: "Yes",
+      No: "No",
+    },
+    ar: {
+      "No.": "رقم",
+      "Response ID": "معرف الاستجابة",
+      Timestamp: "التاريخ والوقت",
+      Finished: "مكتمل",
+      Quotas: "الحصص",
+      "Survey ID": "معرف الاستبيان",
+      "Formbricks ID (internal)": "معرف Formbricks (داخلي)",
+      "User ID": "معرف المستخدم",
+      Tags: "الوسوم",
+      "Verified Email": "البريد الإلكتروني الموثق",
+      Yes: "نعم",
+      No: "لا",
+    },
+  };
+
+  const normalizedLocale = locale.startsWith("ar") ? "ar" : locale;
+  return translations[normalizedLocale] || translations["en"];
+};
+
 export const getResponsesJson = (
   survey: TSurvey,
   responses: TResponseWithQuotas[],
   questionsHeadlines: string[][],
   userAttributes: string[],
   hiddenFields: string[],
-  isQuotasAllowed: boolean = false
+  isQuotasAllowed: boolean = false,
+  locale: string = "en"
 ): Record<string, string | number>[] => {
   const jsonData: Record<string, string | number>[] = [];
+  const t = getExportDataTranslations(locale);
 
   responses.forEach((response, idx) => {
-    // basic response details
+    // Simplified response details - only essential columns for end users
     jsonData.push({
-      "No.": idx + 1,
-      "Response ID": response.id,
-      Timestamp: getFormattedDateTimeString(response.createdAt),
-      Finished: response.finished ? "Yes" : "No",
-      "Survey ID": response.surveyId,
-      "Formbricks ID (internal)": response.contact?.id || "",
-      "User ID": response.contact?.userId || "",
-      Tags: response.tags.map((tag) => tag.name).join(", "),
-    });
-
-    if (isQuotasAllowed) {
-      jsonData[idx]["Quotas"] = response.quotas?.map((quota) => quota.name).join(", ") || "";
-    }
-
-    // meta details
-    Object.entries(response.meta ?? {}).forEach(([key, value]) => {
-      if (typeof value === "object" && value !== null) {
-        Object.entries(value).forEach(([subKey, subValue]) => {
-          jsonData[idx][key + " - " + subKey] = subValue;
-        });
-      } else {
-        jsonData[idx][key] = value;
-      }
+      [t["No."]]: idx + 1,
+      [t["Timestamp"]]: getFormattedDateTimeString(response.createdAt),
+      [t["Finished"]]: response.finished ? t["Yes"] : t["No"],
     });
 
     // survey response data
@@ -755,10 +830,18 @@ export const getResponsesJson = (
           const choiceIds = extractChoiceIdsFromResponse(answer, question, response.language || "default");
           jsonData[idx][questionHeadline[1]] = choiceIds.join(", ");
         }
+      } else if (question.type === "iraq_location") {
+        // Format Iraq location data as readable text
+        jsonData[idx][questionHeadline[0]] = formatIraqLocationForExport(answer, locale);
       } else {
         jsonData[idx][questionHeadline[0]] = processResponseData(answer);
       }
     });
+
+    // Add quotas if allowed
+    if (isQuotasAllowed) {
+      jsonData[idx][t["Quotas"]] = response.quotas?.map((quota) => quota.name).join(", ") || "";
+    }
 
     survey.variables?.forEach((variable) => {
       const answer = response.variables[variable.id];
@@ -782,7 +865,7 @@ export const getResponsesJson = (
 
     if (survey.isVerifyEmailEnabled) {
       const verifiedEmail = response.data["verifiedEmail"];
-      jsonData[idx]["Verified Email"] = processResponseData(verifiedEmail);
+      jsonData[idx][t["Verified Email"]] = processResponseData(verifiedEmail);
     }
   });
 

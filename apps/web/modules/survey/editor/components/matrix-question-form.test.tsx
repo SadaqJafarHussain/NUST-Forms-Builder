@@ -1,5 +1,3 @@
-import { createI18nString } from "@/lib/i18n/utils";
-import { findOptionUsedInLogic } from "@/modules/survey/editor/lib/utils";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -10,6 +8,8 @@ import {
   TSurveyQuestionTypeEnum,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { createI18nString } from "@/lib/i18n/utils";
+import { findOptionUsedInLogic } from "@/modules/survey/editor/lib/utils";
 import { MatrixQuestionForm } from "./matrix-question-form";
 
 // Mock cuid2 to track CUID generation
@@ -188,7 +188,7 @@ const defaultProps = {
   selectedLanguageCode: "en",
   setSelectedLanguageCode: vi.fn(),
   isInvalid: false,
-  locale: "en-US" as TUserLocale,
+  locale: "ar-IQ" as TUserLocale,
   isStorageConfigured: true,
 };
 

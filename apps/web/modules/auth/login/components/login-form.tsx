@@ -5,7 +5,7 @@ import { useTranslate } from "@tolgee/react";
 import { signIn } from "next-auth/react";
 import Link from "next/dist/client/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { z } from "zod";
@@ -127,43 +127,25 @@ export const LoginForm = ({
   const [totpBackup, setTotpBackup] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const inviteToken = callbackUrl ? new URL(callbackUrl).searchParams.get("token") : null;
-  const [lastLoggedInWith, setLastLoggedInWith] = useState("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setLastLoggedInWith(localStorage.getItem(FORMBRICKS_LOGGED_IN_WITH_LS) || "");
-    }
-  }, []);
 
   const formLabel = useMemo(() => {
-    if (totpBackup) {
-      return t("auth.login.enter_your_backup_code");
-    }
-
-    if (totpLogin) {
-      return t("auth.login.enter_your_two_factor_authentication_code");
-    }
-
+    if (totpBackup) return t("auth.login.enter_your_backup_code");
+    if (totpLogin) return t("auth.login.enter_your_two_factor_authentication_code");
     return t("auth.login.login_to_your_account");
   }, [t, totpBackup, totpLogin]);
 
   const TwoFactorComponent = useMemo(() => {
-    if (totpBackup) {
-      return <TwoFactorBackup form={form} />;
-    }
-
-    if (totpLogin) {
-      return <TwoFactor form={form} />;
-    }
-
+    if (totpBackup) return <TwoFactorBackup form={form} />;
+    if (totpLogin) return <TwoFactor form={form} />;
     return null;
   }, [form, totpBackup, totpLogin]);
 
   return (
     <FormProvider {...form}>
-      <div className="text-center">
-        <h1 className="mb-4 text-slate-700">{formLabel}</h1>
-
+      <div dir="ltr" className="text-left">
+        {" "}
+        {/* Force LTR */}
+        <h1 className="mb-4 text-center font-semibold text-slate-700">{formLabel}</h1>
         <div className="space-y-2">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             {TwoFactorComponent}
@@ -203,9 +185,6 @@ export const LoginForm = ({
                             id="password"
                             autoComplete="current-password"
                             placeholder="*******"
-                            aria-placeholder="password"
-                            aria-label="password"
-                            aria-required="true"
                             required
                             className="focus:border-brand-dark focus:ring-brand-dark block w-full rounded-md border-slate-300 pr-8 shadow-sm sm:text-sm"
                             value={field.value}
@@ -218,7 +197,9 @@ export const LoginForm = ({
                   )}
                 />
                 {passwordResetEnabled && (
-                  <div className="ml-1 text-right transition-all duration-500 ease-in-out">
+                  <div className="ml-1 text-left transition-all duration-500 ease-in-out">
+                    {" "}
+                    {/* Align left */}
                     <Link
                       href="/auth/forgot-password"
                       className="hover:text-brand-dark text-xs text-slate-500">
@@ -233,7 +214,6 @@ export const LoginForm = ({
                 onClick={() => {
                   if (!showLogin) {
                     setShowLogin(true);
-                    // Add a slight delay before focusing the input field to ensure it's visible
                     setTimeout(() => emailRef.current?.focus(), 100);
                   } else if (formRef.current) {
                     formRef.current.requestSubmit();
@@ -242,12 +222,10 @@ export const LoginForm = ({
                 className="relative w-full justify-center"
                 loading={form.formState.isSubmitting}>
                 {totpLogin ? t("common.submit") : t("auth.login.login_with_email")}
-                {lastLoggedInWith && lastLoggedInWith === "Email" ? (
-                  <span className="absolute right-3 text-xs opacity-50">{t("auth.last_used")}</span>
-                ) : null}
               </Button>
             )}
           </form>
+
           {isSsoEnabled && (
             <SSOOptions
               googleOAuthEnabled={googleOAuthEnabled}
@@ -263,9 +241,8 @@ export const LoginForm = ({
             />
           )}
         </div>
-
         {publicSignUpEnabled && !totpLogin && isMultiOrgEnabled && (
-          <div className="mt-9 text-center text-xs">
+          <div className="mt-9 text-left text-xs">
             <span className="leading-5 text-slate-500">{t("auth.login.new_to_formbricks")}</span>
             <br />
             <Link
@@ -275,46 +252,37 @@ export const LoginForm = ({
             </Link>
           </div>
         )}
-      </div>
-
-      {totpLogin && !totpBackup && (
-        <div className="mt-9 text-center text-xs">
-          <span className="leading-5 text-slate-500">{t("auth.login.lost_access")}</span>
-          <br />
-          <div className="flex flex-col">
+        {totpLogin && !totpBackup && (
+          <div className="mt-9 text-left text-xs">
+            <span className="leading-5 text-slate-500">{t("auth.login.lost_access")}</span>
+            <br />
+            <div className="flex flex-col">
+              <button
+                type="button"
+                className="font-semibold text-slate-600 underline hover:text-slate-700"
+                onClick={() => setTotpBackup(true)}>
+                {t("auth.login.use_a_backup_code")}
+              </button>
+              <button
+                type="button"
+                className="mt-4 font-semibold text-slate-600 underline hover:text-slate-700"
+                onClick={() => setTotpLogin(false)}>
+                {t("common.go_back")}
+              </button>
+            </div>
+          </div>
+        )}
+        {totpBackup && (
+          <div className="mt-9 text-left text-xs">
             <button
               type="button"
               className="font-semibold text-slate-600 underline hover:text-slate-700"
-              onClick={() => {
-                setTotpBackup(true);
-              }}>
-              {t("auth.login.use_a_backup_code")}
-            </button>
-
-            <button
-              type="button"
-              className="mt-4 font-semibold text-slate-600 underline hover:text-slate-700"
-              onClick={() => {
-                setTotpLogin(false);
-              }}>
+              onClick={() => setTotpBackup(false)}>
               {t("common.go_back")}
             </button>
           </div>
-        </div>
-      )}
-
-      {totpBackup && (
-        <div className="mt-9 text-center text-xs">
-          <button
-            type="button"
-            className="font-semibold text-slate-600 underline hover:text-slate-700"
-            onClick={() => {
-              setTotpBackup(false);
-            }}>
-            {t("common.go_back")}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </FormProvider>
   );
 };

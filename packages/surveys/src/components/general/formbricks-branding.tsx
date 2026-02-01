@@ -4,7 +4,7 @@ export function FormbricksBranding() {
   const { t } = useTranslation();
   return (
     <a
-      href="https://formbricks.com?utm_source=survey_branding"
+      href="https://nust.edu.iq"
       target="_blank"
       tabIndex={-1}
       className="fb-flex fb-justify-center"
@@ -12,7 +12,7 @@ export function FormbricksBranding() {
       <p className="fb-text-signature fb-text-xs">
         {t("common.powered_by")}{" "}
         <b>
-          <span className="fb-text-branding-text hover:fb-text-signature">Formbricks</span>
+          <span className="fb-text-branding-text hover:fb-text-signature">NUST</span>
         </b>
       </p>
     </a>

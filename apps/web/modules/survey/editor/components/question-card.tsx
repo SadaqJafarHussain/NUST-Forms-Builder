@@ -1,29 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { recallToHeadline } from "@/lib/utils/recall";
-import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
-import { AddressQuestionForm } from "@/modules/survey/editor/components/address-question-form";
-import { AdvancedSettings } from "@/modules/survey/editor/components/advanced-settings";
-import { CalQuestionForm } from "@/modules/survey/editor/components/cal-question-form";
-import { ConsentQuestionForm } from "@/modules/survey/editor/components/consent-question-form";
-import { ContactInfoQuestionForm } from "@/modules/survey/editor/components/contact-info-question-form";
-import { CTAQuestionForm } from "@/modules/survey/editor/components/cta-question-form";
-import { DateQuestionForm } from "@/modules/survey/editor/components/date-question-form";
-import { EditorCardMenu } from "@/modules/survey/editor/components/editor-card-menu";
-import { FileUploadQuestionForm } from "@/modules/survey/editor/components/file-upload-question-form";
-import { MatrixQuestionForm } from "@/modules/survey/editor/components/matrix-question-form";
-import { MultipleChoiceQuestionForm } from "@/modules/survey/editor/components/multiple-choice-question-form";
-import { NPSQuestionForm } from "@/modules/survey/editor/components/nps-question-form";
-import { OpenQuestionForm } from "@/modules/survey/editor/components/open-question-form";
-import { PictureSelectionForm } from "@/modules/survey/editor/components/picture-selection-form";
-import { RankingQuestionForm } from "@/modules/survey/editor/components/ranking-question-form";
-import { RatingQuestionForm } from "@/modules/survey/editor/components/rating-question-form";
-import { formatTextWithSlashes } from "@/modules/survey/editor/lib/utils";
-import { getQuestionIconMap, getTSurveyQuestionTypeEnumName } from "@/modules/survey/lib/questions";
-import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
-import { Label } from "@/modules/ui/components/label";
-import { Switch } from "@/modules/ui/components/switch";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
@@ -40,6 +16,31 @@ import {
   TSurveyQuestionTypeEnum,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { cn } from "@/lib/cn";
+import { recallToHeadline } from "@/lib/utils/recall";
+import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
+import { AddressQuestionForm } from "@/modules/survey/editor/components/address-question-form";
+import { AdvancedSettings } from "@/modules/survey/editor/components/advanced-settings";
+import { CalQuestionForm } from "@/modules/survey/editor/components/cal-question-form";
+import { ConsentQuestionForm } from "@/modules/survey/editor/components/consent-question-form";
+import { ContactInfoQuestionForm } from "@/modules/survey/editor/components/contact-info-question-form";
+import { CTAQuestionForm } from "@/modules/survey/editor/components/cta-question-form";
+import { DateQuestionForm } from "@/modules/survey/editor/components/date-question-form";
+import { EditorCardMenu } from "@/modules/survey/editor/components/editor-card-menu";
+import { FileUploadQuestionForm } from "@/modules/survey/editor/components/file-upload-question-form";
+import { IraqLocationQuestionForm } from "@/modules/survey/editor/components/iraq-location-question-form";
+import { MatrixQuestionForm } from "@/modules/survey/editor/components/matrix-question-form";
+import { MultipleChoiceQuestionForm } from "@/modules/survey/editor/components/multiple-choice-question-form";
+import { NPSQuestionForm } from "@/modules/survey/editor/components/nps-question-form";
+import { OpenQuestionForm } from "@/modules/survey/editor/components/open-question-form";
+import { PictureSelectionForm } from "@/modules/survey/editor/components/picture-selection-form";
+import { RankingQuestionForm } from "@/modules/survey/editor/components/ranking-question-form";
+import { RatingQuestionForm } from "@/modules/survey/editor/components/rating-question-form";
+import { formatTextWithSlashes } from "@/modules/survey/editor/lib/utils";
+import { getQuestionIconMap, getTSurveyQuestionTypeEnumName } from "@/modules/survey/lib/questions";
+import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
+import { Label } from "@/modules/ui/components/label";
+import { Switch } from "@/modules/ui/components/switch";
 
 interface QuestionCardProps {
   localSurvey: TSurvey;
@@ -49,7 +50,6 @@ interface QuestionCardProps {
   moveQuestion: (questionIndex: number, up: boolean) => void;
   updateQuestion: (questionIdx: number, updatedAttributes: any) => void;
   deleteQuestion: (questionIdx: number) => void;
-  duplicateQuestion: (questionIdx: number) => void;
   activeQuestionId: TSurveyQuestionId | null;
   setActiveQuestionId: (questionId: TSurveyQuestionId | null) => void;
   lastQuestion: boolean;
@@ -63,6 +63,7 @@ interface QuestionCardProps {
   responseCount: number;
   onAlertTrigger: () => void;
   isStorageConfigured: boolean;
+  environmentId: string;
 }
 
 export const QuestionCard = ({
@@ -72,7 +73,6 @@ export const QuestionCard = ({
   questionIdx,
   moveQuestion,
   updateQuestion,
-  duplicateQuestion,
   deleteQuestion,
   activeQuestionId,
   setActiveQuestionId,
@@ -87,6 +87,7 @@ export const QuestionCard = ({
   responseCount,
   onAlertTrigger,
   isStorageConfigured = true,
+  environmentId,
 }: QuestionCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
@@ -253,7 +254,6 @@ export const QuestionCard = ({
                 survey={localSurvey}
                 cardIdx={questionIdx}
                 lastCard={lastQuestion}
-                duplicateCard={duplicateQuestion}
                 deleteCard={deleteQuestion}
                 moveCard={moveQuestion}
                 card={question}
@@ -262,6 +262,7 @@ export const QuestionCard = ({
                 addCard={addQuestion}
                 cardType="question"
                 isCxMode={isCxMode}
+                environmentId={environmentId}
               />
             </div>
           </div>
@@ -467,6 +468,18 @@ export const QuestionCard = ({
               questionIdx={questionIdx}
               updateQuestion={updateQuestion}
               lastQuestion={lastQuestion}
+              selectedLanguageCode={selectedLanguageCode}
+              setSelectedLanguageCode={setSelectedLanguageCode}
+              isInvalid={isInvalid}
+              locale={locale}
+              isStorageConfigured={isStorageConfigured}
+            />
+          ) : question.type === TSurveyQuestionTypeEnum.IraqLocation ? (
+            <IraqLocationQuestionForm
+              localSurvey={localSurvey}
+              question={question}
+              questionIdx={questionIdx}
+              updateQuestion={updateQuestion}
               selectedLanguageCode={selectedLanguageCode}
               setSelectedLanguageCode={setSelectedLanguageCode}
               isInvalid={isInvalid}

@@ -1,9 +1,9 @@
-import { QuestionCard } from "@/modules/survey/editor/components/question-card";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Project } from "@prisma/client";
 import { TSurvey, TSurveyQuestionId } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { QuestionCard } from "@/modules/survey/editor/components/question-card";
 
 interface QuestionsDraggableProps {
   localSurvey: TSurvey;
@@ -11,7 +11,6 @@ interface QuestionsDraggableProps {
   moveQuestion: (questionIndex: number, up: boolean) => void;
   updateQuestion: (questionIdx: number, updatedAttributes: any) => void;
   deleteQuestion: (questionIdx: number) => void;
-  duplicateQuestion: (questionIdx: number) => void;
   activeQuestionId: TSurveyQuestionId | null;
   setActiveQuestionId: (questionId: TSurveyQuestionId | null) => void;
   selectedLanguageCode: string;
@@ -24,12 +23,12 @@ interface QuestionsDraggableProps {
   responseCount: number;
   onAlertTrigger: () => void;
   isStorageConfigured: boolean;
+  environmentId: string;
 }
 
 export const QuestionsDroppable = ({
   activeQuestionId,
   deleteQuestion,
-  duplicateQuestion,
   invalidQuestions,
   localSurvey,
   moveQuestion,
@@ -45,6 +44,7 @@ export const QuestionsDroppable = ({
   responseCount,
   onAlertTrigger,
   isStorageConfigured = true,
+  environmentId,
 }: QuestionsDraggableProps) => {
   const [parent] = useAutoAnimate();
 
@@ -60,7 +60,6 @@ export const QuestionsDroppable = ({
             questionIdx={questionIdx}
             moveQuestion={moveQuestion}
             updateQuestion={updateQuestion}
-            duplicateQuestion={duplicateQuestion}
             selectedLanguageCode={selectedLanguageCode}
             setSelectedLanguageCode={setSelectedLanguageCode}
             deleteQuestion={deleteQuestion}
@@ -75,6 +74,7 @@ export const QuestionsDroppable = ({
             responseCount={responseCount}
             onAlertTrigger={onAlertTrigger}
             isStorageConfigured={isStorageConfigured}
+            environmentId={environmentId}
           />
         ))}
       </SortableContext>

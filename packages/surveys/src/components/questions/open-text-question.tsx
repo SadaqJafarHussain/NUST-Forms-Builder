@@ -1,3 +1,8 @@
+import { type RefObject } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { useTranslation } from "react-i18next";
+import { type TResponseData, type TResponseTtc } from "@formbricks/types/responses";
+import type { TSurveyOpenTextQuestion, TSurveyQuestionId } from "@formbricks/types/surveys/types";
 import { BackButton } from "@/components/buttons/back-button";
 import { SubmitButton } from "@/components/buttons/submit-button";
 import { Headline } from "@/components/general/headline";
@@ -6,11 +11,16 @@ import { Subheader } from "@/components/general/subheader";
 import { ScrollableContainer } from "@/components/wrappers/scrollable-container";
 import { getLocalizedValue } from "@/lib/i18n";
 import { getUpdatedTtc, useTtc } from "@/lib/ttc";
-import { type RefObject } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
-import { useTranslation } from "react-i18next";
-import { type TResponseData, type TResponseTtc } from "@formbricks/types/responses";
-import type { TSurveyOpenTextQuestion, TSurveyQuestionId } from "@formbricks/types/surveys/types";
+
+// Iraq phone number pattern: starts with 07 followed by 9 digits (total 11 digits)
+// Valid formats: 07XXXXXXXXX, +9647XXXXXXXXX, 009647XXXXXXXXX
+const IRAQ_PHONE_PATTERN = /^(?:(?:\+|00)964|0)?7[0-9]{9}$/;
+
+// Email validation pattern
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+// Number validation - allows integers and decimals
+const NUMBER_PATTERN = /^-?\d*\.?\d+$/;
 
 interface OpenTextQuestionProps {
   question: TSurveyOpenTextQuestion;
@@ -67,13 +77,47 @@ export function OpenTextQuestion({
     onChange({ [question.id]: inputValue });
   };
 
+  const validateInput = (inputValue: string): string | null => {
+    if (!inputValue || inputValue.trim() === "") {
+      return question.required ? t("errors.please_fill_out_this_field") : null;
+    }
+
+    const trimmedValue = inputValue.trim();
+
+    switch (question.inputType) {
+      case "phone": {
+        // Remove spaces, dashes for validation
+        const cleanedPhone = trimmedValue.replace(/[\s-]/g, "");
+        if (!IRAQ_PHONE_PATTERN.test(cleanedPhone)) {
+          return t("errors.please_enter_a_valid_iraq_phone_number");
+        }
+        break;
+      }
+      case "email": {
+        if (!EMAIL_PATTERN.test(trimmedValue)) {
+          return t("errors.please_enter_a_valid_email");
+        }
+        break;
+      }
+      case "number": {
+        if (!NUMBER_PATTERN.test(trimmedValue)) {
+          return t("errors.please_enter_a_valid_number");
+        }
+        break;
+      }
+    }
+
+    return null;
+  };
+
   const handleOnSubmit = (e: Event) => {
     e.preventDefault();
     const input = inputRef.current;
     input?.setCustomValidity("");
 
-    if (question.required && (!value || value.trim() === "")) {
-      input?.setCustomValidity(t("errors.please_fill_out_this_field"));
+    const validationError = validateInput(value);
+    if (validationError) {
+      input?.setCustomValidity(validationError);
       input?.reportValidity();
       return;
     }
@@ -112,21 +156,17 @@ export function OpenTextQuestion({
               step="any"
               required={question.required}
               value={value ? value : ""}
-              type={question.inputType}
+              type={question.inputType === "phone" ? "tel" : question.inputType}
               onInput={(e) => {
                 handleInputChange(e.currentTarget.value);
               }}
               className="fb-border-border placeholder:fb-text-placeholder fb-text-subheading focus:fb-border-brand fb-bg-input-bg fb-rounded-custom fb-block fb-w-full fb-border fb-p-2 fb-shadow-sm focus:fb-outline-none focus:fb-ring-0 sm:fb-text-sm"
-              pattern={question.inputType === "phone" ? "^[0-9+][0-9+\\- ]*[0-9]$" : ".*"}
-              title={
-                question.inputType === "phone" ? t("errors.please_enter_a_valid_phone_number") : undefined
-              }
               minLength={question.inputType === "text" ? question.charLimit?.min : undefined}
               maxLength={
                 question.inputType === "text"
                   ? question.charLimit?.max
                   : question.inputType === "phone"
-                    ? 30
+                    ? 15
                     : undefined
               }
             />

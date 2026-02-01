@@ -1,3 +1,14 @@
+import { CheckCheckIcon, MapPinIcon, MousePointerClickIcon, PhoneIcon } from "lucide-react";
+import React from "react";
+import { TResponseDataValue } from "@formbricks/types/responses";
+import {
+  TSurvey,
+  TSurveyMatrixQuestion,
+  TSurveyPictureSelectionQuestion,
+  TSurveyQuestion,
+  TSurveyQuestionTypeEnum,
+  TSurveyRatingQuestion,
+} from "@formbricks/types/surveys/types";
 import { cn } from "@/lib/cn";
 import { getLanguageCode, getLocalizedValue } from "@/lib/i18n/utils";
 import { getChoiceIdByValue } from "@/lib/response/utils";
@@ -11,17 +22,13 @@ import { PictureSelectionResponse } from "@/modules/ui/components/picture-select
 import { RankingResponse } from "@/modules/ui/components/ranking-response";
 import { RatingResponse } from "@/modules/ui/components/rating-response";
 import { ResponseBadges } from "@/modules/ui/components/response-badges";
-import { CheckCheckIcon, MousePointerClickIcon, PhoneIcon } from "lucide-react";
-import React from "react";
-import { TResponseDataValue } from "@formbricks/types/responses";
-import {
-  TSurvey,
-  TSurveyMatrixQuestion,
-  TSurveyPictureSelectionQuestion,
-  TSurveyQuestion,
-  TSurveyQuestionTypeEnum,
-  TSurveyRatingQuestion,
-} from "@formbricks/types/surveys/types";
+
+// Iraq Location response type
+interface IraqLocationValue {
+  province: { id: number | null; name: string; isOther: boolean };
+  judiciary: { id: number | null; name: string; isOther: boolean };
+  area: { id: number | null; name: string; isOther: boolean };
+}
 
 interface RenderResponseProps {
   responseData: TResponseDataValue;
@@ -186,6 +193,39 @@ export const RenderResponse: React.FC<RenderResponseProps> = ({
         );
       }
       break;
+
+    case TSurveyQuestionTypeEnum.IraqLocation: {
+      // Parse Iraq location response data
+      let parsedData: IraqLocationValue | null = null;
+
+      if (typeof responseData === "string") {
+        try {
+          parsedData = JSON.parse(responseData);
+        } catch {
+          // Invalid JSON, show raw string
+          return <p className="ph-no-capture my-1 font-normal text-slate-700">{responseData}</p>;
+        }
+      } else if (typeof responseData === "object" && !Array.isArray(responseData) && responseData !== null) {
+        const obj = responseData as Record<string, unknown>;
+        if (obj.province && obj.judiciary && obj.area) {
+          parsedData = obj as unknown as IraqLocationValue;
+        }
+      }
+
+      if (parsedData) {
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <MapPinIcon className="h-4 w-4 text-slate-500" />
+              <span className="text-slate-700">
+                {parsedData.province.name} / {parsedData.judiciary.name} / {parsedData.area.name}
+              </span>
+            </div>
+          </div>
+        );
+      }
+      break;
+    }
 
     default:
       if (

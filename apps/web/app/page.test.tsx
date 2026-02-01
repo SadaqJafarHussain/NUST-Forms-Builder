@@ -128,7 +128,7 @@ describe("Page", () => {
         alert: {},
         unsubscribedOrganizationIds: [],
       },
-      locale: "en-US",
+      locale: "ar-IQ",
       lastLoginAt: null,
       isActive: true,
     };
@@ -170,7 +170,7 @@ describe("Page", () => {
         alert: {},
         unsubscribedOrganizationIds: [],
       },
-      locale: "en-US",
+      locale: "ar-IQ",
       lastLoginAt: null,
       isActive: true,
     };
@@ -258,7 +258,7 @@ describe("Page", () => {
         alert: {},
         unsubscribedOrganizationIds: [],
       },
-      locale: "en-US",
+      locale: "ar-IQ",
       lastLoginAt: null,
       isActive: true,
     };
@@ -346,7 +346,7 @@ describe("Page", () => {
         alert: {},
         unsubscribedOrganizationIds: [],
       },
-      locale: "en-US",
+      locale: "ar-IQ",
       lastLoginAt: null,
       isActive: true,
     };

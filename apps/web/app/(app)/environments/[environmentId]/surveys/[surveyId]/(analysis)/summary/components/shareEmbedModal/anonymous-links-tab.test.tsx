@@ -175,7 +175,7 @@ describe("AnonymousLinksTab", () => {
     surveyUrl: "https://example.com/survey",
     publicDomain: "https://example.com",
     setSurveyUrl: vi.fn(),
-    locale: "en-US" as TUserLocale,
+    locale: "ar-IQ" as TUserLocale,
   };
 
   beforeEach(async () => {

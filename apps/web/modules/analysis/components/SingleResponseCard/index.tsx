@@ -1,7 +1,5 @@
 "use client";
 
-import { DecrementQuotasCheckbox } from "@/modules/ui/components/decrement-quotas-checkbox";
-import { DeleteDialog } from "@/modules/ui/components/delete-dialog";
 import { useTranslate } from "@tolgee/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,8 +9,10 @@ import { TResponse, TResponseWithQuotas } from "@formbricks/types/responses";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TTag } from "@formbricks/types/tags";
 import { TUser, TUserLocale } from "@formbricks/types/user";
-import { deleteResponseAction, getResponseAction } from "./actions";
-import { ResponseTagsWrapper } from "./components/ResponseTagsWrapper";
+import { DecrementQuotasCheckbox } from "@/modules/ui/components/decrement-quotas-checkbox";
+import { DeleteDialog } from "@/modules/ui/components/delete-dialog";
+import { deleteResponseAction } from "./actions";
+// Tags functionality removed - ResponseTagsWrapper and getResponseAction no longer needed
 import { SingleResponseCardBody } from "./components/SingleResponseCardBody";
 import { SingleResponseCardHeader } from "./components/SingleResponseCardHeader";
 import { isValidValue } from "./util";
@@ -21,9 +21,9 @@ interface SingleResponseCardProps {
   survey: TSurvey;
   response: TResponseWithQuotas;
   user?: TUser;
-  environmentTags: TTag[];
+  environmentTags?: TTag[]; // Optional - Tags functionality removed
   environment: TEnvironment;
-  updateResponse?: (responseId: string, responses: TResponse) => void;
+  updateResponse?: (responseId: string, responses: TResponse) => void; // Kept for interface compatibility
   updateResponseList?: (responseIds: string[]) => void;
   isReadOnly: boolean;
   setSelectedResponseId?: (responseId: string | null) => void;
@@ -34,9 +34,8 @@ export const SingleResponseCard = ({
   survey,
   response,
   user,
-  environmentTags,
+  // environmentTags and updateResponse removed - Tags functionality not needed
   environment,
-  updateResponse,
   updateResponseList,
   isReadOnly,
   setSelectedResponseId,
@@ -45,7 +44,7 @@ export const SingleResponseCard = ({
   const hasQuotas = (response.quotas && response.quotas.length > 0) ?? false;
   const [decrementQuotas, setDecrementQuotas] = useState(hasQuotas);
   const { t } = useTranslate();
-  const environmentId = survey.environmentId;
+  // environmentId removed - was only used for tags
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -102,12 +101,7 @@ export const SingleResponseCard = ({
     }
   };
 
-  const updateFetchedResponses = async () => {
-    const updatedResponse = await getResponseAction({ responseId: response.id });
-    if (updatedResponse?.data && updatedResponse.data !== null && updateResponse) {
-      updateResponse(response.id, updatedResponse.data);
-    }
-  };
+  // updateFetchedResponses removed - was only used for tags
 
   return (
     <div className="group relative">
@@ -125,15 +119,7 @@ export const SingleResponseCard = ({
 
         <SingleResponseCardBody survey={survey} response={response} skippedQuestions={skippedQuestions} />
 
-        <ResponseTagsWrapper
-          key={response.id}
-          environmentId={environmentId}
-          responseId={response.id}
-          tags={response.tags.map((tag) => ({ tagId: tag.id, tagName: tag.name }))}
-          environmentTags={environmentTags}
-          updateFetchedResponses={updateFetchedResponses}
-          isReadOnly={isReadOnly}
-        />
+        {/* ResponseTagsWrapper removed - Tags functionality not needed */}
 
         <DeleteDialog
           open={deleteDialogOpen}

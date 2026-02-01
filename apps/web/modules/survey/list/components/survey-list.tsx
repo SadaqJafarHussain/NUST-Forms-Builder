@@ -1,10 +1,5 @@
 "use client";
 
-import { FORMBRICKS_SURVEYS_FILTERS_KEY_LS } from "@/lib/localStorage";
-import { getSurveysAction } from "@/modules/survey/list/actions";
-import { getFormattedFilters } from "@/modules/survey/list/lib/utils";
-import { TSurvey } from "@/modules/survey/list/types/surveys";
-import { Button } from "@/modules/ui/components/button";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useTranslate } from "@tolgee/react";
 import { useRouter } from "next/navigation";
@@ -13,6 +8,11 @@ import { wrapThrows } from "@formbricks/types/error-handlers";
 import { TProjectConfigChannel } from "@formbricks/types/project";
 import { TSurveyFilters } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { FORMBRICKS_SURVEYS_FILTERS_KEY_LS } from "@/lib/localStorage";
+import { getSurveysAction } from "@/modules/survey/list/actions";
+import { getFormattedFilters } from "@/modules/survey/list/lib/utils";
+import { TSurvey } from "@/modules/survey/list/types/surveys";
+import { Button } from "@/modules/ui/components/button";
 import { SurveyCard } from "./survey-card";
 import { SurveyFilters } from "./survey-filters";
 import { SurveyLoading } from "./survey-loading";
@@ -146,8 +146,8 @@ export const SurveysList = ({
       {surveys.length > 0 ? (
         <div>
           <div className="flex-col space-y-3" ref={parent}>
-            <div className="mt-6 grid w-full grid-cols-8 place-items-center gap-3 px-6 pr-8 text-sm text-slate-800">
-              <div className="col-span-2 place-self-start">Name</div>
+            <div className="mt-6 grid w-full grid-cols-8 place-items-center gap-3 px-8 py-4 text-sm text-slate-800">
+              <div className="col-span-2 place-self-start">{t("common.survey_name")}</div>
               <div className="col-span-1">{t("common.status")}</div>
               <div className="col-span-1">{t("common.responses")}</div>
               <div className="col-span-1">{t("common.type")}</div>

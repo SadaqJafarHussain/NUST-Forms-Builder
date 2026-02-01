@@ -64,6 +64,43 @@ export function SubmitButton({
     }
   }, [focus]);
 
+  // Get the button text - use "Finish" on last question unless a custom label is set
+  const getButtonText = () => {
+    const defaultNext = t("common.next");
+    const defaultFinish = t("common.finish");
+
+    // Common "Next" translations to detect default button labels
+    const defaultNextLabels = [
+      "Next",
+      "التالي", // Arabic
+      "Siguiente", // Spanish
+      "Suivant", // French
+      "Weiter", // German
+      "次へ", // Japanese
+      "下一步", // Chinese
+      "Avanti", // Italian
+      "Próximo", // Portuguese
+      "अगला", // Hindi
+      "Далее", // Russian
+      "Keyingi", // Uzbek
+      "Următorul", // Romanian
+      defaultNext, // Current i18n translation
+    ];
+
+    // If it's the last question, always show "Finish" unless a truly custom label is provided
+    if (isLastQuestion) {
+      // If no label or label matches any known "Next" translation, use "Finish"
+      if (!buttonLabel || defaultNextLabels.includes(buttonLabel)) {
+        return defaultFinish;
+      }
+      // Otherwise use the custom label
+      return buttonLabel;
+    }
+
+    // Not last question - use provided label or default to "Next"
+    return buttonLabel || defaultNext;
+  };
+
   return (
     <button
       {...props}
@@ -75,7 +112,7 @@ export function SubmitButton({
       className="fb-bg-brand fb-border-submit-button-border fb-text-on-brand focus:fb-ring-focus fb-rounded-custom fb-flex fb-items-center fb-border fb-px-3 fb-py-3 fb-text-base fb-font-medium fb-leading-4 fb-shadow-sm hover:fb-opacity-90 focus:fb-outline-none focus:fb-ring-2 focus:fb-ring-offset-2 fb-mb-1"
       onClick={onClick}
       disabled={disabled}>
-      {buttonLabel || (isLastQuestion ? t("common.finish") : t("common.next"))}
+      {getButtonText()}
     </button>
   );
 }

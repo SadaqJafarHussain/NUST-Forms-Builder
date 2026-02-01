@@ -1,15 +1,15 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import Link from "next/link";
+import { useMemo } from "react";
+import { TUserLocale } from "@formbricks/types/user";
 import { cn } from "@/lib/cn";
 import { convertDateString, timeSince } from "@/lib/time";
 import { useSingleUseId } from "@/modules/survey/hooks/useSingleUseId";
 import { SurveyTypeIndicator } from "@/modules/survey/list/components/survey-type-indicator";
 import { TSurvey } from "@/modules/survey/list/types/surveys";
 import { SurveyStatusIndicator } from "@/modules/ui/components/survey-status-indicator";
-import { useTranslate } from "@tolgee/react";
-import Link from "next/link";
-import { useMemo } from "react";
-import { TUserLocale } from "@formbricks/types/user";
 import { SurveyDropDownMenu } from "./survey-dropdown-menu";
 
 interface SurveyCardProps {
@@ -21,6 +21,7 @@ interface SurveyCardProps {
   locale: TUserLocale;
   onSurveysCopied?: () => void;
 }
+
 export const SurveyCard = ({
   survey,
   environmentId,
@@ -62,7 +63,7 @@ export const SurveyCard = ({
     <>
       <div
         className={cn(
-          "grid w-full grid-cols-8 place-items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 pr-8 shadow-sm transition-colors ease-in-out",
+          "grid w-full grid-cols-8 place-items-center gap-3 rounded-xl border border-slate-200 bg-white px-8 py-4 shadow-sm transition-colors ease-in-out",
           !isDraftAndReadOnly && "hover:border-slate-400"
         )}>
         <div className="col-span-2 flex max-w-full items-center justify-self-start text-sm font-medium text-slate-900">
@@ -70,7 +71,8 @@ export const SurveyCard = ({
         </div>
         <div
           className={cn(
-            "col-span-1 flex w-fit items-center gap-2 whitespace-nowrap rounded-full py-1 pl-1 pr-2 text-sm text-slate-800",
+            "col-span-1 flex w-fit items-center gap-2 whitespace-nowrap rounded-full py-1 text-sm text-slate-800",
+            "pl-1 pr-2 rtl:pl-2 rtl:pr-1",
             surveyStatusLabel === "In Progress" && "bg-emerald-50",
             surveyStatusLabel === "Completed" && "bg-slate-200",
             surveyStatusLabel === "Draft" && "bg-slate-100",
@@ -94,7 +96,9 @@ export const SurveyCard = ({
           {survey.creator ? survey.creator.name : "-"}
         </div>
       </div>
-      <button className="absolute right-3 top-3.5" onClick={(e) => e.stopPropagation()}>
+      <button
+        className="absolute right-3 top-3.5 rtl:left-3 rtl:right-auto"
+        onClick={(e) => e.stopPropagation()}>
         <SurveyDropDownMenu
           survey={survey}
           key={`surveys-${survey.id}`}

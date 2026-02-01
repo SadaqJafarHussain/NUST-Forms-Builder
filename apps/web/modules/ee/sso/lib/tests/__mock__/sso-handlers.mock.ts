@@ -15,7 +15,7 @@ export const mockUser: TUser = {
   emailVerified: new Date(),
   twoFactorEnabled: false,
   identityProvider: "google",
-  locale: "en-US",
+  locale: "ar-IQ",
   createdAt: new Date(),
   updatedAt: new Date(),
   lastLoginAt: new Date(),

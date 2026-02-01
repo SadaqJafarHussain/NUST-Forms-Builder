@@ -1,5 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { ZActionClassInput } from "@formbricks/types/action-classes";
+import { OperationNotAllowedError, ResourceNotFoundError } from "@formbricks/types/errors";
+import { TSurvey, ZSurvey } from "@formbricks/types/surveys/types";
 import { UNSPLASH_ACCESS_KEY, UNSPLASH_ALLOWED_DOMAINS } from "@/lib/constants";
 import { actionClient, authenticatedActionClient } from "@/lib/utils/action-client";
 import { checkAuthorizationUpdated } from "@/lib/utils/action-client/action-client-middleware";
@@ -18,11 +23,6 @@ import { updateSurvey } from "@/modules/survey/editor/lib/survey";
 import { getSurveyFollowUpsPermission } from "@/modules/survey/follow-ups/lib/utils";
 import { checkSpamProtectionPermission } from "@/modules/survey/lib/permission";
 import { getOrganizationBilling, getSurvey } from "@/modules/survey/lib/survey";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { ZActionClassInput } from "@formbricks/types/action-classes";
-import { OperationNotAllowedError, ResourceNotFoundError } from "@formbricks/types/errors";
-import { TSurvey, ZSurvey } from "@formbricks/types/surveys/types";
 import { getProject } from "./lib/project";
 
 /**
@@ -57,7 +57,7 @@ export const updateSurveyAction = authenticatedActionClient.schema(ZSurvey).acti
         access: [
           {
             type: "organization",
-            roles: ["owner", "manager"],
+            roles: ["owner", "manager", "member"],
           },
           {
             type: "projectTeam",
@@ -106,7 +106,7 @@ export const refetchProjectAction = authenticatedActionClient
       access: [
         {
           type: "organization",
-          roles: ["owner", "manager"],
+          roles: ["owner", "manager", "member"],
         },
         {
           type: "projectTeam",
@@ -214,7 +214,7 @@ export const createActionClassAction = authenticatedActionClient.schema(ZCreateA
         access: [
           {
             type: "organization",
-            roles: ["owner", "manager"],
+            roles: ["owner", "manager", "member"],
           },
           {
             type: "projectTeam",

@@ -4,19 +4,10 @@ import { DevTools, Tolgee } from "@tolgee/web";
 const apiKey = process.env.NEXT_PUBLIC_TOLGEE_API_KEY;
 const apiUrl = process.env.NEXT_PUBLIC_TOLGEE_API_URL;
 
-export const ALL_LANGUAGES = [
-  "en-US",
-  "de-DE",
-  "fr-FR",
-  "pt-BR",
-  "pt-PT",
-  "zh-Hant-TW",
-  "ro-RO",
-  "ja-JP",
-  "zh-Hans-CN",
-];
+// Arabic-only configuration
+export const ALL_LANGUAGES = ["ar-IQ"];
 
-export const DEFAULT_LANGUAGE = "en-US";
+export const DEFAULT_LANGUAGE = "ar-IQ";
 
 export function TolgeeBase() {
   return Tolgee()
@@ -25,16 +16,13 @@ export function TolgeeBase() {
     .updateDefaults({
       apiKey,
       apiUrl,
+      defaultLanguage: DEFAULT_LANGUAGE,
       staticData: {
-        "en-US": () => import("@/locales/en-US.json"),
-        "de-DE": () => import("@/locales/de-DE.json"),
-        "fr-FR": () => import("@/locales/fr-FR.json"),
-        "pt-BR": () => import("@/locales/pt-BR.json"),
-        "pt-PT": () => import("@/locales/pt-PT.json"),
-        "zh-Hant-TW": () => import("@/locales/zh-Hant-TW.json"),
-        "ro-RO": () => import("@/locales/ro-RO.json"),
-        "ja-JP": () => import("@/locales/ja-JP.json"),
-        "zh-Hans-CN": () => import("@/locales/zh-Hans-CN.json"),
+        "ar-IQ": () => import("@/locales/ar-IQ.json"),
+      },
+      // Add observer options to fix hydration errors
+      observerOptions: {
+        fullKeyEncode: true,
       },
     });
 }

@@ -1,4 +1,3 @@
-import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { TFnType } from "@tolgee/react";
 import {
@@ -20,6 +19,7 @@ import {
   TSurveyWelcomeCard,
 } from "@formbricks/types/surveys/types";
 import { TTemplate, TTemplateRole } from "@formbricks/types/templates";
+import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
 
 const getDefaultButtonLabel = (label: string | undefined, t: TFnType) =>
   createI18nString(label || t("common.next"), []);
@@ -351,7 +351,7 @@ export const getDefaultEndingCard = (languages: TSurveyLanguage[], t: TFnType): 
     headline: createI18nString(t("templates.default_ending_card_headline"), languageCodes),
     subheader: createI18nString(t("templates.default_ending_card_subheader"), languageCodes),
     buttonLabel: createI18nString(t("templates.default_ending_card_button_label"), languageCodes),
-    buttonLink: "https://formbricks.com",
+    buttonLink: "https://nustwebsite.com/ar/",
   };
 };
 

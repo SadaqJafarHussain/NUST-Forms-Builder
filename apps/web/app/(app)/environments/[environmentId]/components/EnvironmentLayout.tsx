@@ -1,8 +1,9 @@
+import type { Session } from "next-auth";
 import { MainNavigation } from "@/app/(app)/environments/[environmentId]/components/MainNavigation";
 import { TopControlBar } from "@/app/(app)/environments/[environmentId]/components/TopControlBar";
 import { getOrganizationsByUserId } from "@/app/(app)/environments/[environmentId]/lib/organization";
 import { getProjectsByUserId } from "@/app/(app)/environments/[environmentId]/lib/project";
-import { IS_DEVELOPMENT, IS_FORMBRICKS_CLOUD } from "@/lib/constants";
+import { IS_FORMBRICKS_CLOUD } from "@/lib/constants";
 import { getEnvironment, getEnvironments } from "@/lib/environment/service";
 import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
 import { getAccessFlags } from "@/lib/membership/utils";
@@ -21,7 +22,6 @@ import { getProjectPermissionByUserId } from "@/modules/ee/teams/lib/roles";
 import { LimitsReachedBanner } from "@/modules/ui/components/limits-reached-banner";
 import { PendingDowngradeBanner } from "@/modules/ui/components/pending-downgrade-banner";
 import { getTranslate } from "@/tolgee/server";
-import type { Session } from "next-auth";
 
 interface EnvironmentLayoutProps {
   environmentId: string;
@@ -96,8 +96,7 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
     throw new Error(t("common.project_not_found"));
   }
 
-  const { isManager, isOwner } = getAccessFlags(membershipRole);
-  const isOwnerOrManager = isManager || isOwner;
+  getAccessFlags(membershipRole);
 
   return (
     <div className="flex h-screen min-h-screen flex-col overflow-hidden">
@@ -125,8 +124,10 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
           projects={projects}
           user={user}
           isFormbricksCloud={IS_FORMBRICKS_CLOUD}
-          isDevelopment={IS_DEVELOPMENT}
           membershipRole={membershipRole}
+          organizationProjectsLimit={organizationProjectsLimit}
+          isLicenseActive={active}
+          isAccessControlAllowed={isAccessControlAllowed}
         />
         <div id="mainContent" className="flex flex-1 flex-col overflow-hidden bg-slate-50">
           <TopControlBar
@@ -136,12 +137,6 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
             currentProjectId={project.id}
             projects={projects}
             isMultiOrgEnabled={isMultiOrgEnabled}
-            organizationProjectsLimit={organizationProjectsLimit}
-            isFormbricksCloud={IS_FORMBRICKS_CLOUD}
-            isLicenseActive={active}
-            isOwnerOrManager={isOwnerOrManager}
-            isAccessControlAllowed={isAccessControlAllowed}
-            membershipRole={membershipRole}
           />
           <div className="flex-1 overflow-y-auto">{children}</div>
         </div>

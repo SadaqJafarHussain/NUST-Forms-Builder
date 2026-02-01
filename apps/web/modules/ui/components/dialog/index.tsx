@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/cn";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import * as React from "react";
+import { cn } from "@/lib/cn";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -83,7 +83,8 @@ const DialogContent = React.forwardRef<
           {...props}>
           {children}
           {!hideCloseButton && (
-            <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent absolute right-3 top-[-0.25rem] z-10 rounded-sm bg-transparent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:text-slate-500">
+            <DialogPrimitive.Close
+              className={`ring-offset-background focus:ring-ring data-[state=open]:bg-accent absolute top-[-0.25rem] z-10 rounded-sm bg-transparent transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:text-slate-500 ${typeof document !== "undefined" && document.dir === "rtl" ? "left-3" : "right-3"} `}>
               <X className="size-4 text-slate-500" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>

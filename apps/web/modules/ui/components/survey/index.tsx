@@ -1,6 +1,6 @@
-import { executeRecaptcha, loadRecaptchaScript } from "@/modules/ui/components/survey/recaptcha";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SurveyContainerProps } from "@formbricks/types/formbricks-surveys";
+import { executeRecaptcha, loadRecaptchaScript } from "@/modules/ui/components/survey/recaptcha";
 
 const createContainerId = () => `formbricks-survey-container`;
 declare global {
@@ -29,7 +29,10 @@ export const SurveyInline = (props: Omit<SurveyContainerProps, "containerId">) =
 
   const loadSurveyScript: () => Promise<void> = async () => {
     try {
-      const response = await fetch("/js/surveys.umd.cjs");
+      // Add cache-busting timestamp in development to ensure fresh script loads
+      const isDev = process.env.NODE_ENV === "development";
+      const cacheBuster = isDev ? `?t=${Date.now()}` : "";
+      const response = await fetch(`/js/surveys.umd.cjs${cacheBuster}`);
 
       if (!response.ok) {
         throw new Error("Failed to load the surveys package");

@@ -1,19 +1,34 @@
-import Avatar from "boring-avatars";
+"use client";
 
-const colors = ["#00C4B8", "#ccfbf1", "#334155"];
+import BoringAvatars from "boring-avatars";
+import { useEffect, useState } from "react";
 
-interface PersonAvatarProps {
-  personId: string;
-}
+const colors = ["#0a0310", "#49007e", "#ff005b", "#ff7d10", "#ffb238"];
 
-export const PersonAvatar: React.FC<PersonAvatarProps> = ({ personId }) => {
-  return <Avatar size={40} name={personId} variant="beam" colors={colors} />;
+export const ProfileAvatar: React.FC<{ userId: string }> = ({ userId }) => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <div className="rounded-full bg-slate-200" style={{ width: 40, height: 40 }} />;
+  }
+
+  return <BoringAvatars size={40} name={userId} variant="bauhaus" colors={colors} />;
 };
 
-interface ProfileAvatar {
-  userId: string;
-}
+export const PersonAvatar: React.FC<{ personId: string }> = ({ personId }) => {
+  const [isClient, setIsClient] = useState(false);
 
-export const ProfileAvatar: React.FC<ProfileAvatar> = ({ userId }) => {
-  return <Avatar size={40} name={userId} variant="bauhaus" colors={colors} />;
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <div className="rounded-full bg-slate-200" style={{ width: 32, height: 32 }} />;
+  }
+
+  return <BoringAvatars size={32} name={personId} variant="marble" colors={colors} />;
 };

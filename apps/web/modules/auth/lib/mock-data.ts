@@ -14,7 +14,7 @@ export const mockUser: TUser = {
 
     unsubscribedOrganizationIds: [],
   },
-  locale: "en-US",
+  locale: "ar-IQ",
   lastLoginAt: new Date("2024-01-01T00:00:00.000Z"),
   isActive: true,
 };

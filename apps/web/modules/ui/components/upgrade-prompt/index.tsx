@@ -1,6 +1,6 @@
-import { Button } from "@/modules/ui/components/button";
 import { KeyIcon } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/modules/ui/components/button";
 
 export type ModalButton = {
   text: string;
@@ -23,27 +23,41 @@ export const UpgradePrompt = ({ title, description, buttons }: UpgradePromptProp
         <KeyIcon className="h-6 w-6 text-slate-900" />
       </div>
       <div className="flex max-w-[80%] flex-col items-center gap-2 text-center">
-        <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-        <p className="text-sm text-slate-500">{description}</p>
+        <h2 className="text-xl font-semibold text-slate-900" suppressHydrationWarning>
+          {title}
+        </h2>
+        <p className="text-sm text-slate-500" suppressHydrationWarning>
+          {description}
+        </p>
       </div>
       <div className="flex gap-3">
         {primaryButton.href ? (
           <Button asChild>
-            <Link href={primaryButton.href} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={primaryButton.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              suppressHydrationWarning>
               {primaryButton.text}
             </Link>
           </Button>
         ) : (
-          <Button onClick={primaryButton.onClick}>{primaryButton.text}</Button>
+          <Button onClick={primaryButton.onClick} suppressHydrationWarning>
+            {primaryButton.text}
+          </Button>
         )}
         {secondaryButton.href ? (
           <Button variant="secondary" asChild>
-            <Link href={secondaryButton.href} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={secondaryButton.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              suppressHydrationWarning>
               {secondaryButton.text}
             </Link>
           </Button>
         ) : (
-          <Button variant="secondary" onClick={secondaryButton.onClick}>
+          <Button variant="secondary" onClick={secondaryButton.onClick} suppressHydrationWarning>
             {secondaryButton.text}
           </Button>
         )}

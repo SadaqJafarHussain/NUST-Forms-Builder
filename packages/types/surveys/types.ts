@@ -70,7 +70,43 @@ export enum TSurveyQuestionTypeEnum {
   Address = "address",
   Ranking = "ranking",
   ContactInfo = "contactInfo",
+  IraqLocation = "iraq_location",
 }
+
+export const ZIraqLocationJudiciary = z.object({
+  "The city or The judiciary ": z.string(), // English name
+  "المدينة او القضاء": z.string(), // Arabic name
+  province_id: z.number(),
+  district_ID: z.number(),
+});
+
+export const ZIraqLocationProvince = z.object({
+  country_id: z.number(),
+  province_id: z.number(),
+  province: z.string(), // English name
+  المحافظة: z.string(), // Arabic name
+});
+
+export const ZIraqLocationArea = z.object({
+  "Unnamed: 0": z.null().optional(),
+  province: z.string().optional(), // Arabic province name for reference
+  province_id: z.number(),
+  "The Area or The Neighborhood": z.string(), // English name
+  "المنطقة او الحي": z.string(), // Arabic name
+  Neighbor_ID: z.number(),
+  district_ID: z.number(),
+});
+
+export const ZIraqLocationData = z.object({
+  provinces: z.array(ZIraqLocationProvince),
+  judiciaries: z.array(ZIraqLocationJudiciary),
+  areas: z.array(ZIraqLocationArea),
+});
+
+export type TIraqLocationProvince = z.infer<typeof ZIraqLocationProvince>;
+export type TIraqLocationJudiciary = z.infer<typeof ZIraqLocationJudiciary>;
+export type TIraqLocationArea = z.infer<typeof ZIraqLocationArea>;
+export type TIraqLocationData = z.infer<typeof ZIraqLocationData>;
 
 export const ZSurveyQuestionId = z.string().superRefine((id, ctx) => {
   if (FORBIDDEN_IDS.includes(id)) {
@@ -506,7 +542,53 @@ export const ZSurveyQuestionBase = z.object({
 
 export const ZSurveyOpenTextQuestionInputType = z.enum(["text", "email", "url", "number", "phone"]);
 export type TSurveyOpenTextQuestionInputType = z.infer<typeof ZSurveyOpenTextQuestionInputType>;
+export const ZSurveyIraqLocationQuestion = ZSurveyQuestionBase.extend({
+  type: z.literal(TSurveyQuestionTypeEnum.IraqLocation),
 
+  // Configuration for each level
+  province: z.object({
+    label: ZI18nString, // e.g., { default: "Province", ar: "المحافظة" }
+    placeholder: ZI18nString, // e.g., { default: "Select province", ar: "اختر المحافظة" }
+    required: z.boolean().default(true),
+    allowOther: z.boolean().default(true), // Allow custom entry
+    otherLabel: ZI18nString.optional(), // Label for "Other" option
+  }),
+
+  judiciary: z.object({
+    label: ZI18nString, // e.g., { default: "District", ar: "القضاء" }
+    placeholder: ZI18nString,
+    required: z.boolean().default(true),
+    allowOther: z.boolean().default(true),
+    otherLabel: ZI18nString.optional(),
+  }),
+
+  area: z.object({
+    label: ZI18nString, // e.g., { default: "Area", ar: "المنطقة" }
+    placeholder: ZI18nString,
+    required: z.boolean().default(true),
+    allowOther: z.boolean().default(true),
+    otherLabel: ZI18nString.optional(),
+  }),
+
+  // Data source configuration
+  dataSourceType: z.enum(["embedded", "external"]).default("embedded"),
+  // If embedded, data is stored in the survey
+  // If external, data is fetched from API
+
+  enableSearch: z.boolean().default(true), // Enable searchable dropdowns
+  enableAutocomplete: z.boolean().default(true), // Enable autocomplete
+}).superRefine((data, ctx) => {
+  // Custom validation can be added here if needed
+  // For example, ensuring at least one field is required
+  if (!data.province.required && !data.judiciary.required && !data.area.required) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one location level must be required",
+    });
+  }
+});
+
+export type TSurveyIraqLocationQuestion = z.infer<typeof ZSurveyIraqLocationQuestion>;
 export const ZSurveyOpenTextQuestion = ZSurveyQuestionBase.extend({
   type: z.literal(TSurveyQuestionTypeEnum.OpenText),
   placeholder: ZI18nString.optional(),
@@ -717,6 +799,7 @@ export const ZSurveyQuestion = z.union([
   ZSurveyAddressQuestion,
   ZSurveyRankingQuestion,
   ZSurveyContactInfoQuestion,
+  ZSurveyIraqLocationQuestion,
 ]);
 
 export type TSurveyQuestion = z.infer<typeof ZSurveyQuestion>;
@@ -741,6 +824,7 @@ export const ZSurveyQuestionType = z.enum([
   TSurveyQuestionTypeEnum.Cal,
   TSurveyQuestionTypeEnum.Ranking,
   TSurveyQuestionTypeEnum.ContactInfo,
+  TSurveyQuestionTypeEnum.IraqLocation, // ← ADD THIS
 ]);
 
 export type TSurveyQuestionType = z.infer<typeof ZSurveyQuestionType>;
@@ -1240,6 +1324,106 @@ export const ZSurvey = z
           ctx.addIssue(issue);
         });
       }
+
+      if (question.type === TSurveyQuestionTypeEnum.IraqLocation) {
+        // Validate province label
+        multiLangIssue = validateQuestionLabels(
+          "province.label",
+          question.province.label,
+          languages,
+          questionIndex
+        );
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate province placeholder
+        multiLangIssue = validateQuestionLabels(
+          "province.placeholder",
+          question.province.placeholder,
+          languages,
+          questionIndex
+        );
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate judiciary label
+        multiLangIssue = validateQuestionLabels(
+          "judiciary.label",
+          question.judiciary.label,
+          languages,
+          questionIndex
+        );
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate judiciary placeholder
+        multiLangIssue = validateQuestionLabels(
+          "judiciary.placeholder",
+          question.judiciary.placeholder,
+          languages,
+          questionIndex
+        );
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate area label
+        multiLangIssue = validateQuestionLabels("area.label", question.area.label, languages, questionIndex);
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate area placeholder
+        multiLangIssue = validateQuestionLabels(
+          "area.placeholder",
+          question.area.placeholder,
+          languages,
+          questionIndex
+        );
+        if (multiLangIssue) {
+          ctx.addIssue(multiLangIssue);
+        }
+
+        // Validate "Other" labels if allowOther is enabled
+        if (question.province.allowOther && question.province.otherLabel) {
+          multiLangIssue = validateQuestionLabels(
+            "province.otherLabel",
+            question.province.otherLabel,
+            languages,
+            questionIndex
+          );
+          if (multiLangIssue) {
+            ctx.addIssue(multiLangIssue);
+          }
+        }
+
+        if (question.judiciary.allowOther && question.judiciary.otherLabel) {
+          multiLangIssue = validateQuestionLabels(
+            "judiciary.otherLabel",
+            question.judiciary.otherLabel,
+            languages,
+            questionIndex
+          );
+          if (multiLangIssue) {
+            ctx.addIssue(multiLangIssue);
+          }
+        }
+
+        if (question.area.allowOther && question.area.otherLabel) {
+          multiLangIssue = validateQuestionLabels(
+            "area.otherLabel",
+            question.area.otherLabel,
+            languages,
+            questionIndex
+          );
+          if (multiLangIssue) {
+            ctx.addIssue(multiLangIssue);
+          }
+        }
+      }
     });
 
     const questionsWithCyclicLogic = findQuestionsWithCyclicLogic(questions);
@@ -1537,6 +1721,12 @@ const isInvalidOperatorsForQuestionType = (
       }
       break;
     case TSurveyQuestionTypeEnum.ContactInfo:
+      if (!["isSubmitted", "isSkipped"].includes(operator)) {
+        isInvalidOperator = true;
+      }
+      break;
+
+    case TSurveyQuestionTypeEnum.IraqLocation:
       if (!["isSubmitted", "isSkipped"].includes(operator)) {
         isInvalidOperator = true;
       }
@@ -2830,6 +3020,66 @@ export const ZSurveyQuestionSummaryRanking = z.object({
 });
 export type TSurveyQuestionSummaryRanking = z.infer<typeof ZSurveyQuestionSummaryRanking>;
 
+export const ZSurveyQuestionSummaryIraqLocation = z.object({
+  type: z.literal("iraqLocation"),
+  question: ZSurveyIraqLocationQuestion,
+  responseCount: z.number(),
+  samples: z.array(
+    z.object({
+      id: z.string(),
+      updatedAt: z.date(),
+      value: z.object({
+        province: z.object({
+          id: z.number().nullable(),
+          name: z.string(),
+          isOther: z.boolean(),
+        }),
+        judiciary: z.object({
+          id: z.number().nullable(),
+          name: z.string(),
+          isOther: z.boolean(),
+        }),
+        area: z.object({
+          id: z.number().nullable(),
+          name: z.string(),
+          isOther: z.boolean(),
+        }),
+      }),
+      contact: z
+        .object({
+          id: ZId,
+          userId: z.string().optional(),
+        })
+        .nullable(),
+      contactAttributes: ZContactAttributes.nullable(),
+    })
+  ),
+  // Aggregated statistics
+  provinceDistribution: z.array(
+    z.object({
+      province: z.string(),
+      count: z.number(),
+      percentage: z.number(),
+    })
+  ),
+  judiciaryDistribution: z.array(
+    z.object({
+      judiciary: z.string(),
+      count: z.number(),
+      percentage: z.number(),
+    })
+  ),
+  areaDistribution: z.array(
+    z.object({
+      area: z.string(),
+      count: z.number(),
+      percentage: z.number(),
+    })
+  ),
+});
+
+export type TSurveyQuestionSummaryIraqLocation = z.infer<typeof ZSurveyQuestionSummaryIraqLocation>;
+
 export const ZSurveyQuestionSummary = z.union([
   ZSurveyQuestionSummaryOpenText,
   ZSurveyQuestionSummaryMultipleChoice,
@@ -2845,6 +3095,7 @@ export const ZSurveyQuestionSummary = z.union([
   ZSurveyQuestionSummaryAddress,
   ZSurveyQuestionSummaryRanking,
   ZSurveyQuestionSummaryContactInfo,
+  ZSurveyQuestionSummaryIraqLocation,
 ]);
 
 export type TSurveyQuestionSummary = z.infer<typeof ZSurveyQuestionSummary>;
@@ -2931,5 +3182,30 @@ export const ZSurveyRecallItem = z.object({
   label: z.string(),
   type: z.enum(["question", "hiddenField", "attributeClass", "variable"]),
 });
+
+export const getJudiciariesByProvince = (
+  locationData: TIraqLocationData,
+  provinceId: number
+): TIraqLocationJudiciary[] => {
+  return locationData.judiciaries.filter((j) => j.province_id === provinceId);
+};
+
+export const getAreasByJudiciary = (
+  locationData: TIraqLocationData,
+  provinceId: number,
+  judiciaryId: number
+): TIraqLocationArea[] => {
+  return locationData.areas.filter((a) => a.province_id === provinceId && a.district_ID === judiciaryId);
+};
+
+/**
+ * Helper function to get bilingual display name
+ */
+export const getLocationDisplayName = (englishName: string, arabicName: string, language: string): string => {
+  if (language === "ar" || language === "arabic") {
+    return arabicName;
+  }
+  return englishName;
+};
 
 export type TSurveyRecallItem = z.infer<typeof ZSurveyRecallItem>;

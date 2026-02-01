@@ -20,7 +20,7 @@
     "options": "خيارات",
     "people_responded": "{count, plural, one {شخص واحد استجاب} two {شخصان استجابا} few {{count} أشخاص استجابوا} many {{count} شخصًا استجابوا} other {{count} شخص استجابوا}}",
     "please_retry_now_or_try_again_later": "يرجى إعادة المحاولة الآن أو المحاولة مرة أخرى لاحقًا.",
-    "powered_by": "مشغل بواسطة",
+    "powered_by": "Powered by",
     "privacy_policy": "سياسة الخصوصية",
     "protected_by_reCAPTCHA_and_the_Google": "محمي بواسطة reCAPTCHA و Google",
     "question": "سؤال",
@@ -59,6 +59,9 @@
       "title": "هذا الجهاز لا يدعم حماية البريد المزعج."
     },
     "please_book_an_appointment": "يرجى حجز موعد",
+    "please_enter_a_valid_email": "يرجى إدخال بريد إلكتروني صحيح",
+    "please_enter_a_valid_iraq_phone_number": "يرجى إدخال رقم هاتف عراقي صحيح (مثال: 07XXXXXXXXX)",
+    "please_enter_a_valid_number": "يرجى إدخال رقم صحيح",
     "please_enter_a_valid_phone_number": "يرجى إدخال رقم هاتف صحيح",
     "please_fill_out_this_field": "يرجى ملء هذا الحقل",
     "please_rank_all_items_before_submitting": "يرجى ترتيب جميع العناصر قبل الإرسال",

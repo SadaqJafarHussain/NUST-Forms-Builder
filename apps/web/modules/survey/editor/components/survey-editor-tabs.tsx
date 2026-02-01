@@ -1,11 +1,11 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { ProBadge } from "@/modules/ui/components/pro-badge";
 import { useTranslate } from "@tolgee/react";
-import { MailIcon, PaintbrushIcon, Rows3Icon, SettingsIcon } from "lucide-react";
+import { PaintbrushIcon, Rows3Icon, SettingsIcon } from "lucide-react";
 import { type JSX, useMemo } from "react";
 import { TSurveyEditorTabs } from "@formbricks/types/surveys/types";
+import { cn } from "@/lib/cn";
+import { ProBadge } from "@/modules/ui/components/pro-badge";
 
 interface Tab {
   id: TSurveyEditorTabs;
@@ -46,12 +46,6 @@ export const SurveyEditorTabs = ({
         id: "settings",
         label: t("common.settings"),
         icon: <SettingsIcon className="h-5 w-5" />,
-      },
-      {
-        id: "followUps",
-        label: t("environments.surveys.edit.follow_ups"),
-        icon: <MailIcon className="h-5 w-5" />,
-        isPro: !isSurveyFollowUpsAllowed,
       },
     ];
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { useTranslate } from "@tolgee/react";
-import { ExternalLinkIcon, Maximize2Icon, SmartphoneIcon } from "lucide-react";
-import { Button } from "@/modules/ui/components/button";
+import { Maximize2Icon, SmartphoneIcon } from "lucide-react";
 
 export const NoMobileOverlay = () => {
   const { t } = useTranslate();
@@ -23,12 +22,6 @@ export const NoMobileOverlay = () => {
         <p className="mt-2 text-base text-zinc-600 dark:text-zinc-400">
           {t("common.mobile_overlay_surveys_look_good")}
         </p>
-        <Button variant="default" asChild className="mt-8">
-          <a href="https://formbricks.com/docs/xm-and-surveys/overview">
-            {t("common.learn_more")}
-            <ExternalLinkIcon />
-          </a>
-        </Button>
       </div>
     </div>
   );

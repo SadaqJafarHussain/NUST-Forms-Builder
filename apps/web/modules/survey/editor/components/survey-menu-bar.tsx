@@ -1,11 +1,5 @@
 "use client";
 
-import { getFormattedErrorMessage } from "@/lib/utils/helper";
-import { createSegmentAction } from "@/modules/ee/contacts/segments/actions";
-import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
-import { AlertDialog } from "@/modules/ui/components/alert-dialog";
-import { Button } from "@/modules/ui/components/button";
-import { Input } from "@/modules/ui/components/input";
 import { Project } from "@prisma/client";
 import { useTranslate } from "@tolgee/react";
 import { isEqual } from "lodash";
@@ -23,6 +17,12 @@ import {
   ZSurveyEndScreenCard,
   ZSurveyRedirectUrlCard,
 } from "@formbricks/types/surveys/types";
+import { getFormattedErrorMessage } from "@/lib/utils/helper";
+import { createSegmentAction } from "@/modules/ee/contacts/segments/actions";
+import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
+import { AlertDialog } from "@/modules/ui/components/alert-dialog";
+import { Button } from "@/modules/ui/components/button";
+import { Input } from "@/modules/ui/components/input";
 import { updateSurveyAction } from "../actions";
 import { isSurveyValid } from "../lib/validation";
 
@@ -321,14 +321,15 @@ export const SurveyMenuBar = ({
             {t("common.back")}
           </Button>
         )}
-        <p className="hidden pl-4 font-semibold md:block">{project.name} / </p>
+        <div className="hidden pl-4 font-semibold md:block">{project.name} / </div>
         <Input
-          defaultValue={localSurvey.name}
+          value={localSurvey.name}
           onChange={(e) => {
             const updatedSurvey = { ...localSurvey, name: e.target.value };
             setLocalSurvey(updatedSurvey);
           }}
-          className="h-8 w-72 border-white py-0 hover:border-slate-200"
+          className="h-8 w-72 border-slate-300 bg-white px-2 py-0 text-sm font-medium focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+          placeholder={t("environments.surveys.edit.survey_name")}
         />
       </div>
 

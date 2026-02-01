@@ -1,3 +1,7 @@
+import { PlusIcon } from "lucide-react";
+import { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DEFAULT_LOCALE, SURVEYS_PER_PAGE } from "@/lib/constants";
 import { getPublicDomain } from "@/lib/getPublicUrl";
 import { getUserLocale } from "@/lib/user/service";
@@ -10,10 +14,6 @@ import { Button } from "@/modules/ui/components/button";
 import { PageContentWrapper } from "@/modules/ui/components/page-content-wrapper";
 import { PageHeader } from "@/modules/ui/components/page-header";
 import { getTranslate } from "@/tolgee/server";
-import { PlusIcon } from "lucide-react";
-import { Metadata } from "next";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Your Surveys",
@@ -29,7 +29,6 @@ export const SurveysPage = async ({ params: paramsProps }: SurveyTemplateProps) 
   const publicDomain = getPublicDomain();
   const params = await paramsProps;
   const t = await getTranslate();
-
   const project = await getProjectWithTeamIdsByEnvironmentId(params.environmentId);
 
   if (!project) {
@@ -43,13 +42,13 @@ export const SurveysPage = async ({ params: paramsProps }: SurveyTemplateProps) 
   }
 
   const surveyCount = await getSurveyCount(params.environmentId);
-
   const currentProjectChannel = project.config.channel ?? null;
   const locale = (await getUserLocale(session.user.id)) ?? DEFAULT_LOCALE;
+
   const CreateSurveyButton = () => {
     return (
       <Button size="sm" asChild>
-        <Link href={`/environments/${environment.id}/surveys/templates`}>
+        <Link href={`/environments/${environment.id}/surveys/templates`} suppressHydrationWarning>
           {t("environments.surveys.new_survey")}
           <PlusIcon />
         </Link>
@@ -92,11 +91,10 @@ export const SurveysPage = async ({ params: paramsProps }: SurveyTemplateProps) 
   } else if (isReadOnly) {
     content = (
       <>
-        <h1 className="px-6 text-3xl font-extrabold text-slate-700">
+        <h1 className="px-6 text-3xl font-extrabold text-slate-700" suppressHydrationWarning>
           {t("environments.surveys.no_surveys_created_yet")}
         </h1>
-
-        <h2 className="px-6 text-lg font-medium text-slate-500">
+        <h2 className="px-6 text-lg font-medium text-slate-500" suppressHydrationWarning>
           {t("environments.surveys.read_only_user_not_allowed_to_create_survey_warning")}
         </h2>
       </>

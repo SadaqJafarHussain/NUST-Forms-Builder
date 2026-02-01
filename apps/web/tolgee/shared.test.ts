@@ -31,17 +31,7 @@ describe("Tolgee Configuration", () => {
 
   describe("ALL_LANGUAGES", () => {
     test("should contain all supported languages", () => {
-      expect(ALL_LANGUAGES).toEqual([
-        "en-US",
-        "de-DE",
-        "fr-FR",
-        "pt-BR",
-        "pt-PT",
-        "zh-Hant-TW",
-        "ro-RO",
-        "ja-JP",
-        "zh-Hans-CN",
-      ]);
+      expect(ALL_LANGUAGES).toEqual(["ar-IQ", "en-US"]);
     });
   });
 

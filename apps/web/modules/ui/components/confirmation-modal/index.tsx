@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import React from "react";
 import { Button } from "@/modules/ui/components/button";
 import {
   Dialog,
@@ -10,9 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/modules/ui/components/dialog";
-import { useTranslate } from "@tolgee/react";
-import { CircleAlert } from "lucide-react";
-import React from "react";
 
 interface SecondaryButtonProps {
   text: string;
@@ -28,17 +27,19 @@ interface ConfirmationModalProps {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onConfirm: () => void;
   description?: string;
-  body: string;
+  body?: string;
   buttonText: string;
   isButtonDisabled?: boolean;
-  buttonVariant?: "destructive" | "default";
+  buttonDisabled?: boolean;
+  buttonVariant?: "destructive" | "default" | "primary";
   buttonLoading?: boolean;
   closeOnOutsideClick?: boolean;
   hideCloseButton?: boolean;
   cancelButtonText?: string;
   onCancel?: () => void;
-  Icon?: React.ElementType;
   secondaryButton?: SecondaryButtonProps;
+  children?: React.ReactNode;
+  text?: string;
 }
 
 export const ConfirmationModal = ({
@@ -48,21 +49,25 @@ export const ConfirmationModal = ({
   onConfirm,
   description,
   body,
+  text,
   buttonText,
   isButtonDisabled = false,
+  buttonDisabled,
   buttonVariant = "destructive",
   buttonLoading = false,
   closeOnOutsideClick = true,
   hideCloseButton,
   cancelButtonText,
   onCancel,
-  Icon,
   secondaryButton,
+  children,
 }: ConfirmationModalProps) => {
+  const resolvedButtonDisabled = buttonDisabled ?? isButtonDisabled;
+  const resolvedBody = body ?? text;
   const { t } = useTranslate();
 
   const handleMainButtonAction = () => {
-    if (isButtonDisabled) return;
+    if (resolvedButtonDisabled) return;
     onConfirm();
   };
 
@@ -91,8 +96,8 @@ export const ConfirmationModal = ({
   const renderMainButton = () => (
     <Button
       loading={buttonLoading}
-      disabled={isButtonDisabled}
-      variant={buttonVariant}
+      disabled={resolvedButtonDisabled}
+      variant={buttonVariant === "primary" ? "default" : buttonVariant}
       onClick={handleMainButtonAction}>
       {buttonText}
     </Button>
@@ -111,11 +116,6 @@ export const ConfirmationModal = ({
         disableCloseOnOutsideClick={!closeOnOutsideClick}
         className="max-w-[540px] space-y-4">
         <DialogHeader className="flex justify-center gap-2">
-          {Icon ? (
-            <Icon className="h-4 w-4 text-slate-500" />
-          ) : (
-            <CircleAlert className="h-4 w-4 text-slate-500" />
-          )}
           <div className="flex flex-col">
             <DialogTitle className="w-full text-left">{title}</DialogTitle>
             <DialogDescription className="w-full text-left">
@@ -127,7 +127,8 @@ export const ConfirmationModal = ({
         </DialogHeader>
 
         <DialogBody>
-          <p>{body}</p>
+          {resolvedBody && <p>{resolvedBody}</p>}
+          {children}
         </DialogBody>
 
         <DialogFooter>

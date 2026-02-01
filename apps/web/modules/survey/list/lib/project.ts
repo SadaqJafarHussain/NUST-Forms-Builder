@@ -1,11 +1,11 @@
 import "server-only";
-import { TUserProject } from "@/modules/survey/list/types/projects";
-import { TProjectWithLanguages } from "@/modules/survey/list/types/surveys";
 import { Prisma } from "@prisma/client";
 import { cache as reactCache } from "react";
 import { prisma } from "@formbricks/database";
 import { logger } from "@formbricks/logger";
 import { DatabaseError, ValidationError } from "@formbricks/types/errors";
+import { TUserProject } from "@/modules/survey/list/types/projects";
+import { TProjectWithLanguages } from "@/modules/survey/list/types/surveys";
 
 export const getProjectWithLanguagesByEnvironmentId = reactCache(
   async (environmentId: string): Promise<TProjectWithLanguages | null> => {
@@ -49,23 +49,8 @@ export const getUserProjects = reactCache(
         throw new ValidationError("User is not a member of this organization");
       }
 
-      let projectWhereClause: Prisma.ProjectWhereInput = {};
-
-      if (orgMembership.role === "member") {
-        projectWhereClause = {
-          projectTeams: {
-            some: {
-              team: {
-                teamUsers: {
-                  some: {
-                    userId,
-                  },
-                },
-              },
-            },
-          },
-        };
-      }
+      // All organization members can access all projects
+      const projectWhereClause: Prisma.ProjectWhereInput = {};
 
       const projects = await prisma.project.findMany({
         where: {

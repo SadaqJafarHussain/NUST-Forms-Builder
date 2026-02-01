@@ -1,16 +1,5 @@
 "use client";
 
-import { useEnvironment } from "@/app/(app)/environments/[environmentId]/context/environment-context";
-import { SuccessMessage } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/SuccessMessage";
-import { ShareSurveyModal } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/share-survey-modal";
-import { SurveyStatusDropdown } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/components/SurveyStatusDropdown";
-import { getFormattedErrorMessage } from "@/lib/utils/helper";
-import { EditPublicSurveyAlertDialog } from "@/modules/survey/components/edit-public-survey-alert-dialog";
-import { useSingleUseId } from "@/modules/survey/hooks/useSingleUseId";
-import { copySurveyToOtherEnvironmentAction } from "@/modules/survey/list/actions";
-import { Button } from "@/modules/ui/components/button";
-import { ConfirmationModal } from "@/modules/ui/components/confirmation-modal";
-import { IconBar } from "@/modules/ui/components/iconbar";
 import { useTranslate } from "@tolgee/react";
 import { BellRing, Eye, ListRestart, SquarePenIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +9,16 @@ import { TEnvironment } from "@formbricks/types/environment";
 import { TSegment } from "@formbricks/types/segment";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TUser } from "@formbricks/types/user";
+import { useEnvironment } from "@/app/(app)/environments/[environmentId]/context/environment-context";
+import { SuccessMessage } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/SuccessMessage";
+import { ShareSurveyModal } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/share-survey-modal";
+import { SurveyStatusDropdown } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/components/SurveyStatusDropdown";
+import { getFormattedErrorMessage } from "@/lib/utils/helper";
+import { EditPublicSurveyAlertDialog } from "@/modules/survey/components/edit-public-survey-alert-dialog";
+import { useSingleUseId } from "@/modules/survey/hooks/useSingleUseId";
+import { copySurveyToOtherEnvironmentAction } from "@/modules/survey/list/actions";
+import { ConfirmationModal } from "@/modules/ui/components/confirmation-modal";
+import { IconBar } from "@/modules/ui/components/iconbar";
 import { resetSurveyAction } from "../actions";
 
 interface SurveyAnalysisCTAProps {
@@ -191,13 +190,6 @@ export const SurveyAnalysisCTA = ({
       )}
 
       <IconBar actions={iconActions} />
-      <Button
-        onClick={() => {
-          setModalState((prev) => ({ ...prev, share: true }));
-        }}>
-        {t("environments.surveys.summary.share_survey")}
-      </Button>
-
       {user && (
         <ShareSurveyModal
           survey={survey}

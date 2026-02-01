@@ -1,3 +1,6 @@
+import { getServerSession } from "next-auth";
+import { cache as reactCache } from "react";
+import { AuthorizationError } from "@formbricks/types/errors";
 import { hasUserEnvironmentAccess } from "@/lib/environment/auth";
 import { getEnvironment } from "@/lib/environment/service";
 import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
@@ -9,9 +12,6 @@ import { authOptions } from "@/modules/auth/lib/authOptions";
 import { getProjectPermissionByUserId } from "@/modules/ee/teams/lib/roles";
 import { getTeamPermissionFlags } from "@/modules/ee/teams/utils/teams";
 import { getTranslate } from "@/tolgee/server";
-import { getServerSession } from "next-auth";
-import { cache as reactCache } from "react";
-import { AuthorizationError } from "@formbricks/types/errors";
 import { TEnvironmentAuth } from "../types/environment-auth";
 
 /**
@@ -52,13 +52,15 @@ export const getEnvironmentAuth = reactCache(async (environmentId: string): Prom
     throw new Error(t("common.membership_not_found"));
   }
 
-  const { isMember, isOwner, isManager, isBilling } = getAccessFlags(currentUserMembership?.role);
+  const { isMember, isOwner, isManager, isBilling, isViewer } = getAccessFlags(currentUserMembership?.role);
 
   const projectPermission = await getProjectPermissionByUserId(session.user.id, project.id);
 
   const { hasReadAccess, hasReadWriteAccess, hasManageAccess } = getTeamPermissionFlags(projectPermission);
 
-  const isReadOnly = isMember && hasReadAccess;
+  // Viewers are always read-only (can see everything but can't modify)
+  // Members with read-only team permission are also read-only
+  const isReadOnly = isViewer || (isMember && hasReadAccess);
 
   return {
     environment,
@@ -71,6 +73,7 @@ export const getEnvironmentAuth = reactCache(async (environmentId: string): Prom
     isOwner,
     isManager,
     isBilling,
+    isViewer,
     hasReadAccess,
     hasReadWriteAccess,
     hasManageAccess,

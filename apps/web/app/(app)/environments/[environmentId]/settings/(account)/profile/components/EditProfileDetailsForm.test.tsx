@@ -10,7 +10,7 @@ const mockUser = {
   id: "test-user-id",
   name: "Old Name",
   email: "test@example.com",
-  locale: "en-US",
+  locale: "ar-IQ",
   notificationSettings: {
     alert: {},
 

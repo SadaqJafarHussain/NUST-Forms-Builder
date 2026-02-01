@@ -78,7 +78,7 @@ describe("surveyLogic", () => {
         subheader: {
           default: "We appreciate your feedback.‌‌‍‍‌‍‍‍‌‌‌‍‍‌‍‌‌‌‌‌‌‌‍‌‍‌‌",
         },
-        buttonLink: "https://formbricks.com",
+        buttonLink: "https://nustwebsite.com/ar/",
         buttonLabel: {
           default: "Create your own Survey‌‌‍‍‌‍‍‍‌‌‌‍‍‌‍‌‍‌‌‌‌‌‍‌‍‌‌",
         },

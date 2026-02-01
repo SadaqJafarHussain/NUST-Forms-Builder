@@ -43,23 +43,8 @@ export const getUserProjects = reactCache(
       throw new ValidationError("User is not a member of this organization");
     }
 
-    let projectWhereClause: Prisma.ProjectWhereInput = {};
-
-    if (orgMembership.role === "member") {
-      projectWhereClause = {
-        projectTeams: {
-          some: {
-            team: {
-              teamUsers: {
-                some: {
-                  userId,
-                },
-              },
-            },
-          },
-        },
-      };
-    }
+    // All organization members can access all projects
+    const projectWhereClause: Prisma.ProjectWhereInput = {};
 
     try {
       const projects = await prisma.project.findMany({
@@ -192,30 +177,10 @@ export const getUserProjectEnvironmentsByOrganizationIds = reactCache(
         return [];
       }
 
-      const whereConditions: Prisma.ProjectWhereInput[] = memberships.map((membership) => {
-        let projectWhereClause: Prisma.ProjectWhereInput = {
-          organizationId: membership.organizationId,
-        };
-
-        if (membership.role === "member") {
-          projectWhereClause = {
-            ...projectWhereClause,
-            projectTeams: {
-              some: {
-                team: {
-                  teamUsers: {
-                    some: {
-                      userId,
-                    },
-                  },
-                },
-              },
-            },
-          };
-        }
-
-        return projectWhereClause;
-      });
+      // All organization members can access all projects
+      const whereConditions: Prisma.ProjectWhereInput[] = memberships.map((membership) => ({
+        organizationId: membership.organizationId,
+      }));
 
       const projects = await prisma.project.findMany({
         where: {

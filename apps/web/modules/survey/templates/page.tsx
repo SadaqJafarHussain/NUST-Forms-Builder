@@ -1,7 +1,7 @@
+import { redirect } from "next/navigation";
 import { getEnvironmentAuth } from "@/modules/environments/lib/utils";
 import { getProjectWithTeamIdsByEnvironmentId } from "@/modules/survey/lib/project";
 import { getTranslate } from "@/tolgee/server";
-import { redirect } from "next/navigation";
 import { TemplateContainerWithPreview } from "./components/template-container";
 
 interface SurveyTemplateProps {
@@ -23,6 +23,8 @@ export const SurveyTemplatesPage = async (props: SurveyTemplateProps) => {
     throw new Error(t("common.project_not_found"));
   }
 
+  // Only redirect if explicitly read-only (member with read-only team permission)
+  // Members without team permissions can still create surveys
   if (isReadOnly) {
     return redirect(`/environments/${environment.id}/surveys`);
   }

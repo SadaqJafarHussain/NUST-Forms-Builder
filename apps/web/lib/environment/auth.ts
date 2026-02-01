@@ -8,7 +8,8 @@ export const hasUserEnvironmentAccess = async (userId: string, environmentId: st
   validateInputs([userId, ZId], [environmentId, ZId]);
 
   try {
-    const orgMembership = await prisma.membership.findFirst({
+    // First get the membership to check the role
+    const membership = await prisma.membership.findFirst({
       where: {
         userId,
         organization: {
@@ -25,36 +26,34 @@ export const hasUserEnvironmentAccess = async (userId: string, environmentId: st
       },
     });
 
-    if (!orgMembership) return false;
+    if (!membership) {
+      return false;
+    }
 
-    if (
-      orgMembership.role === "owner" ||
-      orgMembership.role === "manager" ||
-      orgMembership.role === "billing"
-    )
+    // Owners, managers, and viewers have access to all environments
+    if (membership.role === "owner" || membership.role === "manager" || membership.role === "viewer") {
       return true;
+    }
 
-    const teamMembership = await prisma.teamUser.findFirst({
-      where: {
-        userId,
-        team: {
-          projectTeams: {
-            some: {
-              project: {
-                environments: {
-                  some: {
-                    id: environmentId,
-                  },
-                },
+    // For members, check if they are assigned to the project
+    if (membership.role === "member") {
+      const userProject = await prisma.userProject.findFirst({
+        where: {
+          userId,
+          project: {
+            environments: {
+              some: {
+                id: environmentId,
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (teamMembership) return true;
+      return !!userProject;
+    }
 
+    // Billing role doesn't have environment access
     return false;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

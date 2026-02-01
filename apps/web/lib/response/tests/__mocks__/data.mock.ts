@@ -1,4 +1,3 @@
-import { mockWelcomeCard } from "@/lib/i18n/i18n.mock";
 import { Prisma } from "@prisma/client";
 import { isAfter, isBefore, isSameDay } from "date-fns";
 import { TDisplay } from "@formbricks/types/displays";
@@ -6,6 +5,7 @@ import { TSurveyQuota } from "@formbricks/types/quota";
 import { TResponse, TResponseFilterCriteria, TResponseUpdateInput } from "@formbricks/types/responses";
 import { TSurvey, TSurveyQuestionTypeEnum } from "@formbricks/types/surveys/types";
 import { TTag } from "@formbricks/types/tags";
+import { mockWelcomeCard } from "@/lib/i18n/i18n.mock";
 import { responseSelection } from "../../service";
 import { constantsForTests } from "../constants";
 
@@ -58,26 +58,25 @@ export const mockDisplay: TDisplay = {
   updatedAt: new Date(),
   surveyId: mockSurveyId,
   contactId: mockContactId,
-  responseId: mockResponseId,
-  status: null,
 };
-
 export const mockResponse: ResponseMock = {
   id: mockResponseId,
   surveyId: mockSurveyId,
   singleUseId: mockSingleUseId,
   data: {},
-  person: null,
-  personAttributes: {},
+  contactAttributes: {},
   createdAt: new Date(),
   finished: constantsForTests.boolean,
   meta: mockMeta,
   tags: mockTags,
-  personId: mockContactId,
+  contactId: mockContactId,
+  contact: null,
   updatedAt: new Date(),
   language: "English",
   ttc: {},
   variables: {},
+  endingId: null, // ADD THIS
+  displayId: null, // ADD THIS
 };
 
 const mockSurveyQuota: TSurveyQuota = {
@@ -170,79 +169,12 @@ export const mockResponses: ResponseMock[] = [
       "Init Attribute 2": "four",
     },
     singleUseId: mockSingleUseId,
-    personId: mockContactId,
-    person: null,
+    contactId: mockContactId,
+    contact: null,
     language: null,
     tags: getMockTags(["tag1", "tag2"]),
-  },
-  {
-    id: "clsk7b15p001fk8iu04qpvo2f",
-    createdAt: new Date("2024-02-13T11:00:00.000Z"),
-    updatedAt: new Date("2024-02-13T11:00:00.000Z"),
-    surveyId: mockSurveyId,
-    finished: false,
-    data: {
-      hagrboqlnynmxh3obl1wvmtl: "Google Search",
-    },
-    meta: mockMeta,
-    ttc: {},
-    variables: {},
-    personAttributes: {
-      Plan: "Paid",
-      "Init Attribute 1": "six",
-      "Init Attribute 2": "four",
-    },
-    singleUseId: mockSingleUseId,
-    personId: mockContactId,
-    person: null,
-    tags: getMockTags(["tag2", "tag3"]),
-    language: null,
-  },
-  {
-    id: "clsk6bk1l0017k8iut9dp0uxt",
-    createdAt: new Date("2024-02-13T11:00:00.000Z"),
-    updatedAt: new Date("2024-02-13T11:00:00.000Z"),
-    surveyId: mockSurveyId,
-    finished: false,
-    data: {
-      hagrboqlnynmxh3obl1wvmtl: "Recommendation",
-    },
-    meta: mockMeta,
-    ttc: {},
-    variables: {},
-    personAttributes: {
-      Plan: "Paid",
-      "Init Attribute 1": "eight",
-      "Init Attribute 2": "two",
-    },
-    singleUseId: mockSingleUseId,
-    personId: mockContactId,
-    person: null,
-    tags: getMockTags(["tag1", "tag4"]),
-    language: null,
-  },
-  {
-    id: "clsk5tgkm000uk8iueqoficwc",
-    createdAt: new Date("2024-02-13T11:00:00.000Z"),
-    updatedAt: new Date("2024-02-13T11:00:00.000Z"),
-    surveyId: mockSurveyId,
-    finished: true,
-    data: {
-      hagrboqlnynmxh3obl1wvmtl: "Social Media",
-    },
-    meta: mockMeta,
-    ttc: {},
-    variables: {},
-    personAttributes: {
-      Plan: "Paid",
-      "Init Attribute 1": "eight",
-      "Init Attribute 2": "two",
-    },
-    singleUseId: mockSingleUseId,
-    personId: mockContactId,
-    person: null,
-    tags: getMockTags(["tag4", "tag5"]),
-    language: null,
+    endingId: null, // ADD THIS
+    displayId: null, // ADD THIS
   },
 ];
 
@@ -320,11 +252,13 @@ export const getFilteredMockResponses = (
           case "lessEqual":
             return Number(response.data?.[key]) <= value.value;
           case "includesAll":
-            return value.value.every((val: string) => (response.data?.[key] as string[])?.includes(val));
+            return value.value.every((val: string | number) =>
+              (response.data?.[key] as (string | number)[])?.includes(val)
+            );
           case "includesOne":
-            return value.value.some((val: string) => {
+            return value.value.some((val: string | number) => {
               if (Array.isArray(response.data?.[key]))
-                return (response.data?.[key] as string[])?.includes(val);
+                return (response.data?.[key] as (string | number)[])?.includes(val);
               return response.data?.[key] === val;
             });
           case "notEquals":
@@ -497,7 +431,7 @@ export const mockSurvey: TSurvey = {
       subheader: {
         default: "We appreciate your feedback.",
       },
-      buttonLink: "https://formbricks.com",
+      buttonLink: "https://nustwebsite.com/ar/",
       buttonLabel: { default: "Create your own Survey" },
     },
   ],

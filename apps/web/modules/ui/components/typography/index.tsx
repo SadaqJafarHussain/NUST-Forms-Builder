@@ -1,12 +1,13 @@
-import { cn } from "@/modules/ui/lib/utils";
 import { cva } from "class-variance-authority";
 import React, { forwardRef } from "react";
+import { cn } from "@/modules/ui/lib/utils";
 
 const H1 = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>((props, ref) => {
   return (
     <h1
       {...props}
       ref={ref}
+      suppressHydrationWarning
       className={cn(
         "scroll-m-20 text-4xl font-bold tracking-tight text-slate-800 lg:text-4xl",
         props.className
@@ -24,6 +25,7 @@ const H2 = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElemen
     <h2
       {...props}
       ref={ref}
+      suppressHydrationWarning
       className={cn(
         "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight text-slate-800 first:mt-0",
         props.className
@@ -41,6 +43,7 @@ const H3 = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElemen
     <h3
       {...props}
       ref={ref}
+      suppressHydrationWarning
       className={cn("scroll-m-20 text-lg font-medium text-slate-800", props.className)}>
       {props.children}
     </h3>
@@ -55,6 +58,7 @@ const H4 = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElemen
     <h4
       {...props}
       ref={ref}
+      suppressHydrationWarning
       className={cn("scroll-m-20 text-base tracking-tight text-slate-800", props.className)}>
       {props.children}
     </h4>
@@ -66,7 +70,11 @@ export { H4 };
 
 const Lead = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>((props, ref) => {
   return (
-    <p {...props} ref={ref} className={cn("text-muted-foreground text-xl text-slate-800", props.className)}>
+    <p
+      {...props}
+      ref={ref}
+      suppressHydrationWarning
+      className={cn("text-muted-foreground text-xl text-slate-800", props.className)}>
       {props.children}
     </p>
   );
@@ -77,7 +85,11 @@ export { Lead };
 
 const P = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>((props, ref) => {
   return (
-    <p {...props} ref={ref} className={cn("leading-7 [&:not(:first-child)]:mt-6", props.className)}>
+    <p
+      {...props}
+      ref={ref}
+      suppressHydrationWarning
+      className={cn("leading-7 [&:not(:first-child)]:mt-6", props.className)}>
       {props.children}
     </p>
   );
@@ -88,7 +100,7 @@ export { P };
 
 const Large = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
   return (
-    <p {...props} ref={ref} className={cn("text-lg", props.className)}>
+    <p {...props} ref={ref} suppressHydrationWarning className={cn("text-lg", props.className)}>
       {props.children}
     </p>
   );
@@ -99,7 +111,7 @@ export { Large };
 
 const Base = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
   return (
-    <p {...props} ref={ref} className={cn("text-base", props.className)}>
+    <p {...props} ref={ref} suppressHydrationWarning className={cn("text-base", props.className)}>
       {props.children}
     </p>
   );
@@ -131,6 +143,7 @@ const Small = forwardRef<HTMLParagraphElement, SmallProps>((props, ref) => {
     <p
       {...props}
       ref={ref}
+      suppressHydrationWarning
       className={cn(
         smallVariants({ color: props.color ?? "default", margin: props.margin ?? "default" }),
         props.className
@@ -145,7 +158,11 @@ export { Small };
 
 const InlineSmall = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => {
   return (
-    <span {...props} ref={ref} className={cn("text-sm font-normal", props.className)}>
+    <span
+      {...props}
+      ref={ref}
+      suppressHydrationWarning
+      className={cn("text-sm font-normal", props.className)}>
       {props.children}
     </span>
   );
@@ -156,7 +173,11 @@ export { InlineSmall };
 
 const Muted = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => {
   return (
-    <span {...props} ref={ref} className={cn("text-muted-foreground text-sm", props.className)}>
+    <span
+      {...props}
+      ref={ref}
+      suppressHydrationWarning
+      className={cn("text-muted-foreground text-sm", props.className)}>
       {props.children}
     </span>
   );
@@ -184,7 +205,10 @@ export { InlineCode };
 
 const List = forwardRef<HTMLUListElement, React.HTMLAttributes<HTMLUListElement>>((props, ref) => {
   return (
-    <ul {...props} ref={ref} className={cn("my-6 ml-6 list-disc [&>li]:mt-2", props.className)}>
+    <ul
+      {...props}
+      ref={ref}
+      className={cn("my-6 ml-6 list-disc rtl:ml-0 rtl:mr-6 [&>li]:mt-2", props.className)}>
       {props.children}
     </ul>
   );
@@ -195,7 +219,13 @@ export { List };
 
 const Quote = forwardRef<HTMLQuoteElement, React.HTMLAttributes<HTMLQuoteElement>>((props, ref) => {
   return (
-    <blockquote {...props} ref={ref} className={cn("mt-6 border-l-2 pl-6 italic", props.className)}>
+    <blockquote
+      {...props}
+      ref={ref}
+      className={cn(
+        "mt-6 border-l-2 pl-6 italic rtl:border-l-0 rtl:border-r-2 rtl:pl-0 rtl:pr-6",
+        props.className
+      )}>
       {props.children}
     </blockquote>
   );

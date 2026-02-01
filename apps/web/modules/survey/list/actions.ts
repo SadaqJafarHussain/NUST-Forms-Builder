@@ -1,5 +1,8 @@
 "use server";
 
+import { z } from "zod";
+import { ResourceNotFoundError } from "@formbricks/types/errors";
+import { ZSurveyFilterCriteria } from "@formbricks/types/surveys/types";
 import { authenticatedActionClient } from "@/lib/utils/action-client";
 import { checkAuthorizationUpdated } from "@/lib/utils/action-client/action-client-middleware";
 import { AuthenticatedActionClientCtx } from "@/lib/utils/action-client/types/context";
@@ -19,9 +22,6 @@ import {
   getSurvey,
   getSurveys,
 } from "@/modules/survey/list/lib/survey";
-import { z } from "zod";
-import { ResourceNotFoundError } from "@formbricks/types/errors";
-import { ZSurveyFilterCriteria } from "@formbricks/types/surveys/types";
 
 const ZGetSurveyAction = z.object({
   surveyId: z.string().cuid2(),
@@ -36,7 +36,7 @@ export const getSurveyAction = authenticatedActionClient
       access: [
         {
           type: "organization",
-          roles: ["owner", "manager"],
+          roles: ["owner", "manager", "member", "viewer"],
         },
         {
           type: "projectTeam",
@@ -226,28 +226,38 @@ const ZGetSurveysAction = z.object({
 export const getSurveysAction = authenticatedActionClient
   .schema(ZGetSurveysAction)
   .action(async ({ ctx, parsedInput }) => {
+    const organizationId = await getOrganizationIdFromEnvironmentId(parsedInput.environmentId);
+
     await checkAuthorizationUpdated({
       userId: ctx.user.id,
-      organizationId: await getOrganizationIdFromEnvironmentId(parsedInput.environmentId),
+      organizationId,
       access: [
         {
           data: parsedInput.filterCriteria,
           schema: ZSurveyFilterCriteria,
           type: "organization",
-          roles: ["owner", "manager"],
-        },
-        {
-          type: "projectTeam",
-          minPermission: "read",
-          projectId: await getProjectIdFromEnvironmentId(parsedInput.environmentId),
+          roles: ["owner", "manager", "member", "viewer"],
         },
       ],
     });
 
-    return await getSurveys(
-      parsedInput.environmentId,
-      parsedInput.limit,
-      parsedInput.offset,
-      parsedInput.filterCriteria
+    // Get user's membership role
+    const membership = await import("@/lib/membership/service").then((m) =>
+      m.getMembershipByUserIdOrganizationId(ctx.user.id, organizationId)
     );
+
+    // Members can only see surveys they created
+    // Viewers can see ALL surveys (like owners/managers) but can't modify
+    let filterCriteria = parsedInput.filterCriteria;
+    if (membership?.role === "member") {
+      filterCriteria = {
+        ...filterCriteria,
+        createdBy: {
+          userId: ctx.user.id,
+          value: ["you"] as const,
+        },
+      };
+    }
+
+    return await getSurveys(parsedInput.environmentId, parsedInput.limit, parsedInput.offset, filterCriteria);
   });

@@ -1,10 +1,3 @@
-import { cn } from "@/lib/cn";
-import { WEBAPP_URL } from "@/lib/constants";
-import { getLocalizedValue } from "@/lib/i18n/utils";
-import { COLOR_DEFAULTS } from "@/lib/styling/constants";
-import { isLight, mixColor } from "@/lib/utils/colors";
-import { parseRecallInfo } from "@/lib/utils/recall";
-import { RatingSmiley } from "@/modules/analysis/components/RatingSmiley";
 import {
   Column,
   Container,
@@ -21,6 +14,13 @@ import { TFnType } from "@tolgee/react";
 import { CalendarDaysIcon, UploadIcon } from "lucide-react";
 import React from "react";
 import { type TSurvey, TSurveyQuestionTypeEnum, type TSurveyStyling } from "@formbricks/types/surveys/types";
+import { cn } from "@/lib/cn";
+import { WEBAPP_URL } from "@/lib/constants";
+import { getLocalizedValue } from "@/lib/i18n/utils";
+import { COLOR_DEFAULTS } from "@/lib/styling/constants";
+import { isLight, mixColor } from "@/lib/utils/colors";
+import { parseRecallInfo } from "@/lib/utils/recall";
+import { RatingSmiley } from "@/modules/analysis/components/RatingSmiley";
 import { getNPSOptionColor, getRatingNumberOptionColor } from "../lib/utils";
 import { QuestionHeader } from "./email-question-header";
 
@@ -438,6 +438,13 @@ export async function PreviewEmailTemplate({
           <EmailFooter />
         </EmailTemplateWrapper>
       );
+    default:
+      return (
+        <EmailTemplateWrapper styling={styling} surveyUrl={url}>
+          <QuestionHeader headline={headline} subheader={subheader} className="mr-8" />
+          <EmailFooter />
+        </EmailTemplateWrapper>
+      );
   }
 }
 
@@ -495,7 +502,7 @@ function EmailFooter(): React.JSX.Element {
   return (
     <Container className="m-auto mt-8 text-center">
       <Link className="text-signature-color text-xs" href="https://formbricks.com/" target="_blank">
-        Powered by Formbricks
+        Powered by NUST
       </Link>
     </Container>
   );

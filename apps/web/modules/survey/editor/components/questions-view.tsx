@@ -1,19 +1,5 @@
 "use client";
 
-import { getDefaultEndingCard } from "@/app/lib/survey-builder";
-import { addMultiLanguageLabels, extractLanguageCodes } from "@/lib/i18n/utils";
-import { structuredClone } from "@/lib/pollyfills/structuredClone";
-import { isConditionGroup } from "@/lib/surveyLogic/utils";
-import { checkForEmptyFallBackValue, extractRecallInfo } from "@/lib/utils/recall";
-import { MultiLanguageCard } from "@/modules/ee/multi-language-surveys/components/multi-language-card";
-import { AddEndingCardButton } from "@/modules/survey/editor/components/add-ending-card-button";
-import { AddQuestionButton } from "@/modules/survey/editor/components/add-question-button";
-import { EditEndingCard } from "@/modules/survey/editor/components/edit-ending-card";
-import { EditWelcomeCard } from "@/modules/survey/editor/components/edit-welcome-card";
-import { HiddenFieldsCard } from "@/modules/survey/editor/components/hidden-fields-card";
-import { QuestionsDroppable } from "@/modules/survey/editor/components/questions-droppable";
-import { SurveyVariablesCard } from "@/modules/survey/editor/components/survey-variables-card";
-import { findQuestionUsedInLogic, isUsedInQuota } from "@/modules/survey/editor/lib/utils";
 import {
   DndContext,
   DragEndEvent,
@@ -25,7 +11,7 @@ import {
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { createId } from "@paralleldrive/cuid2";
-import { Language, Project } from "@prisma/client";
+import { Project } from "@prisma/client";
 import { useTranslate } from "@tolgee/react";
 import React, { SetStateAction, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
@@ -41,6 +27,17 @@ import {
 import { TSurvey, TSurveyQuestion } from "@formbricks/types/surveys/types";
 import { findQuestionsWithCyclicLogic } from "@formbricks/types/surveys/validation";
 import { TUserLocale } from "@formbricks/types/user";
+import { getDefaultEndingCard } from "@/app/lib/survey-builder";
+import { addMultiLanguageLabels, extractLanguageCodes } from "@/lib/i18n/utils";
+import { structuredClone } from "@/lib/pollyfills/structuredClone";
+import { isConditionGroup } from "@/lib/surveyLogic/utils";
+import { checkForEmptyFallBackValue, extractRecallInfo } from "@/lib/utils/recall";
+import { AddEndingCardButton } from "@/modules/survey/editor/components/add-ending-card-button";
+import { AddQuestionButton } from "@/modules/survey/editor/components/add-question-button";
+import { EditEndingCard } from "@/modules/survey/editor/components/edit-ending-card";
+import { EditWelcomeCard } from "@/modules/survey/editor/components/edit-welcome-card";
+import { QuestionsDroppable } from "@/modules/survey/editor/components/questions-droppable";
+import { findQuestionUsedInLogic, isUsedInQuota } from "@/modules/survey/editor/lib/utils";
 import {
   isEndingCardValid,
   isWelcomeCardValid,
@@ -54,12 +51,10 @@ interface QuestionsViewProps {
   activeQuestionId: TSurveyQuestionId | null;
   setActiveQuestionId: (questionId: TSurveyQuestionId | null) => void;
   project: Project;
-  projectLanguages: Language[];
   invalidQuestions: string[] | null;
   setInvalidQuestions: React.Dispatch<SetStateAction<string[] | null>>;
   selectedLanguageCode: string;
   setSelectedLanguageCode: (languageCode: string) => void;
-  isMultiLanguageAllowed?: boolean;
   isFormbricksCloud: boolean;
   plan: TOrganizationBillingPlan;
   isCxMode: boolean;
@@ -76,12 +71,10 @@ export const QuestionsView = ({
   localSurvey,
   setLocalSurvey,
   project,
-  projectLanguages,
   invalidQuestions,
   setInvalidQuestions,
   setSelectedLanguageCode,
   selectedLanguageCode,
-  isMultiLanguageAllowed,
   isFormbricksCloud,
   plan,
   isCxMode,
@@ -317,28 +310,6 @@ export const QuestionsView = ({
     toast.success(t("environments.surveys.edit.question_deleted"));
   };
 
-  const duplicateQuestion = (questionIdx: number) => {
-    const questionToDuplicate = structuredClone(localSurvey.questions[questionIdx]);
-
-    const newQuestionId = createId();
-
-    // create a copy of the question with a new id
-    const duplicatedQuestion = {
-      ...questionToDuplicate,
-      id: newQuestionId,
-    };
-
-    // insert the new question right after the original one
-    const updatedSurvey = { ...localSurvey };
-    updatedSurvey.questions.splice(questionIdx + 1, 0, duplicatedQuestion);
-
-    setLocalSurvey(updatedSurvey);
-    setActiveQuestionId(newQuestionId);
-    internalQuestionIdMap[newQuestionId] = createId();
-
-    toast.success(t("environments.surveys.edit.question_duplicated"));
-  };
-
   const addQuestion = (question: TSurveyQuestion, index?: number) => {
     const updatedSurvey = { ...localSurvey };
     const newQuestions = [...localSurvey.questions];
@@ -469,7 +440,6 @@ export const QuestionsView = ({
           project={project}
           moveQuestion={moveQuestion}
           updateQuestion={updateQuestion}
-          duplicateQuestion={duplicateQuestion}
           selectedLanguageCode={selectedLanguageCode}
           setSelectedLanguageCode={setSelectedLanguageCode}
           deleteQuestion={deleteQuestion}
@@ -483,10 +453,16 @@ export const QuestionsView = ({
           responseCount={responseCount}
           onAlertTrigger={() => setIsCautionDialogOpen(true)}
           isStorageConfigured={isStorageConfigured}
+          environmentId={localSurvey.environmentId}
         />
       </DndContext>
 
-      <AddQuestionButton addQuestion={addQuestion} project={project} isCxMode={isCxMode} />
+      <AddQuestionButton
+        addQuestion={addQuestion}
+        project={project}
+        isCxMode={isCxMode}
+        environmentId={localSurvey.environmentId}
+      />
       <div className="mt-5 flex flex-col gap-5" ref={parent}>
         <hr className="border-t border-dashed" />
         <DndContext
@@ -522,35 +498,6 @@ export const QuestionsView = ({
         {!isCxMode && (
           <>
             <AddEndingCardButton localSurvey={localSurvey} addEndingCard={addEndingCard} />
-            <hr />
-
-            <HiddenFieldsCard
-              localSurvey={localSurvey}
-              setLocalSurvey={setLocalSurvey}
-              setActiveQuestionId={setActiveQuestionId}
-              activeQuestionId={activeQuestionId}
-              quotas={quotas}
-            />
-
-            <SurveyVariablesCard
-              localSurvey={localSurvey}
-              setLocalSurvey={setLocalSurvey}
-              activeQuestionId={activeQuestionId}
-              setActiveQuestionId={setActiveQuestionId}
-              quotas={quotas}
-            />
-
-            <MultiLanguageCard
-              localSurvey={localSurvey}
-              projectLanguages={projectLanguages}
-              setLocalSurvey={setLocalSurvey}
-              setActiveQuestionId={setActiveQuestionId}
-              activeQuestionId={activeQuestionId}
-              isMultiLanguageAllowed={isMultiLanguageAllowed}
-              isFormbricksCloud={isFormbricksCloud}
-              setSelectedLanguageCode={setSelectedLanguageCode}
-              locale={locale}
-            />
           </>
         )}
       </div>

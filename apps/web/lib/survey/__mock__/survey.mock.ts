@@ -131,7 +131,7 @@ export const mockUser: TUser = {
 
     unsubscribedOrganizationIds: [],
   },
-  locale: "en-US",
+  locale: "ar-IQ",
   lastLoginAt: new Date(),
   isActive: true,
 };

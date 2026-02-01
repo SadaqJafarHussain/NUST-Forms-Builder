@@ -1,16 +1,7 @@
 import { z } from "zod";
 
-export const ZUserLocale = z.enum([
-  "en-US",
-  "de-DE",
-  "pt-BR",
-  "fr-FR",
-  "zh-Hant-TW",
-  "pt-PT",
-  "ro-RO",
-  "ja-JP",
-  "zh-Hans-CN",
-]);
+// Arabic-only locale
+export const ZUserLocale = z.enum(["ar-IQ"]);
 
 export type TUserLocale = z.infer<typeof ZUserLocale>;
 

@@ -1,9 +1,4 @@
 import "server-only";
-import { getIsQuotasEnabled } from "@/modules/ee/license-check/lib/utils";
-import { reduceQuotaLimits } from "@/modules/ee/quotas/lib/quotas";
-import { deleteFile } from "@/modules/storage/service";
-import { getOrganizationIdFromEnvironmentId } from "@/modules/survey/lib/organization";
-import { getOrganizationBilling } from "@/modules/survey/lib/survey";
 import { Prisma } from "@prisma/client";
 import { cache as reactCache } from "react";
 import { z } from "zod";
@@ -22,6 +17,11 @@ import {
 } from "@formbricks/types/responses";
 import { TSurvey, TSurveyQuestionTypeEnum } from "@formbricks/types/surveys/types";
 import { TTag } from "@formbricks/types/tags";
+import { getIsQuotasEnabled } from "@/modules/ee/license-check/lib/utils";
+import { reduceQuotaLimits } from "@/modules/ee/quotas/lib/quotas";
+import { deleteFile } from "@/modules/storage/service";
+import { getOrganizationIdFromEnvironmentId } from "@/modules/survey/lib/organization";
+import { getOrganizationBilling } from "@/modules/survey/lib/survey";
 import { ITEMS_PER_PAGE } from "../constants";
 import { deleteDisplay } from "../display/service";
 import { getSurvey } from "../survey/service";
@@ -336,10 +336,53 @@ export const getResponses = reactCache(
   }
 );
 
+// Export translations for different locales
+const getExportTranslations = (locale: string) => {
+  const translations: Record<string, Record<string, string>> = {
+    en: {
+      "No.": "No.",
+      "Response ID": "Response ID",
+      Timestamp: "Timestamp",
+      Finished: "Finished",
+      Quotas: "Quotas",
+      "Survey ID": "Survey ID",
+      "Formbricks ID (internal)": "Formbricks ID (internal)",
+      "User ID": "User ID",
+      Notes: "Notes",
+      Tags: "Tags",
+      "Verified Email": "Verified Email",
+      Yes: "Yes",
+      No: "No",
+      "Option ID": "Option ID",
+    },
+    ar: {
+      "No.": "رقم",
+      "Response ID": "معرف الاستجابة",
+      Timestamp: "التاريخ والوقت",
+      Finished: "مكتمل",
+      Quotas: "الحصص",
+      "Survey ID": "معرف الاستبيان",
+      "Formbricks ID (internal)": "معرف Formbricks (داخلي)",
+      "User ID": "معرف المستخدم",
+      Notes: "ملاحظات",
+      Tags: "الوسوم",
+      "Verified Email": "البريد الإلكتروني الموثق",
+      Yes: "نعم",
+      No: "لا",
+      "Option ID": "معرف الخيار",
+    },
+  };
+
+  // Check for Arabic locale variants
+  const normalizedLocale = locale.startsWith("ar") ? "ar" : locale;
+  return translations[normalizedLocale] || translations["en"];
+};
+
 export const getResponseDownloadFile = async (
   surveyId: string,
   format: "csv" | "xlsx",
-  filterCriteria?: TResponseFilterCriteria
+  filterCriteria?: TResponseFilterCriteria,
+  locale: string = "en"
 ): Promise<{ fileContents: string; fileName: string }> => {
   validateInputs([surveyId, ZId], [format, ZString], [filterCriteria, ZResponseFilterCriteria.optional()]);
   try {
@@ -368,10 +411,13 @@ export const getResponseDownloadFile = async (
       }
     }
 
-    const { metaDataFields, questions, hiddenFields, variables, userAttributes } = extractSurveyDetails(
-      survey,
-      responses
-    );
+    const {
+      metaDataFields: _metaDataFields,
+      questions,
+      hiddenFields,
+      variables,
+      userAttributes,
+    } = extractSurveyDetails(survey, responses);
 
     const organizationId = await getOrganizationIdFromEnvironmentId(survey.environmentId);
     if (!organizationId) {
@@ -385,26 +431,22 @@ export const getResponseDownloadFile = async (
     }
     const isQuotasAllowed = await getIsQuotasEnabled(organizationBilling.plan);
 
+    const t = getExportTranslations(locale);
+
+    // Simplified headers - only include essential columns for end users
     const headers = [
-      "No.",
-      "Response ID",
-      "Timestamp",
-      "Finished",
-      ...(isQuotasAllowed ? ["Quotas"] : []),
-      "Survey ID",
-      "Formbricks ID (internal)",
-      "User ID",
-      "Notes",
-      "Tags",
-      ...metaDataFields,
+      t["No."],
+      t["Timestamp"],
+      t["Finished"],
       ...questions.flat(),
+      ...(isQuotasAllowed ? [t["Quotas"]] : []),
       ...variables,
       ...hiddenFields,
       ...userAttributes,
     ];
 
     if (survey.isVerifyEmailEnabled) {
-      headers.push("Verified Email");
+      headers.push(t["Verified Email"]);
     }
     const jsonData = getResponsesJson(
       survey,
@@ -412,14 +454,17 @@ export const getResponseDownloadFile = async (
       questions,
       userAttributes,
       hiddenFields,
-      isQuotasAllowed
+      isQuotasAllowed,
+      locale
     );
 
     const fileName = getResponsesFileName(survey?.name || "", format);
     let fileContents: string;
 
     if (format === "xlsx") {
-      const buffer = convertToXlsxBuffer(headers, jsonData);
+      // Enable RTL for Arabic locales
+      const isRtl = locale.startsWith("ar");
+      const buffer = await convertToXlsxBuffer(headers, jsonData, { rtl: isRtl });
       fileContents = buffer.toString("base64");
     } else {
       fileContents = await convertToCsv(headers, jsonData);

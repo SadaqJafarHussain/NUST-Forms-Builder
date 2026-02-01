@@ -1,5 +1,3 @@
-import { WEBAPP_URL } from "@/lib/constants";
-import { getPublicDomain } from "@/lib/getPublicUrl";
 import { randomUUID } from "crypto";
 import { logger } from "@formbricks/logger";
 import {
@@ -12,6 +10,8 @@ import {
 } from "@formbricks/storage";
 import { Result, err, ok } from "@formbricks/types/error-handlers";
 import { TAccessType } from "@formbricks/types/storage";
+import { WEBAPP_URL } from "@/lib/constants";
+import { getPublicDomain } from "@/lib/getPublicUrl";
 import { sanitizeFileName } from "./utils";
 
 export const getSignedUrlForUpload = async (
@@ -24,8 +24,8 @@ export const getSignedUrlForUpload = async (
   Result<
     {
       signedUrl: string;
-      presignedFields: Record<string, string>;
       fileUrl: string;
+      updatedFileName: string;
     },
     StorageError
   >
@@ -56,10 +56,10 @@ export const getSignedUrlForUpload = async (
 
     return ok({
       signedUrl: signedUrlResult.data.signedUrl,
-      presignedFields: signedUrlResult.data.presignedFields,
       fileUrl: new URL(
         `${baseUrl}/storage/${environmentId}/${accessType}/${encodeURIComponent(updatedFileName)}`
       ).href,
+      updatedFileName,
     });
   } catch (error) {
     logger.error({ error }, "Error getting signed url for upload");

@@ -255,7 +255,7 @@ const mockUser: TUser = {
 
   role: "other",
   objective: "other",
-  locale: "en-US",
+  locale: "ar-IQ",
   lastLoginAt: new Date(),
   isActive: true,
   notificationSettings: {

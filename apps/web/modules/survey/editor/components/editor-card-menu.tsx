@@ -1,5 +1,19 @@
 "use client";
 
+import { createId } from "@paralleldrive/cuid2";
+import { Project } from "@prisma/client";
+import { useTranslate } from "@tolgee/react";
+import { ArrowDownIcon, ArrowUpIcon, BookmarkIcon, EllipsisIcon, TrashIcon } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import {
+  TSurvey,
+  TSurveyEndScreenCard,
+  TSurveyQuestion,
+  TSurveyQuestionTypeEnum,
+  TSurveyRedirectUrlCard,
+} from "@formbricks/types/surveys/types";
+import { saveToQuestionBankAction } from "@/lib/question-bank/actions";
 import {
   getCXQuestionNameMap,
   getQuestionDefaults,
@@ -18,24 +32,11 @@ import {
   DropdownMenuTrigger,
 } from "@/modules/ui/components/dropdown-menu";
 import { TooltipRenderer } from "@/modules/ui/components/tooltip";
-import { createId } from "@paralleldrive/cuid2";
-import { Project } from "@prisma/client";
-import { useTranslate } from "@tolgee/react";
-import { ArrowDownIcon, ArrowUpIcon, CopyIcon, EllipsisIcon, TrashIcon } from "lucide-react";
-import { useState } from "react";
-import {
-  TSurvey,
-  TSurveyEndScreenCard,
-  TSurveyQuestion,
-  TSurveyQuestionTypeEnum,
-  TSurveyRedirectUrlCard,
-} from "@formbricks/types/surveys/types";
 
 interface EditorCardMenuProps {
   survey: TSurvey;
   cardIdx: number;
   lastCard: boolean;
-  duplicateCard: (cardIdx: number) => void;
   deleteCard: (cardIdx: number) => void;
   moveCard: (cardIdx: number, up: boolean) => void;
   card: TSurveyQuestion | TSurveyEndScreenCard | TSurveyRedirectUrlCard;
@@ -44,13 +45,13 @@ interface EditorCardMenuProps {
   cardType: "question" | "ending";
   project?: Project;
   isCxMode?: boolean;
+  environmentId: string;
 }
 
 export const EditorCardMenu = ({
   survey,
   cardIdx,
   lastCard,
-  duplicateCard,
   deleteCard,
   moveCard,
   project,
@@ -59,10 +60,12 @@ export const EditorCardMenu = ({
   addCard,
   cardType,
   isCxMode = false,
+  environmentId,
 }: EditorCardMenuProps) => {
   const { t } = useTranslate();
   const QUESTIONS_ICON_MAP = getQuestionIconMap(t);
   const [logicWarningModal, setLogicWarningModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [changeToType, setChangeToType] = useState(() => {
     if (card.type !== "endScreen" && card.type !== "redirectToUrl") {
       return card.type;
@@ -74,6 +77,37 @@ export const EditorCardMenu = ({
     cardType === "question"
       ? survey.questions.length === 1
       : survey.type === "link" && survey.endings.length === 1;
+
+  const handleSaveToQuestionBank = async () => {
+    if (cardType !== "question") return;
+
+    setIsSaving(true);
+    try {
+      const questionToSave = card as TSurveyQuestion;
+      // Remove logic when saving to bank as it's survey-specific
+      const { logic, ...questionWithoutLogic } = questionToSave;
+
+      const result = await saveToQuestionBankAction({
+        environmentId,
+        question: questionWithoutLogic as TSurveyQuestion,
+      });
+
+      if (result?.data?.success) {
+        toast.success(t("environments.surveys.edit.question_saved_to_bank"));
+      } else {
+        // Show more detailed error message
+        const errorMessage = result?.serverError || result?.validationErrors?.toString() || "Unknown error";
+        console.error("Failed to save question to bank:", result);
+        toast.error(`${t("environments.surveys.edit.failed_to_save_question")}: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Error saving question to bank:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`${t("environments.surveys.edit.failed_to_save_question")}: ${errorMessage}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const availableQuestionTypes = isCxMode ? getCXQuestionNameMap(t) : getQuestionNameMap(t);
 
@@ -179,18 +213,23 @@ export const EditorCardMenu = ({
           <ArrowDownIcon />
         </Button>
       </TooltipRenderer>
-      <TooltipRenderer tooltipContent={t("common.duplicate")} triggerClass="disabled:border-none">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            duplicateCard(cardIdx);
-          }}
-          className="disabled:border-none">
-          <CopyIcon />
-        </Button>
-      </TooltipRenderer>
+      {cardType === "question" && (
+        <TooltipRenderer
+          tooltipContent={t("environments.surveys.edit.save_to_question_bank")}
+          triggerClass="disabled:border-none">
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={isSaving}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSaveToQuestionBank();
+            }}
+            className="disabled:border-none">
+            <BookmarkIcon className={isSaving ? "animate-pulse" : ""} />
+          </Button>
+        </TooltipRenderer>
+      )}
       <TooltipRenderer tooltipContent={t("common.delete")} triggerClass="disabled:border-none">
         <Button
           variant="ghost"

@@ -1,8 +1,6 @@
 import { SettingsCard } from "@/app/(app)/environments/[environmentId]/settings/components/SettingsCard";
 import { cn } from "@/lib/cn";
 import { IS_STORAGE_CONFIGURED, SURVEY_BG_COLORS, UNSPLASH_ACCESS_KEY } from "@/lib/constants";
-import { getWhiteLabelPermission } from "@/modules/ee/license-check/lib/utils";
-import { BrandingSettingsCard } from "@/modules/ee/whitelabel/remove-branding/components/branding-settings-card";
 import { getEnvironmentAuth } from "@/modules/environments/lib/utils";
 import { ProjectConfigNavigation } from "@/modules/projects/settings/components/project-config-navigation";
 import { EditLogo } from "@/modules/projects/settings/look/components/edit-logo";
@@ -18,15 +16,13 @@ export const ProjectLookSettingsPage = async (props: { params: Promise<{ environ
   const params = await props.params;
   const t = await getTranslate();
 
-  const { isReadOnly, organization } = await getEnvironmentAuth(params.environmentId);
+  const { isReadOnly } = await getEnvironmentAuth(params.environmentId);
 
   const project = await getProjectByEnvironmentId(params.environmentId);
 
   if (!project) {
     throw new Error("Project not found");
   }
-
-  const canRemoveBranding = await getWhiteLabelPermission(organization.billing.plan);
 
   return (
     <PageContentWrapper>
@@ -66,13 +62,6 @@ export const ProjectLookSettingsPage = async (props: { params: Promise<{ environ
         description={t("environments.project.look.app_survey_placement_settings_description")}>
         <EditPlacementForm project={project} environmentId={params.environmentId} isReadOnly={isReadOnly} />
       </SettingsCard>
-
-      <BrandingSettingsCard
-        canRemoveBranding={canRemoveBranding}
-        project={project}
-        environmentId={params.environmentId}
-        isReadOnly={isReadOnly}
-      />
     </PageContentWrapper>
   );
 };

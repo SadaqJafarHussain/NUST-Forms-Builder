@@ -1,5 +1,11 @@
 "use client";
 
+import { ColumnDef } from "@tanstack/react-table";
+import { TFnType } from "@tolgee/react";
+import { CircleHelpIcon, EyeOffIcon, MailIcon } from "lucide-react";
+import Link from "next/link";
+import { TResponseTableData } from "@formbricks/types/responses";
+import { TSurvey, TSurveyQuestion } from "@formbricks/types/surveys/types";
 import { getLocalizedValue } from "@/lib/i18n/utils";
 import { extractChoiceIdsFromResponse } from "@/lib/response/utils";
 import { getContactIdentifier } from "@/lib/utils/contact";
@@ -12,12 +18,6 @@ import { IdBadge } from "@/modules/ui/components/id-badge";
 import { ResponseBadges } from "@/modules/ui/components/response-badges";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/modules/ui/components/tooltip";
 import { cn } from "@/modules/ui/lib/utils";
-import { ColumnDef } from "@tanstack/react-table";
-import { TFnType } from "@tolgee/react";
-import { CircleHelpIcon, EyeOffIcon, MailIcon, TagIcon } from "lucide-react";
-import Link from "next/link";
-import { TResponseTableData } from "@formbricks/types/responses";
-import { TSurvey, TSurveyQuestion } from "@formbricks/types/surveys/types";
 import {
   COLUMNS_ICON_MAP,
   METADATA_FIELDS,
@@ -328,24 +328,7 @@ export const generateResponseTableColumns = (
     },
   };
 
-  const tagsColumn: ColumnDef<TResponseTableData> = {
-    accessorKey: "tags",
-    header: () => <div className="gap-x-1.5">{t("common.tags")}</div>,
-    cell: ({ row }) => {
-      const tags = row.original.tags;
-      if (Array.isArray(tags)) {
-        const tagsArray = tags.map((tag) => tag.name);
-        return (
-          <ResponseBadges
-            items={tagsArray.map((tag) => ({ value: tag }))}
-            isExpanded={isExpanded}
-            icon={<TagIcon className="h-4 w-4 text-slate-500" />}
-            showId={false}
-          />
-        );
-      }
-    },
-  };
+  // Tags column removed - not needed
 
   const variableColumns: ColumnDef<TResponseTableData>[] = survey.variables.map((variable) => {
     return {
@@ -402,6 +385,7 @@ export const generateResponseTableColumns = (
   };
 
   // Combine the selection column with the dynamic question columns
+  // Tags column removed - not needed
   const baseColumns = [
     personColumn,
     dateColumn,
@@ -412,7 +396,6 @@ export const generateResponseTableColumns = (
     ...variableColumns,
     ...hiddenFieldColumns,
     ...metadataColumns,
-    tagsColumn,
   ];
 
   return isReadOnly ? baseColumns : [getSelectionColumn(), ...baseColumns];

@@ -1,6 +1,9 @@
 import { formatDistance, intlFormat } from "date-fns";
-import { de, enUS, fr, ja, pt, ptBR, ro, zhCN, zhTW } from "date-fns/locale";
+import { arSA } from "date-fns/locale";
 import { TUserLocale } from "@formbricks/types/user";
+
+// Arabic-only locale configuration
+const ARABIC_LOCALE = "ar";
 
 export const convertDateString = (dateString: string | null) => {
   if (dateString === null) return null;
@@ -10,7 +13,7 @@ export const convertDateString = (dateString: string | null) => {
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
-    return "Invalid Date";
+    return "تاريخ غير صالح";
   }
   return intlFormat(
     date,
@@ -20,7 +23,7 @@ export const convertDateString = (dateString: string | null) => {
       day: "numeric",
     },
     {
-      locale: "en",
+      locale: ARABIC_LOCALE,
     }
   );
 };
@@ -41,7 +44,7 @@ export const convertDateTimeString = (dateString: string) => {
       minute: "2-digit",
     },
     {
-      locale: "en",
+      locale: ARABIC_LOCALE,
     }
   );
 };
@@ -61,7 +64,7 @@ export const convertDateTimeStringShort = (dateString: string) => {
       minute: "2-digit",
     },
     {
-      locale: "en",
+      locale: ARABIC_LOCALE,
     }
   );
 };
@@ -76,32 +79,14 @@ export const convertTimeString = (dateString: string) => {
       second: "2-digit",
     },
     {
-      locale: "en",
+      locale: ARABIC_LOCALE,
     }
   );
 };
 
-const getLocaleForTimeSince = (locale: TUserLocale) => {
-  switch (locale) {
-    case "de-DE":
-      return de;
-    case "en-US":
-      return enUS;
-    case "pt-BR":
-      return ptBR;
-    case "fr-FR":
-      return fr;
-    case "zh-Hant-TW":
-      return zhTW;
-    case "pt-PT":
-      return pt;
-    case "ro-RO":
-      return ro;
-    case "ja-JP":
-      return ja;
-    case "zh-Hans-CN":
-      return zhCN;
-  }
+// Always return Arabic locale
+const getLocaleForTimeSince = (_locale: TUserLocale) => {
+  return arSA;
 };
 
 export const timeSince = (dateString: string, locale: TUserLocale) => {
@@ -115,15 +100,22 @@ export const timeSince = (dateString: string, locale: TUserLocale) => {
 export const timeSinceDate = (date: Date) => {
   return formatDistance(date, new Date(), {
     addSuffix: true,
+    locale: arSA,
   });
 };
 
 export const formatDate = (date: Date) => {
-  return intlFormat(date, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return intlFormat(
+    date,
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+    {
+      locale: ARABIC_LOCALE,
+    }
+  );
 };
 
 export const getTodaysDateFormatted = (seperator: string) => {
