@@ -184,6 +184,8 @@ const defaultProps = {
   responseCount: 0,
   onAlertTrigger: mockOnAlertTrigger,
   isStorageConfigured: true,
+  environmentId: "env1",
+  suggestions: [],
 };
 
 describe("QuestionCard Component", () => {

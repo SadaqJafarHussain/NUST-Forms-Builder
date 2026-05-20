@@ -10,6 +10,7 @@ import {
   createQuestionBankItems,
   deleteQuestionBankItem,
   getQuestionBankItems,
+  getSurveysWithQuestionsForOrg,
 } from "./service";
 
 const ZUploadQuestionsAction = z.object({
@@ -34,7 +35,7 @@ export const uploadQuestionsAction = authenticatedActionClient
     });
 
     const count = await createQuestionBankItems(
-      parsedInput.environmentId,
+      organizationId,
       parsedInput.questions,
       parsedInput.category,
       ctx.user.id
@@ -62,7 +63,7 @@ export const getQuestionsAction = authenticatedActionClient
       ],
     });
 
-    const questions = await getQuestionBankItems(parsedInput.environmentId);
+    const questions = await getQuestionBankItems(organizationId);
 
     return questions;
   });
@@ -90,13 +91,36 @@ export const saveToQuestionBankAction = authenticatedActionClient
     });
 
     const questionId = await createQuestionBankItem(
-      parsedInput.environmentId,
+      organizationId,
       parsedInput.question,
       parsedInput.category,
       ctx.user.id
     );
 
     return { success: true, questionId };
+  });
+
+// Get all surveys with their questions (for import dialog + suggestions)
+const ZGetSurveysForImportAction = z.object({
+  environmentId: z.string().cuid(),
+});
+
+export const getSurveysForImportAction = authenticatedActionClient
+  .schema(ZGetSurveysForImportAction)
+  .action(async ({ ctx, parsedInput }) => {
+    const organizationId = await getOrganizationIdFromEnvironmentId(parsedInput.environmentId);
+    await checkAuthorizationUpdated({
+      userId: ctx.user.id,
+      organizationId,
+      access: [
+        {
+          type: "organization",
+          roles: ["owner", "manager", "member"],
+        },
+      ],
+    });
+
+    return await getSurveysWithQuestionsForOrg(organizationId);
   });
 
 // Delete a question from the question bank

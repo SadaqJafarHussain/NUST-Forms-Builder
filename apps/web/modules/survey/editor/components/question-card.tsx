@@ -2,14 +2,12 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Project } from "@prisma/client";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useTranslate } from "@tolgee/react";
-import { ChevronDownIcon, ChevronRightIcon, GripIcon } from "lucide-react";
+import { GripIcon } from "lucide-react";
 import { useState } from "react";
 import {
-  TI18nString,
   TSurvey,
   TSurveyQuestion,
   TSurveyQuestionId,
@@ -17,8 +15,8 @@ import {
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
 import { cn } from "@/lib/cn";
+import { getLocalizedValue } from "@/lib/i18n/utils";
 import { recallToHeadline } from "@/lib/utils/recall";
-import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
 import { AddressQuestionForm } from "@/modules/survey/editor/components/address-question-form";
 import { AdvancedSettings } from "@/modules/survey/editor/components/advanced-settings";
 import { CalQuestionForm } from "@/modules/survey/editor/components/cal-question-form";
@@ -34,10 +32,14 @@ import { MultipleChoiceQuestionForm } from "@/modules/survey/editor/components/m
 import { NPSQuestionForm } from "@/modules/survey/editor/components/nps-question-form";
 import { OpenQuestionForm } from "@/modules/survey/editor/components/open-question-form";
 import { PictureSelectionForm } from "@/modules/survey/editor/components/picture-selection-form";
+import {
+  QuestionSuggestionStrip,
+  SuggestionQuestion,
+} from "@/modules/survey/editor/components/question-suggestion-strip";
 import { RankingQuestionForm } from "@/modules/survey/editor/components/ranking-question-form";
 import { RatingQuestionForm } from "@/modules/survey/editor/components/rating-question-form";
 import { formatTextWithSlashes } from "@/modules/survey/editor/lib/utils";
-import { getQuestionIconMap, getTSurveyQuestionTypeEnumName } from "@/modules/survey/lib/questions";
+import { getTSurveyQuestionTypeEnumName } from "@/modules/survey/lib/questions";
 import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
 import { Label } from "@/modules/ui/components/label";
 import { Switch } from "@/modules/ui/components/switch";
@@ -64,6 +66,7 @@ interface QuestionCardProps {
   onAlertTrigger: () => void;
   isStorageConfigured: boolean;
   environmentId: string;
+  suggestions: SuggestionQuestion[];
 }
 
 export const QuestionCard = ({
@@ -88,29 +91,19 @@ export const QuestionCard = ({
   onAlertTrigger,
   isStorageConfigured = true,
   environmentId,
+  suggestions,
 }: QuestionCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
   });
   const { t } = useTranslate();
-  const QUESTIONS_ICON_MAP = getQuestionIconMap(t);
   const open = activeQuestionId === question.id;
-  const [openAdvanced, setOpenAdvanced] = useState(question.logic && question.logic.length > 0);
-  const [parent] = useAutoAnimate();
 
-  const updateEmptyButtonLabels = (
-    labelKey: "buttonLabel" | "backButtonLabel",
-    labelValue: TI18nString,
-    skipIndex: number
-  ) => {
-    localSurvey.questions.forEach((q, index) => {
-      if (index === skipIndex) return;
-      const currentLabel = q[labelKey];
-      if (!currentLabel || currentLabel[selectedLanguageCode]?.trim() === "") {
-        updateQuestion(index, { [labelKey]: labelValue });
-      }
-    });
-  };
+  // Strip is hidden after picking a suggestion; re-appears if user edits the headline.
+  const [pickedHeadline, setPickedHeadline] = useState<string | null>(null);
+  const currentHeadline = getLocalizedValue(question.headline, selectedLanguageCode) ?? "";
+  const suggestionStripVisible =
+    question.isDraft === true && !(pickedHeadline !== null && currentHeadline === pickedHeadline);
 
   const getIsRequiredToggleDisabled = (): boolean => {
     if (question.type === TSurveyQuestionTypeEnum.Address) {
@@ -182,29 +175,18 @@ export const QuestionCard = ({
   return (
     <div
       className={cn(
-        open ? "shadow-lg" : "shadow-md",
-        "flex w-full flex-row rounded-lg bg-white duration-300"
+        "group w-full rounded-xl bg-white duration-200",
+        open ? "shadow-md" : "shadow-sm hover:shadow-md"
       )}
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        borderTop: isInvalid ? "1px solid #f87171" : open ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+        borderRight: isInvalid ? "1px solid #f87171" : open ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+        borderBottom: isInvalid ? "1px solid #f87171" : open ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+        borderLeft: open ? "4px solid #1b335f" : isInvalid ? "1px solid #f87171" : "1px solid #e5e7eb",
+      }}
       id={question.id}>
-      <div
-        {...listeners}
-        {...attributes}
-        className={cn(
-          open ? "bg-slate-700" : "bg-slate-400",
-          "top-0 w-10 rounded-l-lg p-2 text-center text-sm text-white hover:cursor-grab hover:bg-slate-600",
-          isInvalid && "bg-red-400 hover:bg-red-600",
-          "flex flex-col items-center justify-between"
-        )}>
-        <div className="mt-3 flex w-full justify-center">{QUESTIONS_ICON_MAP[question.type]}</div>
-
-        <button
-          className="opacity-0 hover:cursor-move group-hover:opacity-100"
-          aria-label="Drag to reorder question">
-          <GripIcon className="h-4 w-4" />
-        </button>
-      </div>
       <Collapsible.Root
         open={open}
         onOpenChange={() => {
@@ -214,21 +196,23 @@ export const QuestionCard = ({
             setActiveQuestionId(null);
           }
         }}
-        className="w-[95%] flex-1 rounded-r-lg border border-slate-200">
+        className="w-full rounded-lg">
         <Collapsible.CollapsibleTrigger
           asChild
-          className={cn(
-            open ? "" : " ",
-            "flex cursor-pointer justify-between gap-4 rounded-r-lg p-4 hover:bg-slate-50"
-          )}
+          className="flex cursor-pointer items-center justify-between gap-3 rounded-t-xl px-5 py-4 hover:bg-slate-50"
           aria-label="Toggle question details">
           <div>
-            <div className="flex grow">
-              {/*  <div className="-ml-0.5 mr-3 h-6 min-w-[1.5rem] text-slate-400">
-                {QUESTIONS_ICON_MAP[question.type]}
-              </div> */}
-              <div className="flex grow flex-col justify-center" dir="auto">
-                <h3 className="text-sm font-semibold">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div
+                {...listeners}
+                {...attributes}
+                className="flex-shrink-0 cursor-grab text-slate-400 opacity-0 group-hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}>
+                <GripIcon className="h-4 w-4" />
+              </div>
+              <span className="flex-shrink-0 text-base font-medium text-slate-400">{questionIdx + 1}.</span>
+              <div className="flex min-w-0 flex-1 flex-col" dir="auto">
+                <h3 className="truncate text-base font-semibold text-slate-800">
                   {recallToHeadline(question.headline, localSurvey, true, selectedLanguageCode)[
                     selectedLanguageCode
                   ]
@@ -240,16 +224,16 @@ export const QuestionCard = ({
                     : getTSurveyQuestionTypeEnumName(question.type, t)}
                 </h3>
                 {!open && (
-                  <p className="mt-1 truncate text-xs text-slate-500">
-                    {question?.required
-                      ? t("environments.surveys.edit.required")
-                      : t("environments.surveys.edit.optional")}
-                  </p>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
+                    <span>{getTSurveyQuestionTypeEnumName(question.type, t)}</span>
+                    <span>·</span>
+                    <span>{question.required ? "إلزامي" : "اختياري"}</span>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-shrink-0 items-center">
               <EditorCardMenu
                 survey={localSurvey}
                 cardIdx={questionIdx}
@@ -267,7 +251,21 @@ export const QuestionCard = ({
             </div>
           </div>
         </Collapsible.CollapsibleTrigger>
-        <Collapsible.CollapsibleContent className={`flex flex-col px-4 ${open && "pb-4"}`}>
+        <Collapsible.CollapsibleContent className={`flex flex-col px-5 ${open && "pb-5"}`}>
+          {/* Suggestion strip — only for new (draft) questions; hidden after picking until headline changes */}
+          {open && suggestionStripVisible && (
+            <div className="pt-3">
+              <QuestionSuggestionStrip
+                headline={currentHeadline}
+                questionType={question.type}
+                suggestions={suggestions}
+                onSelect={(q) => {
+                  setPickedHeadline(getLocalizedValue(q.headline, "default") ?? "");
+                  updateQuestion(questionIdx, { ...q, id: question.id });
+                }}
+              />
+            </div>
+          )}
           {responseCount > 0 &&
           [
             TSurveyQuestionTypeEnum.MultipleChoiceSingle,
@@ -487,123 +485,22 @@ export const QuestionCard = ({
               isStorageConfigured={isStorageConfigured}
             />
           ) : null}
-          <div className="mt-4">
-            <Collapsible.Root open={openAdvanced} onOpenChange={setOpenAdvanced} className="mt-5">
-              <Collapsible.CollapsibleTrigger
-                className="flex items-center text-sm text-slate-700"
-                aria-label="Toggle advanced settings">
-                {openAdvanced ? (
-                  <ChevronDownIcon className="mr-1 h-4 w-3" />
-                ) : (
-                  <ChevronRightIcon className="mr-2 h-4 w-3" />
-                )}
-                {openAdvanced
-                  ? t("environments.surveys.edit.hide_advanced_settings")
-                  : t("environments.surveys.edit.show_advanced_settings")}
-              </Collapsible.CollapsibleTrigger>
-
-              <Collapsible.CollapsibleContent className="flex flex-col gap-4" ref={parent}>
-                {question.type !== TSurveyQuestionTypeEnum.NPS &&
-                question.type !== TSurveyQuestionTypeEnum.Rating &&
-                question.type !== TSurveyQuestionTypeEnum.CTA ? (
-                  <div className="mt-2 flex space-x-2">
-                    {questionIdx !== 0 && (
-                      <QuestionFormInput
-                        id="backButtonLabel"
-                        value={question.backButtonLabel}
-                        label={t("environments.surveys.edit.back_button_label")}
-                        localSurvey={localSurvey}
-                        questionIdx={questionIdx}
-                        maxLength={48}
-                        placeholder={t("common.back")}
-                        isInvalid={isInvalid}
-                        updateQuestion={updateQuestion}
-                        selectedLanguageCode={selectedLanguageCode}
-                        setSelectedLanguageCode={setSelectedLanguageCode}
-                        locale={locale}
-                        onBlur={(e) => {
-                          if (!question.backButtonLabel) return;
-                          let translatedBackButtonLabel = {
-                            ...question.backButtonLabel,
-                            [selectedLanguageCode]: e.target.value,
-                          };
-                          updateEmptyButtonLabels("backButtonLabel", translatedBackButtonLabel, 0);
-                        }}
-                        isStorageConfigured={isStorageConfigured}
-                      />
-                    )}
-                    <div className="w-full">
-                      <QuestionFormInput
-                        id="buttonLabel"
-                        value={question.buttonLabel}
-                        label={t("environments.surveys.edit.next_button_label")}
-                        localSurvey={localSurvey}
-                        questionIdx={questionIdx}
-                        maxLength={48}
-                        placeholder={lastQuestion ? t("common.finish") : t("common.next")}
-                        isInvalid={isInvalid}
-                        updateQuestion={updateQuestion}
-                        selectedLanguageCode={selectedLanguageCode}
-                        setSelectedLanguageCode={setSelectedLanguageCode}
-                        onBlur={(e) => {
-                          if (!question.buttonLabel) return;
-                          let translatedNextButtonLabel = {
-                            ...question.buttonLabel,
-                            [selectedLanguageCode]: e.target.value,
-                          };
-
-                          if (questionIdx === localSurvey.questions.length - 1) return;
-                          updateEmptyButtonLabels(
-                            "buttonLabel",
-                            translatedNextButtonLabel,
-                            localSurvey.questions.length - 1
-                          );
-                        }}
-                        locale={locale}
-                        isStorageConfigured={isStorageConfigured}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-                {(question.type === TSurveyQuestionTypeEnum.Rating ||
-                  question.type === TSurveyQuestionTypeEnum.NPS) &&
-                  questionIdx !== 0 && (
-                    <div className="mt-4">
-                      <QuestionFormInput
-                        id="backButtonLabel"
-                        value={question.backButtonLabel}
-                        label={`"Back" Button Label`}
-                        localSurvey={localSurvey}
-                        questionIdx={questionIdx}
-                        maxLength={48}
-                        placeholder={"Back"}
-                        isInvalid={isInvalid}
-                        updateQuestion={updateQuestion}
-                        selectedLanguageCode={selectedLanguageCode}
-                        setSelectedLanguageCode={setSelectedLanguageCode}
-                        locale={locale}
-                        isStorageConfigured={isStorageConfigured}
-                      />
-                    </div>
-                  )}
-
-                <AdvancedSettings
-                  question={question}
-                  questionIdx={questionIdx}
-                  localSurvey={localSurvey}
-                  updateQuestion={updateQuestion}
-                  selectedLanguageCode={selectedLanguageCode}
-                />
-              </Collapsible.CollapsibleContent>
-            </Collapsible.Root>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <AdvancedSettings
+              question={question}
+              questionIdx={questionIdx}
+              localSurvey={localSurvey}
+              updateQuestion={updateQuestion}
+              selectedLanguageCode={selectedLanguageCode}
+            />
           </div>
         </Collapsible.CollapsibleContent>
 
         {open && (
-          <div className="mx-4 flex justify-end space-x-6 border-t border-slate-200">
+          <div className="mx-5 flex justify-end gap-6 border-t border-slate-100" dir="rtl">
             {question.type === "openText" && (
-              <div className="my-4 flex items-center justify-end space-x-2">
-                <Label htmlFor="longAnswer">{t("environments.surveys.edit.long_answer")}</Label>
+              <div className="my-4 flex items-center gap-2">
+                <Label htmlFor="longAnswer">إجابة طويلة</Label>
                 <Switch
                   id="longAnswer"
                   disabled={question.inputType !== "text"}
@@ -617,20 +514,18 @@ export const QuestionCard = ({
                 />
               </div>
             )}
-            {
-              <div className="my-4 flex items-center justify-end space-x-2">
-                <Label htmlFor="required-toggle">{t("environments.surveys.edit.required")}</Label>
-                <Switch
-                  id="required-toggle"
-                  checked={question.required}
-                  disabled={getIsRequiredToggleDisabled()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRequiredToggle();
-                  }}
-                />
-              </div>
-            }
+            <div className="my-4 flex items-center gap-2">
+              <Label htmlFor="required-toggle">{question.required ? "إلزامي" : "اختياري"}</Label>
+              <Switch
+                id="required-toggle"
+                checked={question.required}
+                disabled={getIsRequiredToggleDisabled()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRequiredToggle();
+                }}
+              />
+            </div>
           </div>
         )}
       </Collapsible.Root>

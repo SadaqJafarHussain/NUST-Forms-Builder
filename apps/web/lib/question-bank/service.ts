@@ -4,10 +4,40 @@ import { prisma } from "@formbricks/database";
 import { DatabaseError } from "@formbricks/types/errors";
 import { TSurveyQuestion } from "@formbricks/types/surveys/types";
 
-// Get all questions for an environment
+// ── Surveys with questions (for import dialog + suggestion engine) ────────────
+
+export const getSurveysWithQuestionsForOrg = cache(
+  async (
+    organizationId: string
+  ): Promise<Array<{ id: string; name: string; questions: TSurveyQuestion[] }>> => {
+    try {
+      const environments = await prisma.environment.findMany({
+        where: { project: { organizationId } },
+        select: { id: true },
+      });
+      const environmentIds = environments.map((e) => e.id);
+
+      const surveys = await prisma.survey.findMany({
+        where: { environmentId: { in: environmentIds } },
+        select: { id: true, name: true, questions: true },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      return surveys.map((s) => ({
+        id: s.id,
+        name: s.name,
+        questions: (s.questions as unknown as TSurveyQuestion[]) ?? [],
+      }));
+    } catch {
+      throw new DatabaseError("Failed to get surveys with questions");
+    }
+  }
+);
+
+// Get all questions for an organization (org-wide, not per environment)
 export const getQuestionBankItems = cache(
   async (
-    environmentId: string
+    organizationId: string
   ): Promise<
     Array<{
       id: string;
@@ -20,7 +50,7 @@ export const getQuestionBankItems = cache(
   > => {
     try {
       const items = await prisma.questionBankItem.findMany({
-        where: { environmentId },
+        where: { organizationId },
         orderBy: { createdAt: "desc" },
       });
 
@@ -40,7 +70,7 @@ export const getQuestionBankItems = cache(
 
 // Create a new question in the bank
 export const createQuestionBankItem = async (
-  environmentId: string,
+  organizationId: string,
   questionData: TSurveyQuestion,
   category?: string,
   createdBy?: string
@@ -48,7 +78,7 @@ export const createQuestionBankItem = async (
   try {
     const item = await prisma.questionBankItem.create({
       data: {
-        environmentId,
+        organizationId,
         questionData: questionData as any,
         type: questionData.type,
         category,
@@ -64,7 +94,7 @@ export const createQuestionBankItem = async (
 
 // Create multiple questions at once (for Excel upload)
 export const createQuestionBankItems = async (
-  environmentId: string,
+  organizationId: string,
   questions: TSurveyQuestion[],
   category?: string,
   createdBy?: string
@@ -72,7 +102,7 @@ export const createQuestionBankItems = async (
   try {
     const result = await prisma.questionBankItem.createMany({
       data: questions.map((q) => ({
-        environmentId,
+        organizationId,
         questionData: q as any,
         type: q.type,
         category,
@@ -114,10 +144,10 @@ export const deleteQuestionBankItem = async (questionId: string): Promise<void> 
 };
 
 // Filter questions by type
-export const getQuestionBankItemsByType = cache(async (environmentId: string, type: string) => {
+export const getQuestionBankItemsByType = cache(async (organizationId: string, type: string) => {
   try {
     const items = await prisma.questionBankItem.findMany({
-      where: { environmentId, type },
+      where: { organizationId, type },
       orderBy: { usageCount: "desc" },
     });
 

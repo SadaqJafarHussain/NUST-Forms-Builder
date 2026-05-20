@@ -4,6 +4,7 @@ import { Project } from "@prisma/client";
 import { TSurvey, TSurveyQuestionId } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
 import { QuestionCard } from "@/modules/survey/editor/components/question-card";
+import { SuggestionQuestion } from "@/modules/survey/editor/components/question-suggestion-strip";
 
 interface QuestionsDraggableProps {
   localSurvey: TSurvey;
@@ -24,6 +25,7 @@ interface QuestionsDraggableProps {
   onAlertTrigger: () => void;
   isStorageConfigured: boolean;
   environmentId: string;
+  suggestions: SuggestionQuestion[];
 }
 
 export const QuestionsDroppable = ({
@@ -45,11 +47,12 @@ export const QuestionsDroppable = ({
   onAlertTrigger,
   isStorageConfigured = true,
   environmentId,
+  suggestions,
 }: QuestionsDraggableProps) => {
   const [parent] = useAutoAnimate();
 
   return (
-    <div className="group mb-5 flex w-full flex-col gap-5" ref={parent}>
+    <div className="group mb-5 flex w-full flex-col gap-4" ref={parent}>
       <SortableContext items={localSurvey.questions} strategy={verticalListSortingStrategy}>
         {localSurvey.questions.map((question, questionIdx) => (
           <QuestionCard
@@ -75,6 +78,7 @@ export const QuestionsDroppable = ({
             onAlertTrigger={onAlertTrigger}
             isStorageConfigured={isStorageConfigured}
             environmentId={environmentId}
+            suggestions={suggestions}
           />
         ))}
       </SortableContext>

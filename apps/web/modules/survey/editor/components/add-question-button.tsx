@@ -1,14 +1,11 @@
 "use client";
 
-import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { createId } from "@paralleldrive/cuid2";
 import { Project } from "@prisma/client";
-import * as Collapsible from "@radix-ui/react-collapsible";
 import { useTranslate } from "@tolgee/react";
-import { BookmarkIcon, PlusIcon } from "lucide-react";
+import { BookmarkIcon, FileTextIcon, PlusCircleIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { TSurveyQuestion } from "@formbricks/types/surveys/types";
-import { cn } from "@/lib/cn";
 import { QuestionBankModal } from "@/modules/survey/editor/components/question-bank-modal";
 import {
   getCXQuestionTypes,
@@ -22,6 +19,7 @@ interface AddQuestionButtonProps {
   project: Project;
   isCxMode: boolean;
   environmentId: string;
+  onImportFromForms?: () => void;
 }
 
 export const AddQuestionButton = ({
@@ -29,13 +27,23 @@ export const AddQuestionButton = ({
   project,
   isCxMode,
   environmentId,
+  onImportFromForms,
 }: AddQuestionButtonProps) => {
   const { t } = useTranslate();
-  const [open, setOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [questionBankOpen, setQuestionBankOpen] = useState(false);
-  const [hoveredQuestionId, setHoveredQuestionId] = useState<string | null>(null);
-  const availableQuestionTypes = isCxMode ? getCXQuestionTypes(t) : getQuestionTypes(t);
-  const [parent] = useAutoAnimate();
+
+  const allTypes = isCxMode ? getCXQuestionTypes(t) : getQuestionTypes(t);
+
+  const handleAdd = (typeId: string) => {
+    addQuestion({
+      ...universalQuestionPresets,
+      ...getQuestionDefaults(typeId, project, t),
+      id: createId(),
+      type: typeId,
+    });
+    setPanelOpen(false);
+  };
 
   const handleAddFromBank = (question: TSurveyQuestion) => {
     addQuestion(question);
@@ -43,73 +51,81 @@ export const AddQuestionButton = ({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
-        <Collapsible.Root
-          open={open}
-          onOpenChange={setOpen}
-          className={cn(
-            open ? "shadow-lg" : "shadow-md",
-            "group w-full space-y-2 rounded-lg border border-slate-300 bg-white duration-200 hover:cursor-pointer hover:bg-slate-50"
-          )}>
-          <Collapsible.CollapsibleTrigger asChild className="group h-full w-full">
-            <div className="inline-flex">
-              <div className="bg-brand-dark flex w-10 items-center justify-center rounded-l-lg group-aria-expanded:rounded-bl-none group-aria-expanded:rounded-br">
-                <PlusIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="px-4 py-3">
-                <p className="text-sm font-semibold">{t("environments.surveys.edit.add_question")}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {t("environments.surveys.edit.add_a_new_question_to_your_survey")}
-                </p>
-              </div>
-            </div>
-          </Collapsible.CollapsibleTrigger>
-          <Collapsible.CollapsibleContent className="justify-left flex flex-col" ref={parent}>
-            {availableQuestionTypes.map((questionType) => (
+      <div className="mt-5" dir="rtl">
+        {!panelOpen ? (
+          /* Trigger button — simple "+ إضافة سؤال" */
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-4 text-sm font-medium text-slate-500 transition-all hover:border-[#1b335f] hover:bg-slate-50 hover:text-[#1b335f]">
+            <PlusCircleIcon className="h-5 w-5" />
+            إضافة سؤال جديد
+          </button>
+        ) : (
+          /* MS Forms-style question type picker panel */
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            {/* Panel header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+              <h3 className="text-sm font-semibold text-slate-700">إضافة سؤال جديد</h3>
               <button
                 type="button"
-                key={questionType.id}
-                className="group relative mx-2 inline-flex items-center justify-between rounded p-0.5 px-4 py-2 text-sm font-medium text-slate-700 last:mb-2 hover:bg-slate-100 hover:text-slate-800"
-                onClick={() => {
-                  addQuestion({
-                    ...universalQuestionPresets,
-                    ...getQuestionDefaults(questionType.id, project, t),
-                    id: createId(),
-                    type: questionType.id,
-                  });
-                  setOpen(false);
-                }}
-                onMouseEnter={() => setHoveredQuestionId(questionType.id)}
-                onMouseLeave={() => setHoveredQuestionId(null)}>
-                <div className="flex items-center">
-                  <questionType.icon className="text-brand-dark -ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
-                  {questionType.label}
-                </div>
-                <div
-                  className={`absolute right-4 text-xs font-light text-slate-500 transition-opacity duration-200 ${
-                    hoveredQuestionId === questionType.id ? "opacity-100" : "opacity-0"
-                  }`}>
-                  {questionType.description}
-                </div>
+                onClick={() => setPanelOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <XIcon className="h-4 w-4" />
               </button>
-            ))}
-          </Collapsible.CollapsibleContent>
-        </Collapsible.Root>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setQuestionBankOpen(true)}
-          className="group inline-flex w-full items-center rounded-lg border border-slate-300 bg-white shadow-md duration-200 hover:cursor-pointer hover:bg-slate-50 hover:shadow-lg">
-          <div className="flex w-10 items-center justify-center rounded-l-lg bg-slate-100 p-3">
-            <BookmarkIcon className="h-5 w-5 text-slate-600" />
+            {/* ── Import sources — top section, visually distinct ── */}
+            <div className="border-b border-slate-100 bg-slate-50 p-3">
+              <p className="mb-2 text-xs font-medium text-slate-400">استيراد من</p>
+              <div className="flex gap-2">
+                {/* Question bank */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuestionBankOpen(true);
+                    setPanelOpen(false);
+                  }}
+                  className="flex flex-1 items-center gap-2.5 rounded-lg border-2 px-4 py-2.5 text-right text-sm font-medium transition-all hover:shadow-sm"
+                  style={{ borderColor: "#f4bf00", backgroundColor: "#fffdf0", color: "#1b335f" }}>
+                  <BookmarkIcon className="h-4 w-4 flex-shrink-0" style={{ color: "#f4bf00" }} />
+                  <span>بنك الأسئلة</span>
+                </button>
+                {/* Import from saved forms */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onImportFromForms) {
+                      onImportFromForms();
+                      setPanelOpen(false);
+                    }
+                  }}
+                  className="flex flex-1 items-center gap-2.5 rounded-lg border-2 px-4 py-2.5 text-right text-sm font-medium transition-all hover:shadow-sm"
+                  style={{ borderColor: "#1b335f", backgroundColor: "#f0f4f8", color: "#1b335f" }}>
+                  <FileTextIcon className="h-4 w-4 flex-shrink-0" style={{ color: "#1b335f" }} />
+                  <span>نموذج آخر</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ── Question type grid ── */}
+            <div className="p-3">
+              <p className="mb-2 text-xs font-medium text-slate-400">أو اختر نوع السؤال</p>
+              <div className="grid grid-cols-3 gap-2">
+                {allTypes.map((qt) => (
+                  <button
+                    key={qt.id}
+                    type="button"
+                    onClick={() => handleAdd(qt.id)}
+                    className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm font-medium text-slate-700 transition-all hover:border-[#1b335f] hover:bg-white hover:text-[#1b335f] hover:shadow-sm">
+                    <qt.icon className="h-5 w-5 flex-shrink-0" style={{ color: "#1b335f" }} />
+                    <span className="flex-1 text-right">{qt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="px-4 py-3">
-            <p className="text-sm font-semibold">{t("environments.surveys.edit.question_bank")}</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {t("environments.surveys.edit.add_from_question_bank")}
-            </p>
-          </div>
-        </button>
+        )}
       </div>
 
       <QuestionBankModal
