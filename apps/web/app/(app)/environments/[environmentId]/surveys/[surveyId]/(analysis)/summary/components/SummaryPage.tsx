@@ -58,6 +58,7 @@ export const SummaryPage = ({
   );
 
   const [tab, setTab] = useState<"dropOffs" | "quotas" | undefined>(undefined);
+  const [showIncompleteStats, setShowIncompleteStats] = useState(false);
   const [isLoading, setIsLoading] = useState(!initialSurveySummary);
 
   const { selectedFilter, dateRange, resetState } = useResponseFilter();
@@ -119,8 +120,17 @@ export const SummaryPage = ({
         tab={tab}
         setTab={setTab}
         isQuotasAllowed={isQuotasAllowed}
+        showIncompleteStats={showIncompleteStats}
+        onToggleIncompleteStats={() => {
+          setShowIncompleteStats((v) => {
+            if (v && tab === "dropOffs") setTab(undefined);
+            return !v;
+          });
+        }}
       />
-      {tab === "dropOffs" && <SummaryDropOffs dropOff={surveySummary.dropOff} survey={surveyMemoized} />}
+      {showIncompleteStats && tab === "dropOffs" && (
+        <SummaryDropOffs dropOff={surveySummary.dropOff} survey={surveyMemoized} />
+      )}
       {isQuotasAllowed && tab === "quotas" && <QuotasSummary quotas={surveySummary.quotas} />}
       <div className="mt-6 flex items-center gap-3" dir="rtl">
         <div className="h-px flex-1 bg-slate-200" />

@@ -401,7 +401,8 @@ export const getResponseDownloadFile = async (
 
     while (hasMore) {
       const batch = await getResponses(surveyId, batchSize, 0, filterCriteria, cursor);
-      responses.push(...batch);
+      // Only include completed responses in the export
+      responses.push(...batch.filter((r) => r.finished));
 
       if (batch.length < batchSize) {
         hasMore = false;

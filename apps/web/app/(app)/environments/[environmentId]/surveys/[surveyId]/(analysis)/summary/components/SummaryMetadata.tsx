@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslate } from "@tolgee/react";
-import { CheckCircle2Icon, ClockIcon, EyeIcon, TrendingDownIcon, UsersIcon } from "lucide-react";
+import { CheckCircle2Icon, ClockIcon, EyeIcon, EyeOffIcon, TrendingDownIcon, UsersIcon } from "lucide-react";
 import { TSurveySummary } from "@formbricks/types/surveys/types";
 import { InteractiveCard } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/interactive-card";
 import { StatCard } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/stat-card";
@@ -13,6 +13,8 @@ interface SummaryMetadataProps {
   tab: "dropOffs" | "quotas" | undefined;
   setTab: React.Dispatch<React.SetStateAction<"dropOffs" | "quotas" | undefined>>;
   isQuotasAllowed: boolean;
+  showIncompleteStats: boolean;
+  onToggleIncompleteStats: () => void;
 }
 
 const formatTime = (ttc) => {
@@ -31,6 +33,8 @@ export const SummaryMetadata = ({
   tab,
   setTab,
   isQuotasAllowed,
+  showIncompleteStats,
+  onToggleIncompleteStats,
 }: SummaryMetadataProps) => {
   const {
     completedPercentage,
@@ -54,6 +58,15 @@ export const SummaryMetadata = ({
 
   return (
     <div dir="rtl">
+      <div className="mb-3 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={onToggleIncompleteStats}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50">
+          {showIncompleteStats ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+          {showIncompleteStats ? "إخفاء الردود غير المكتملة" : "إظهار الردود غير المكتملة"}
+        </button>
+      </div>
       <div
         className={cn(
           `grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 2xl:grid-cols-5`,
@@ -86,19 +99,21 @@ export const SummaryMetadata = ({
           accentColor="#16a34a"
           icon={<CheckCircle2Icon className="h-4 w-4" />}
         />
-        <InteractiveCard
-          key="dropOffs"
-          tab="dropOffs"
-          label="تركوا الفورم"
-          percentage={dropOffPercentage}
-          value={dropoffCountValue}
-          tooltipText="عدد الأشخاص الذين بدأوا ثم تركوا الفورم دون إكمال"
-          isLoading={isLoading}
-          onClick={() => handleTabChange("dropOffs")}
-          isActive={tab === "dropOffs"}
-          accentColor="#dc2626"
-          icon={<TrendingDownIcon className="h-4 w-4" />}
-        />
+        {showIncompleteStats && (
+          <InteractiveCard
+            key="dropOffs"
+            tab="dropOffs"
+            label="تركوا الفورم"
+            percentage={dropOffPercentage}
+            value={dropoffCountValue}
+            tooltipText="عدد الأشخاص الذين بدأوا ثم تركوا الفورم دون إكمال"
+            isLoading={isLoading}
+            onClick={() => handleTabChange("dropOffs")}
+            isActive={tab === "dropOffs"}
+            accentColor="#dc2626"
+            icon={<TrendingDownIcon className="h-4 w-4" />}
+          />
+        )}
         <StatCard
           label="متوسط وقت الإجابة"
           percentage={null}

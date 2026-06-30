@@ -670,7 +670,7 @@ export const extractSurveyDetails = (survey: TSurvey, responses: TResponse[]) =>
       question.type === "multipleChoiceSingle" ||
       question.type === "ranking"
     ) {
-      return [`${idx + 1}. ${headline}`, `${idx + 1}. ${headline} - Option ID`];
+      return [`${idx + 1}. ${headline}`];
     } else {
       return [`${idx + 1}. ${headline}`];
     }
