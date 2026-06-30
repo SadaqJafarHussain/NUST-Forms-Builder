@@ -1,10 +1,15 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { SubmitHandler, useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { z } from "zod";
+import { TOrganizationRole } from "@formbricks/types/memberships";
+import { TOrganization, ZOrganization } from "@formbricks/types/organizations";
 import { updateOrganizationNameAction } from "@/app/(app)/environments/[environmentId]/settings/(organization)/general/actions";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import { Alert, AlertDescription } from "@/modules/ui/components/alert";
-import { Button } from "@/modules/ui/components/button";
 import {
   FormControl,
   FormError,
@@ -14,13 +19,6 @@ import {
   FormProvider,
 } from "@/modules/ui/components/form";
 import { Input } from "@/modules/ui/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useTranslate } from "@tolgee/react";
-import { SubmitHandler, useForm } from "react-hook-form";
-import toast from "react-hot-toast";
-import { z } from "zod";
-import { TOrganizationRole } from "@formbricks/types/memberships";
-import { TOrganization, ZOrganization } from "@formbricks/types/organizations";
 
 interface EditOrganizationNameProps {
   environmentId: string;
@@ -32,7 +30,6 @@ const ZEditOrganizationNameFormSchema = ZOrganization.pick({ name: true });
 type EditOrganizationNameForm = z.infer<typeof ZEditOrganizationNameFormSchema>;
 
 export const EditOrganizationNameForm = ({ organization, membershipRole }: EditOrganizationNameProps) => {
-  const { t } = useTranslate();
   const form = useForm<EditOrganizationNameForm>({
     defaultValues: {
       name: organization.name,
@@ -54,7 +51,7 @@ export const EditOrganizationNameForm = ({ organization, membershipRole }: EditO
       });
 
       if (updatedOrganizationResponse?.data) {
-        toast.success(t("environments.settings.general.organization_name_updated_successfully"));
+        toast.success("تم تحديث اسم الجامعة بنجاح");
         form.reset({ name: updatedOrganizationResponse.data.name });
       } else {
         const errorMessage = getFormattedErrorMessage(updatedOrganizationResponse);
@@ -69,45 +66,58 @@ export const EditOrganizationNameForm = ({ organization, membershipRole }: EditO
     <>
       <FormProvider {...form}>
         <form
-          className="w-full max-w-sm items-center"
+          className="w-full max-w-lg"
+          dir="rtl"
           onSubmit={form.handleSubmit(handleUpdateOrganizationName)}>
           <FormField
             control={form.control}
             name="name"
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>{t("environments.settings.general.organization_name")}</FormLabel>
+                <FormLabel className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+                  اسم الجامعة
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="text"
                     disabled={!isOwner}
                     isInvalid={!!fieldState.error?.message}
-                    placeholder={t("environments.settings.general.organization_name_placeholder")}
+                    placeholder="مثال: جامعة NUST"
+                    className="text-right"
                     required
                   />
                 </FormControl>
-
                 <FormError />
               </FormItem>
             )}
           />
 
-          <Button
-            type="submit"
-            className="mt-4"
-            size="sm"
-            loading={isSubmitting}
-            disabled={isSubmitting || !isDirty || !isOwner}>
-            {t("common.update")}
-          </Button>
+          <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="submit"
+              disabled={isSubmitting || !isDirty || !isOwner}
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: "#1b335f" }}>
+              {isSubmitting && (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              )}
+              حفظ التغييرات
+            </button>
+            {isDirty && (
+              <button
+                type="button"
+                onClick={() => form.reset()}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                إلغاء
+              </button>
+            )}
+          </div>
         </form>
       </FormProvider>
       {!isOwner && (
         <Alert variant="warning" className="mt-4">
-          <AlertDescription>
-            {t("environments.settings.general.only_org_owner_can_perform_action")}
-          </AlertDescription>
+          <AlertDescription>فقط مالك الجامعة يمكنه تعديل هذه الإعدادات</AlertDescription>
         </Alert>
       )}
     </>

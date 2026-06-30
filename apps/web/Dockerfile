@@ -51,8 +51,9 @@ COPY . .
 # Create a .env file
 RUN touch apps/web/.env
 
-# Install the dependencies
-RUN pnpm install --ignore-scripts
+# Install the dependencies (cache pnpm store between builds)
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --ignore-scripts
 
 # Build the database package first
 RUN pnpm build --filter=@formbricks/database
@@ -124,7 +125,7 @@ RUN chmod -R 755 ./node_modules/@noble/hashes
 COPY --from=installer /app/node_modules/zod ./node_modules/zod
 RUN chmod -R 755 ./node_modules/zod
 
-RUN npm install -g prisma
+RUN npm install -g prisma@$(cat ./prisma_version.txt)
 
 # Create a startup script to handle the conditional logic
 COPY --from=installer /app/apps/web/scripts/docker/next-start.sh /home/nextjs/start.sh

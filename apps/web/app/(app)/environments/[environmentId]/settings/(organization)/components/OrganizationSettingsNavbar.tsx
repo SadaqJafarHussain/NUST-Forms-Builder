@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslate } from "@tolgee/react";
 import { usePathname } from "next/navigation";
 import { SecondaryNavigation } from "@/modules/ui/components/secondary-navigation";
 
@@ -12,12 +11,11 @@ interface SettingsNavbarProps {
 
 export const SettingsNavbar = ({ environmentId, activeId, loading }: SettingsNavbarProps) => {
   const pathname = usePathname();
-  const { t } = useTranslate();
 
   const navigation = [
     {
       id: "general",
-      label: t("common.general"),
+      label: "عام",
       href: `/environments/${environmentId}/settings/general`,
       current: pathname?.includes("/general"),
       hidden: false,

@@ -1,84 +1,34 @@
 "use client";
 
-import { useTranslate } from "@tolgee/react";
-import { PaintbrushIcon, Rows3Icon, SettingsIcon } from "lucide-react";
-import { type JSX, useMemo } from "react";
-import { TSurveyEditorTabs } from "@formbricks/types/surveys/types";
-import { cn } from "@/lib/cn";
-import { ProBadge } from "@/modules/ui/components/pro-badge";
-
-interface Tab {
-  id: TSurveyEditorTabs;
-  label: string;
-  icon: JSX.Element;
-  isPro?: boolean;
-}
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 interface SurveyEditorTabsProps {
-  activeId: TSurveyEditorTabs;
-  setActiveId: React.Dispatch<React.SetStateAction<TSurveyEditorTabs>>;
+  showPreview: boolean;
+  onTogglePreview: () => void;
+  // kept for prop compatibility but unused
+  activeId?: string;
+  setActiveId?: (id: any) => void;
   isStylingTabVisible?: boolean;
-  isCxMode: boolean;
-  isSurveyFollowUpsAllowed: boolean;
+  isCxMode?: boolean;
+  isSurveyFollowUpsAllowed?: boolean;
 }
 
-export const SurveyEditorTabs = ({
-  activeId,
-  setActiveId,
-  isStylingTabVisible,
-  isCxMode,
-  isSurveyFollowUpsAllowed = false,
-}: SurveyEditorTabsProps) => {
-  const { t } = useTranslate();
-  const tabsComputed = useMemo(() => {
-    const tabs: Tab[] = [
-      {
-        id: "questions",
-        label: t("common.questions"),
-        icon: <Rows3Icon className="h-5 w-5" />,
-      },
-      {
-        id: "styling",
-        label: t("common.styling"),
-        icon: <PaintbrushIcon className="h-5 w-5" />,
-      },
-      {
-        id: "settings",
-        label: t("common.settings"),
-        icon: <SettingsIcon className="h-5 w-5" />,
-      },
-    ];
-
-    if (isStylingTabVisible) {
-      return tabs;
-    }
-    return tabs.filter((tab) => tab.id !== "styling");
-  }, [isStylingTabVisible, isSurveyFollowUpsAllowed]);
-
-  // Hide settings tab in CX mode
-  let tabsToDisplay = isCxMode ? tabsComputed.filter((tab) => tab.id !== "settings") : tabsComputed;
-
+export const SurveyEditorTabs = ({ showPreview, onTogglePreview }: SurveyEditorTabsProps) => {
   return (
-    <div className="fixed z-30 flex h-12 w-full items-center justify-center border-b bg-white md:w-1/2">
-      <nav className="flex h-full items-center space-x-4" aria-label="Tabs">
-        {tabsToDisplay.map((tab) => (
-          <button
-            type="button"
-            key={tab.id}
-            onClick={() => setActiveId(tab.id)}
-            className={cn(
-              tab.id === activeId
-                ? "border-brand-dark font-semibold text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-700",
-              "flex h-full items-center border-b-2 px-3 text-sm font-medium"
-            )}
-            aria-current={tab.id === activeId ? "page" : undefined}>
-            {tab.icon && <div className="mr-2 h-5 w-5">{tab.icon}</div>}
-            {tab.label}
-            {tab.isPro && <ProBadge />}
-          </button>
-        ))}
-      </nav>
+    <div className="sticky top-0 z-30 flex h-12 w-full items-center border-b border-slate-200 bg-white px-4">
+      {/* Left: preview toggle */}
+      <button
+        type="button"
+        onClick={onTogglePreview}
+        className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors"
+        style={
+          showPreview
+            ? { backgroundColor: "#1b335f", color: "#fff", borderColor: "#1b335f" }
+            : { backgroundColor: "#fff", color: "#1b335f", borderColor: "#1b335f" }
+        }>
+        {showPreview ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+        {showPreview ? "إخفاء المعاينة" : "معاينة"}
+      </button>
     </div>
   );
 };

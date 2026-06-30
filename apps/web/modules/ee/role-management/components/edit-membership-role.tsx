@@ -1,9 +1,11 @@
 "use client";
 
+import { ChevronDownIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import type { TOrganizationRole } from "@formbricks/types/memberships";
 import { getAccessFlags } from "@/lib/membership/utils";
-import { capitalizeFirstLetter } from "@/lib/utils/strings";
-import { Badge } from "@/modules/ui/components/badge";
-import { Button } from "@/modules/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,13 +13,28 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/modules/ui/components/dropdown-menu";
-import { useTranslate } from "@tolgee/react";
-import { ChevronDownIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import type { TOrganizationRole } from "@formbricks/types/memberships";
 import { updateInviteAction, updateMembershipAction } from "../actions";
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: "مالك",
+  manager: "مدير",
+  member: "عضو",
+  billing: "مالية",
+};
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  owner: "صلاحيات كاملة على الجامعة",
+  manager: "يدير الأعضاء والأقسام والكليات",
+  member: "وصول للأقسام والكليات المحددة",
+  billing: "إدارة الفواتير فقط",
+};
+
+const ROLE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  owner: { bg: "#fef3c7", color: "#92400e", border: "#f4bf00" },
+  manager: { bg: "#1b335f", color: "#ffffff", border: "#1b335f" },
+  member: { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" },
+  billing: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+};
 
 interface Role {
   currentUserRole: TOrganizationRole;
@@ -44,7 +61,6 @@ export function EditMembershipRole({
   isFormbricksCloud,
   isUserManagementDisabledFromUi,
 }: Role) {
-  const { t } = useTranslate();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +85,7 @@ export function EditMembershipRole({
         await updateInviteAction({ inviteId: inviteId, organizationId, data: { role } });
       }
     } catch (error) {
-      toast.error(t("common.something_went_wrong_please_try_again"));
+      toast.error("حدث خطأ، يرجى المحاولة مرة أخرى");
     }
 
     setLoading(false);
@@ -93,34 +109,50 @@ export function EditMembershipRole({
     return roles;
   };
 
+  const roleStyle = ROLE_STYLES[memberRole] ?? ROLE_STYLES.member;
+  const roleLabel = ROLE_LABELS[memberRole] ?? memberRole;
+
   if (isOwnerOrManager) {
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="flex items-center gap-1 p-2 text-xs"
-            disabled={disableRole}
-            loading={loading}
-            size="sm"
-            variant="secondary"
-            role="button-role">
-            <span className="ml-1">{capitalizeFirstLetter(memberRole)}</span>
-            <ChevronDownIcon className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger asChild disabled={disableRole || loading}>
+          <button
+            role="button-role"
+            disabled={disableRole || loading}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{
+              backgroundColor: roleStyle.bg,
+              color: roleStyle.color,
+              border: `1px solid ${roleStyle.border}`,
+            }}>
+            {loading ? (
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : null}
+            {roleLabel}
+            {!disableRole && <ChevronDownIcon className="h-3 w-3 opacity-60" />}
+          </button>
         </DropdownMenuTrigger>
         {!disableRole && (
-          <DropdownMenuContent>
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuRadioGroup
-              onValueChange={(value) => {
-                handleRoleChange(value.toLowerCase() as TOrganizationRole);
-              }}
-              value={memberRole}
-              className="flex flex-col-reverse">
-              {getMembershipRoles().map((role) => (
-                <DropdownMenuRadioItem className="capitalize" key={role} value={role}>
-                  {role.toLowerCase()}
-                </DropdownMenuRadioItem>
-              ))}
+              onValueChange={(value) => handleRoleChange(value as TOrganizationRole)}
+              value={memberRole}>
+              {getMembershipRoles().map((role) => {
+                const s = ROLE_STYLES[role] ?? ROLE_STYLES.member;
+                return (
+                  <DropdownMenuRadioItem
+                    key={role}
+                    value={role}
+                    className="flex flex-col items-start gap-0.5 py-2">
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: s.bg, color: s.color }}>
+                      {ROLE_LABELS[role] ?? role}
+                    </span>
+                    <span className="pr-6 text-xs text-slate-400">{ROLE_DESCRIPTIONS[role]}</span>
+                  </DropdownMenuRadioItem>
+                );
+              })}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         )}
@@ -128,5 +160,16 @@ export function EditMembershipRole({
     );
   }
 
-  return <Badge size="tiny" type="gray" role="badge-role" text={capitalizeFirstLetter(memberRole)} />;
+  return (
+    <span
+      role="badge-role"
+      className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+      style={{
+        backgroundColor: roleStyle.bg,
+        color: roleStyle.color,
+        border: `1px solid ${roleStyle.border}`,
+      }}>
+      {roleLabel}
+    </span>
+  );
 }

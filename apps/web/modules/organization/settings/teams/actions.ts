@@ -1,13 +1,26 @@
 "use server";
 
+import { OrganizationRole } from "@prisma/client";
+import { z } from "zod";
+import { ZId, ZUuid } from "@formbricks/types/common";
+import {
+  AuthenticationError,
+  InvalidInputError,
+  OperationNotAllowedError,
+  ValidationError,
+} from "@formbricks/types/errors";
+import { ZOrganizationRole } from "@formbricks/types/memberships";
+import { ZUserEmail, ZUserName, ZUserPassword } from "@formbricks/types/user";
+import { hashPassword } from "@/lib/auth";
 import { INVITE_DISABLED, IS_FORMBRICKS_CLOUD } from "@/lib/constants";
 import { createInviteToken } from "@/lib/jwt";
-import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
+import { createMembership, getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { authenticatedActionClient } from "@/lib/utils/action-client";
 import { checkAuthorizationUpdated } from "@/lib/utils/action-client/action-client-middleware";
 import { AuthenticatedActionClientCtx } from "@/lib/utils/action-client/types/context";
 import { getOrganizationIdFromInviteId } from "@/lib/utils/helper";
+import { createUser } from "@/modules/auth/lib/user";
 import { withAuditLogging } from "@/modules/ee/audit-logs/lib/handler";
 import { getIsMultiOrgEnabled } from "@/modules/ee/license-check/lib/utils";
 import { checkRoleManagementPermission } from "@/modules/ee/role-management/actions";
@@ -17,11 +30,6 @@ import {
   getMembershipsByUserId,
   getOrganizationOwnerCount,
 } from "@/modules/organization/settings/teams/lib/membership";
-import { OrganizationRole } from "@prisma/client";
-import { z } from "zod";
-import { ZId, ZUuid } from "@formbricks/types/common";
-import { AuthenticationError, OperationNotAllowedError, ValidationError } from "@formbricks/types/errors";
-import { ZOrganizationRole } from "@formbricks/types/memberships";
 import { deleteInvite, getInvite, inviteUser, resendInvite } from "./lib/invite";
 
 const ZDeleteInviteAction = z.object({
@@ -271,6 +279,68 @@ export const inviteUserAction = authenticatedActionClient.schema(ZInviteUserActi
     }
   )
 );
+
+const ZCreateMemberAccountAction = z.object({
+  organizationId: ZId,
+  name: ZUserName,
+  email: ZUserEmail,
+  password: ZUserPassword,
+  role: ZOrganizationRole,
+});
+
+export const createMemberAccountAction = authenticatedActionClient
+  .schema(ZCreateMemberAccountAction)
+  .action(async ({ parsedInput, ctx }) => {
+    await checkAuthorizationUpdated({
+      userId: ctx.user.id,
+      organizationId: parsedInput.organizationId,
+      access: [
+        {
+          type: "organization",
+          roles: ["owner", "manager"],
+        },
+      ],
+    });
+
+    if (!IS_FORMBRICKS_CLOUD && parsedInput.role === OrganizationRole.billing) {
+      throw new ValidationError("Billing role is not allowed");
+    }
+
+    const currentUserMembership = await getMembershipByUserIdOrganizationId(
+      ctx.user.id,
+      parsedInput.organizationId
+    );
+    if (!currentUserMembership) {
+      throw new AuthenticationError("User not a member of this organization");
+    }
+
+    if (currentUserMembership.role === "manager" && parsedInput.role !== "member") {
+      throw new OperationNotAllowedError("Managers can only create users as members");
+    }
+
+    const hashedPassword = await hashPassword(parsedInput.password);
+
+    let user;
+    try {
+      user = await createUser({
+        email: parsedInput.email.toLowerCase(),
+        name: parsedInput.name,
+        password: hashedPassword,
+      });
+    } catch (error) {
+      if (error instanceof InvalidInputError) {
+        throw new InvalidInputError("هذا البريد الإلكتروني مسجّل مسبقاً");
+      }
+      throw error;
+    }
+
+    await createMembership(parsedInput.organizationId, user.id, {
+      accepted: true,
+      role: parsedInput.role,
+    });
+
+    return { userId: user.id };
+  });
 
 const ZLeaveOrganizationAction = z.object({
   organizationId: ZId,

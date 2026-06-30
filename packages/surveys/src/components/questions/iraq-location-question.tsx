@@ -10,7 +10,6 @@ import { ScrollableContainer } from "@/components/wrappers/scrollable-container"
 import { getLocalizedValue } from "@/lib/i18n";
 import { getUpdatedTtc, useTtc } from "@/lib/ttc";
 import { cn } from "@/lib/utils";
-// Import your actual JSON data
 import iraqLocationData from "../../lib/iraqLocationData.json";
 
 interface IraqLocationQuestionProps {
@@ -43,6 +42,7 @@ interface DropdownProps {
   dir?: "ltr" | "rtl" | "auto";
 }
 
+// Dropdown that uses position:fixed so it is never clipped by overflow:auto parents
 const SearchableDropdown = ({
   options,
   selected,
@@ -57,12 +57,43 @@ const SearchableDropdown = ({
 }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [menuStyle, setMenuStyle] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  }>({ top: 0, left: 0, width: 0, maxHeight: 240 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const filteredOptions = options.filter((option) =>
     getDisplayName(option).toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleOpen = () => {
+    if (disabled) return;
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const spaceBelow = vh - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const preferred = 240;
+
+      let top: number;
+      let maxHeight: number;
+      if (spaceBelow >= preferred || spaceBelow >= spaceAbove) {
+        // open downward
+        top = rect.bottom + 4;
+        maxHeight = Math.min(preferred, spaceBelow);
+      } else {
+        // flip upward
+        maxHeight = Math.min(preferred, spaceAbove);
+        top = rect.top - maxHeight - 4;
+      }
+      setMenuStyle({ top, left: rect.left, width: rect.width, maxHeight });
+    }
+    setIsOpen(!isOpen);
+  };
 
   const handleSelect = (option: any) => {
     onSelect(option);
@@ -77,7 +108,6 @@ const SearchableDropdown = ({
     }
   };
 
-  // Auto-focus the button when autoFocus is true
   useEffect(() => {
     if (autoFocus && buttonRef.current && !disabled) {
       buttonRef.current.focus();
@@ -89,13 +119,23 @@ const SearchableDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close dropdown on scroll so position is recalculated on next open
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => {
+      setIsOpen(false);
+      setSearchTerm("");
+    };
+    window.addEventListener("scroll", close, true);
+    return () => window.removeEventListener("scroll", close, true);
+  }, [isOpen]);
+
   return (
     <div ref={dropdownRef} className="fb-relative fb-w-full">
-      {/* Selected value display */}
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleOpen}
         disabled={disabled}
         tabIndex={tabIndex}
         dir={dir}
@@ -117,10 +157,18 @@ const SearchableDropdown = ({
         </span>
       </button>
 
-      {/* Dropdown menu */}
+      {/* Fixed-position menu — never clipped by overflow:auto parents */}
       {isOpen && (
-        <div className="fb-absolute fb-z-10 fb-w-full fb-mt-1 fb-bg-input-bg fb-border fb-border-border fb-rounded-custom fb-shadow-lg fb-max-h-60 fb-overflow-auto">
-          {/* Search input */}
+        <div
+          style={{
+            position: "fixed",
+            top: menuStyle.top,
+            left: menuStyle.left,
+            width: menuStyle.width,
+            maxHeight: menuStyle.maxHeight,
+            zIndex: 9999,
+          }}
+          className="fb-bg-input-bg fb-border fb-border-border fb-rounded-custom fb-shadow-lg fb-overflow-auto">
           <div className="fb-p-2 fb-border-b fb-border-border">
             <input
               type="text"
@@ -132,13 +180,11 @@ const SearchableDropdown = ({
               autoFocus
             />
           </div>
-
-          {/* Options list */}
           <div className="fb-py-1">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <button
-                  key={option.province_id || option.district_ID || option.Neighbor_ID}
+                  key={option.province_id ?? option.district_ID ?? option.Neighbor_ID}
                   type="button"
                   onClick={() => handleSelect(option)}
                   dir={dir}
@@ -191,32 +237,34 @@ export function IraqLocationQuestion({
 
   const isCurrent = question.id === currentQuestionId;
 
-  // For Iraq Location question, we always show Arabic location data
-  // since this is specifically designed for Iraq
-  // The languageCode might be "default" even for Arabic surveys
-  const isArabic = true; // Always use Arabic for Iraq location data
+  // Which levels are visible
+  const judiciaryEnabled = question.judiciary?.enabled !== false;
+  const areaEnabled = question.area?.enabled !== false;
 
-  // Initialize from existing value if present
+  // Active data source: customData overrides built-in JSON
+  const locationData = (question.customData as any) ?? iraqLocationData;
+
+  const isArabic = true;
+
+  // Restore previous answer
   useEffect(() => {
     if (value) {
       try {
-        const parsedValue = JSON.parse(value);
-        if (parsedValue.province && parsedValue.province.id) {
-          const province = iraqLocationData.provinces.find((p) => p.province_id === parsedValue.province.id);
+        const parsed = JSON.parse(value);
+        if (parsed.province?.id) {
+          const province = locationData.provinces.find((p: any) => p.province_id === parsed.province.id);
           if (province) {
             setSelectedProvince(province);
-
-            if (parsedValue.judiciary && parsedValue.judiciary.id) {
-              const judiciary = iraqLocationData.judiciaries.find(
-                (j) => j.district_ID === parsedValue.judiciary.id && j.province_id === province.province_id
+            if (judiciaryEnabled && parsed.judiciary?.id) {
+              const judiciary = locationData.judiciaries.find(
+                (j: any) => j.district_ID === parsed.judiciary.id && j.province_id === province.province_id
               );
               if (judiciary) {
                 setSelectedJudiciary(judiciary);
-
-                if (parsedValue.area && parsedValue.area.id) {
-                  const area = iraqLocationData.areas.find(
-                    (a) =>
-                      a.Neighbor_ID === parsedValue.area.id &&
+                if (areaEnabled && parsed.area?.id) {
+                  const area = locationData.areas.find(
+                    (a: any) =>
+                      a.Neighbor_ID === parsed.area.id &&
                       a.province_id === province.province_id &&
                       a.district_ID === judiciary.district_ID
                   );
@@ -226,33 +274,38 @@ export function IraqLocationQuestion({
             }
           }
         }
-      } catch (error) {
-        console.error("Error parsing stored value:", error);
+      } catch (e) {
+        // ignore
       }
     }
-  }, [value]);
-
-  // Filter out "none" entries (where id = 0)
-  const provinces = useMemo(() => {
-    return iraqLocationData.provinces.filter((province) => province.province_id !== 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Province list — apply enabledProvinceIds filter when using built-in data
+  const provinces = useMemo(() => {
+    const raw = locationData.provinces.filter((p: any) => p.province_id !== 0);
+    if (!question.customData && question.enabledProvinceIds?.length) {
+      return raw.filter((p: any) => question.enabledProvinceIds!.includes(p.province_id));
+    }
+    return raw;
+  }, [locationData, question.customData, question.enabledProvinceIds]);
 
   const judiciaries = useMemo(() => {
     if (!selectedProvince) return [];
-    return iraqLocationData.judiciaries.filter(
-      (j) => j.province_id === selectedProvince.province_id && j.district_ID !== 0
+    return locationData.judiciaries.filter(
+      (j: any) => j.province_id === selectedProvince.province_id && j.district_ID !== 0
     );
-  }, [selectedProvince]);
+  }, [selectedProvince, locationData]);
 
   const areas = useMemo(() => {
     if (!selectedProvince || !selectedJudiciary) return [];
-    return iraqLocationData.areas.filter(
-      (a) =>
+    return locationData.areas.filter(
+      (a: any) =>
         a.province_id === selectedProvince.province_id &&
         a.district_ID === selectedJudiciary.district_ID &&
         a.Neighbor_ID !== 0
     );
-  }, [selectedProvince, selectedJudiciary]);
+  }, [selectedProvince, selectedJudiciary, locationData]);
 
   const handleProvinceChange = (province: any) => {
     setSelectedProvince(province);
@@ -272,86 +325,65 @@ export function IraqLocationQuestion({
     updateResponseData(selectedProvince, selectedJudiciary, area);
   };
 
-  // Separate display functions for each type to avoid field name conflicts
-  // Areas have a 'province' field that contains Arabic province name, not the area name!
-  const getProvinceDisplayName = (item: any) => {
-    if (!item) return "";
-    return isArabic ? item["المحافظة"] : item.province;
-  };
-
-  const getJudiciaryDisplayName = (item: any) => {
-    if (!item) return "";
-    return isArabic ? item["المدينة او القضاء"] : item["The city or The judiciary "];
-  };
-
-  const getAreaDisplayName = (item: any) => {
-    if (!item) return "";
-    return isArabic ? item["المنطقة او الحي"] : item["The Area or The Neighborhood"];
-  };
+  const getProvinceDisplayName = (item: any) => (isArabic ? item["المحافظة"] : item.province) ?? "";
+  const getJudiciaryDisplayName = (item: any) =>
+    (isArabic ? item["المدينة او القضاء"] : item["The city or The judiciary "]) ?? "";
+  const getAreaDisplayName = (item: any) =>
+    (isArabic ? item["المنطقة او الحي"] : item["The Area or The Neighborhood"]) ?? "";
 
   const updateResponseData = (province: any, judiciary: any, area: any) => {
     if (!province) {
       onChange({ [question.id]: "" });
       return;
     }
-
-    const responseValue = JSON.stringify({
-      province: {
-        id: province.province_id,
-        name: isArabic ? province["المحافظة"] : province.province,
-        isOther: false,
-      },
-      judiciary: judiciary
-        ? {
-            id: judiciary.district_ID,
-            name: isArabic ? judiciary["المدينة او القضاء"] : judiciary["The city or The judiciary "],
-            isOther: false,
-          }
-        : null,
-      area: area
-        ? {
-            id: area.Neighbor_ID,
-            name: isArabic ? area["المنطقة او الحي"] : area["The Area or The Neighborhood"],
-            isOther: false,
-          }
-        : null,
+    onChange({
+      [question.id]: JSON.stringify({
+        province: { id: province.province_id, name: getProvinceDisplayName(province), isOther: false },
+        judiciary: judiciary
+          ? { id: judiciary.district_ID, name: getJudiciaryDisplayName(judiciary), isOther: false }
+          : null,
+        area: area ? { id: area.Neighbor_ID, name: getAreaDisplayName(area), isOther: false } : null,
+      }),
     });
-
-    onChange({ [question.id]: responseValue });
   };
 
   const handleSubmit = (e: Event) => {
     e.preventDefault();
-
-    if (!selectedProvince || !selectedJudiciary || !selectedArea) return;
+    if (!isValid) return;
 
     const updatedTtc = getUpdatedTtc(ttc, question.id, performance.now() - startTime);
     setTtc(updatedTtc);
 
-    const responseValue = JSON.stringify({
-      province: {
-        id: selectedProvince.province_id,
-        name: isArabic ? selectedProvince["المحافظة"] : selectedProvince.province,
-        isOther: false,
+    onSubmit(
+      {
+        [question.id]: JSON.stringify({
+          province: {
+            id: selectedProvince.province_id,
+            name: getProvinceDisplayName(selectedProvince),
+            isOther: false,
+          },
+          judiciary:
+            judiciaryEnabled && selectedJudiciary
+              ? {
+                  id: selectedJudiciary.district_ID,
+                  name: getJudiciaryDisplayName(selectedJudiciary),
+                  isOther: false,
+                }
+              : null,
+          area:
+            areaEnabled && selectedArea
+              ? { id: selectedArea.Neighbor_ID, name: getAreaDisplayName(selectedArea), isOther: false }
+              : null,
+        }),
       },
-      judiciary: {
-        id: selectedJudiciary.district_ID,
-        name: isArabic
-          ? selectedJudiciary["المدينة او القضاء"]
-          : selectedJudiciary["The city or The judiciary "],
-        isOther: false,
-      },
-      area: {
-        id: selectedArea.Neighbor_ID,
-        name: isArabic ? selectedArea["المنطقة او الحي"] : selectedArea["The Area or The Neighborhood"],
-        isOther: false,
-      },
-    });
-
-    onSubmit({ [question.id]: responseValue }, updatedTtc);
+      updatedTtc
+    );
   };
 
-  const isValid = selectedProvince && selectedJudiciary && selectedArea;
+  const isValid =
+    !!selectedProvince &&
+    (!judiciaryEnabled || !!selectedJudiciary) &&
+    (!areaEnabled || !judiciaryEnabled || !!selectedArea);
 
   return (
     <ScrollableContainer>
@@ -371,7 +403,7 @@ export function IraqLocationQuestion({
           />
 
           <div className="fb-flex fb-flex-col fb-space-y-4 fb-mt-4 fb-w-full">
-            {/* Province Selection */}
+            {/* Province */}
             <div className="fb-space-y-1">
               <label className="fb-text-subheading fb-text-sm fb-font-medium">
                 {getLocalizedValue(question.province.label, languageCode) || "المحافظة"}
@@ -392,49 +424,55 @@ export function IraqLocationQuestion({
               />
             </div>
 
-            {/* Judiciary Selection */}
-            <div className="fb-space-y-1">
-              <label className="fb-text-subheading fb-text-sm fb-font-medium">
-                {getLocalizedValue(question.judiciary.label, languageCode) || "القضاء"}
-                {question.judiciary.required && <span className="fb-text-red-500 fb-ml-1">*</span>}
-              </label>
-              <SearchableDropdown
-                options={judiciaries}
-                selected={selectedJudiciary}
-                onSelect={handleJudiciaryChange}
-                placeholder={getLocalizedValue(question.judiciary.placeholder, languageCode) || "اختر القضاء"}
-                getDisplayName={getJudiciaryDisplayName}
-                searchPlaceholder="ابحث عن القضاء..."
-                disabled={!selectedProvince}
-                tabIndex={isCurrent ? 0 : -1}
-                dir={dir}
-              />
-              {!selectedProvince && (
-                <p className="fb-mt-1 fb-text-xs fb-text-placeholder">يجب اختيار المحافظة أولاً</p>
-              )}
-            </div>
+            {/* Judiciary — only if enabled */}
+            {judiciaryEnabled && (
+              <div className="fb-space-y-1">
+                <label className="fb-text-subheading fb-text-sm fb-font-medium">
+                  {getLocalizedValue(question.judiciary.label, languageCode) || "القضاء"}
+                  {question.judiciary.required && <span className="fb-text-red-500 fb-ml-1">*</span>}
+                </label>
+                <SearchableDropdown
+                  options={judiciaries}
+                  selected={selectedJudiciary}
+                  onSelect={handleJudiciaryChange}
+                  placeholder={
+                    getLocalizedValue(question.judiciary.placeholder, languageCode) || "اختر القضاء"
+                  }
+                  getDisplayName={getJudiciaryDisplayName}
+                  searchPlaceholder="ابحث عن القضاء..."
+                  disabled={!selectedProvince}
+                  tabIndex={isCurrent ? 0 : -1}
+                  dir={dir}
+                />
+                {!selectedProvince && (
+                  <p className="fb-mt-1 fb-text-xs fb-text-placeholder">يجب اختيار المحافظة أولاً</p>
+                )}
+              </div>
+            )}
 
-            {/* Area Selection */}
-            <div className="fb-space-y-1">
-              <label className="fb-text-subheading fb-text-sm fb-font-medium">
-                {getLocalizedValue(question.area.label, languageCode) || "المنطقة"}
-                {question.area.required && <span className="fb-text-red-500 fb-ml-1">*</span>}
-              </label>
-              <SearchableDropdown
-                options={areas}
-                selected={selectedArea}
-                onSelect={handleAreaChange}
-                placeholder={getLocalizedValue(question.area.placeholder, languageCode) || "اختر المنطقة"}
-                getDisplayName={getAreaDisplayName}
-                searchPlaceholder="ابحث عن المنطقة..."
-                disabled={!selectedJudiciary}
-                tabIndex={isCurrent ? 0 : -1}
-                dir={dir}
-              />
-              {!selectedJudiciary && (
-                <p className="fb-mt-1 fb-text-xs fb-text-placeholder">يجب اختيار القضاء أولاً</p>
-              )}
-            </div>
+            {/* Area — only if both judiciary and area are enabled */}
+            {judiciaryEnabled && areaEnabled && (
+              <div className="fb-space-y-1">
+                <label className="fb-text-subheading fb-text-sm fb-font-medium">
+                  {getLocalizedValue(question.area.label, languageCode) || "المنطقة"}
+                  {question.area.required && <span className="fb-text-red-500 fb-ml-1">*</span>}
+                </label>
+                <SearchableDropdown
+                  options={areas}
+                  selected={selectedArea}
+                  onSelect={handleAreaChange}
+                  placeholder={getLocalizedValue(question.area.placeholder, languageCode) || "اختر المنطقة"}
+                  getDisplayName={getAreaDisplayName}
+                  searchPlaceholder="ابحث عن المنطقة..."
+                  disabled={!selectedJudiciary}
+                  tabIndex={isCurrent ? 0 : -1}
+                  dir={dir}
+                />
+                {!selectedJudiciary && (
+                  <p className="fb-mt-1 fb-text-xs fb-text-placeholder">يجب اختيار القضاء أولاً</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="fb-flex fb-flex-row-reverse fb-w-full fb-justify-between fb-pt-4">

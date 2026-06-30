@@ -21,6 +21,7 @@ import { SurveyEditorTabs } from "@/modules/survey/editor/components/survey-edit
 import { SurveyMenuBar } from "@/modules/survey/editor/components/survey-menu-bar";
 import { TFollowUpEmailToUser } from "@/modules/survey/editor/types/survey-follow-up";
 import { FollowUpsView } from "@/modules/survey/follow-ups/components/follow-ups-view";
+import { OnepageForm } from "@/modules/survey/link/components/one-page-form";
 import { PreviewSurvey } from "@/modules/ui/components/preview-survey";
 import { refetchProjectAction } from "../actions";
 
@@ -49,6 +50,8 @@ interface SurveyEditorProps {
   isStorageConfigured: boolean;
   plan: TOrganizationBillingPlan;
   quotas: TSurveyQuota[];
+  orgHasDefaultBanner?: boolean;
+  orgDefaultBannerConfig?: any;
 }
 
 export const SurveyEditor = ({
@@ -76,8 +79,10 @@ export const SurveyEditor = ({
   teamMemberDetails,
   isStorageConfigured,
   quotas,
+  orgHasDefaultBanner = false,
+  orgDefaultBannerConfig = null,
 }: SurveyEditorProps) => {
-  const [activeView, setActiveView] = useState<TSurveyEditorTabs>("questions");
+  const [activeView, _setActiveView] = useState<TSurveyEditorTabs>("questions");
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [localSurvey, setLocalSurvey] = useState<TSurvey | null>(() => structuredClone(survey));
   const [invalidQuestions, setInvalidQuestions] = useState<string[] | null>(null);
@@ -96,6 +101,9 @@ export const SurveyEditor = ({
   }, [localProject.id]);
 
   const [isCautionDialogOpen, setIsCautionDialogOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showDesignPanel, setShowDesignPanel] = useState(false);
 
   useDocumentVisibility(fetchLatestProject);
 
@@ -159,8 +167,6 @@ export const SurveyEditor = ({
         localSurvey={localSurvey}
         survey={survey}
         environmentId={environment.id}
-        activeId={activeView}
-        setActiveId={setActiveView}
         setInvalidQuestions={setInvalidQuestions}
         project={localProject}
         responseCount={responseCount}
@@ -170,18 +176,24 @@ export const SurveyEditor = ({
         locale={locale}
         setIsCautionDialogOpen={setIsCautionDialogOpen}
         isStorageConfigured={isStorageConfigured}
+        showSettingsPanel={showSettingsPanel}
+        onToggleSettings={() => {
+          setShowSettingsPanel((v) => !v);
+          setShowDesignPanel(false);
+        }}
+        showDesignPanel={showDesignPanel}
+        onToggleDesign={() => {
+          setShowDesignPanel((v) => !v);
+          setShowSettingsPanel(false);
+        }}
+        isStylingTabVisible={!!project.styling.allowStyleOverwrite}
+        orgHasDefaultBanner={orgHasDefaultBanner}
       />
       <div className="relative z-0 flex flex-1 overflow-hidden">
         <main
-          className="relative z-0 w-1/2 flex-1 overflow-y-auto bg-slate-50 focus:outline-none"
+          className="relative z-0 flex-1 overflow-y-auto bg-slate-50 focus:outline-none"
           ref={surveyEditorRef}>
-          <SurveyEditorTabs
-            activeId={activeView}
-            setActiveId={setActiveView}
-            isCxMode={isCxMode}
-            isStylingTabVisible={!!project.styling.allowStyleOverwrite}
-            isSurveyFollowUpsAllowed={isSurveyFollowUpsAllowed}
-          />
+          <SurveyEditorTabs showPreview={showPreview} onTogglePreview={() => setShowPreview((v) => !v)} />
 
           {activeView === "questions" && (
             <QuestionsView
@@ -205,42 +217,6 @@ export const SurveyEditor = ({
             />
           )}
 
-          {activeView === "styling" && project.styling.allowStyleOverwrite && (
-            <StylingView
-              colors={colors}
-              environmentId={environment.id}
-              localSurvey={localSurvey}
-              setLocalSurvey={setLocalSurvey}
-              project={localProject}
-              styling={styling ?? null}
-              setStyling={setStyling}
-              localStylingChanges={localStylingChanges}
-              setLocalStylingChanges={setLocalStylingChanges}
-              isUnsplashConfigured={isUnsplashConfigured}
-              isCxMode={isCxMode}
-              isStorageConfigured={isStorageConfigured}
-            />
-          )}
-
-          {activeView === "settings" && (
-            <SettingsView
-              environment={environment}
-              localSurvey={localSurvey}
-              setLocalSurvey={setLocalSurvey}
-              actionClasses={actionClasses}
-              contactAttributeKeys={contactAttributeKeys}
-              segments={segments}
-              responseCount={responseCount}
-              membershipRole={membershipRole}
-              isUserTargetingAllowed={isUserTargetingAllowed}
-              isSpamProtectionAllowed={isSpamProtectionAllowed}
-              projectPermission={projectPermission}
-              isFormbricksCloud={isFormbricksCloud}
-              isQuotasAllowed={isQuotasAllowed}
-              quotas={quotas}
-            />
-          )}
-
           {activeView === "followUps" && (
             <FollowUpsView
               localSurvey={localSurvey}
@@ -255,17 +231,118 @@ export const SurveyEditor = ({
           )}
         </main>
 
-        <aside className="group hidden flex-1 flex-shrink-0 items-center justify-center overflow-hidden border-l border-slate-200 bg-slate-100 shadow-inner md:flex md:flex-col">
-          <PreviewSurvey
-            survey={localSurvey}
-            questionId={activeQuestionId}
-            project={localProject}
-            environment={environment}
-            previewType={localSurvey.type === "app" ? "modal" : "fullwidth"}
-            languageCode={selectedLanguageCode}
-            isSpamProtectionAllowed={isSpamProtectionAllowed}
-          />
+        <aside
+          className={`group w-1/2 flex-shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-slate-100 shadow-inner ${showPreview ? "flex" : "hidden"}`}>
+          {localSurvey.isOnePage ? (
+            <div className="flex-1 overflow-y-auto">
+              <OnepageForm
+                survey={localSurvey}
+                publicDomain=""
+                isPreview={true}
+                projectName={localProject.name}
+                orgDefaultBannerConfig={orgDefaultBannerConfig}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-1 items-center justify-center">
+              <PreviewSurvey
+                survey={localSurvey}
+                questionId={activeQuestionId}
+                project={localProject}
+                environment={environment}
+                previewType={localSurvey.type === "app" ? "modal" : "fullwidth"}
+                languageCode={selectedLanguageCode}
+                isSpamProtectionAllowed={isSpamProtectionAllowed}
+              />
+            </div>
+          )}
         </aside>
+
+        {/* Design slide-in panel */}
+        {showDesignPanel && project.styling.allowStyleOverwrite && (
+          <aside className="flex w-96 flex-shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl">
+            <div
+              className="flex items-center justify-between border-b border-slate-200 px-5 py-4"
+              style={{ backgroundColor: "#1b335f" }}>
+              <h2 className="text-sm font-semibold text-white" dir="rtl">
+                التصميم
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowDesignPanel(false)}
+                className="rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <StylingView
+                colors={colors}
+                environmentId={environment.id}
+                localSurvey={localSurvey}
+                setLocalSurvey={setLocalSurvey}
+                project={localProject}
+                styling={styling ?? null}
+                setStyling={setStyling}
+                localStylingChanges={localStylingChanges}
+                setLocalStylingChanges={setLocalStylingChanges}
+                isUnsplashConfigured={isUnsplashConfigured}
+                isCxMode={isCxMode}
+                isStorageConfigured={isStorageConfigured}
+              />
+            </div>
+          </aside>
+        )}
+
+        {/* Settings slide-in panel (MS Forms style) */}
+        {showSettingsPanel && (
+          <aside className="flex w-96 flex-shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl">
+            <div
+              className="flex items-center justify-between border-b border-slate-200 px-5 py-4"
+              style={{ backgroundColor: "#1b335f" }}>
+              <h2 className="text-sm font-semibold text-white" dir="rtl">
+                الإعدادات
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowSettingsPanel(false)}
+                className="rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <SettingsView
+                environment={environment}
+                localSurvey={localSurvey}
+                setLocalSurvey={setLocalSurvey}
+                actionClasses={actionClasses}
+                contactAttributeKeys={contactAttributeKeys}
+                segments={segments}
+                responseCount={responseCount}
+                membershipRole={membershipRole}
+                isUserTargetingAllowed={isUserTargetingAllowed}
+                isSpamProtectionAllowed={isSpamProtectionAllowed}
+                projectPermission={projectPermission}
+                isFormbricksCloud={isFormbricksCloud}
+                isQuotasAllowed={isQuotasAllowed}
+                quotas={quotas}
+              />
+            </div>
+          </aside>
+        )}
       </div>
       <EditPublicSurveyAlertDialog open={isCautionDialogOpen} setOpen={setIsCautionDialogOpen} />
     </div>

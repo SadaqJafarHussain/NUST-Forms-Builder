@@ -13,7 +13,7 @@ import {
   TSurveyQuestionTypeEnum,
   TSurveyRedirectUrlCard,
 } from "@formbricks/types/surveys/types";
-import { saveToQuestionBankAction } from "@/lib/question-bank/actions";
+import { deleteFromQuestionBankAction, saveToQuestionBankAction } from "@/lib/question-bank/actions";
 import {
   getCXQuestionNameMap,
   getQuestionDefaults,
@@ -66,6 +66,7 @@ export const EditorCardMenu = ({
   const QUESTIONS_ICON_MAP = getQuestionIconMap(t);
   const [logicWarningModal, setLogicWarningModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedBankItemId, setSavedBankItemId] = useState<string | null>(null);
   const [changeToType, setChangeToType] = useState(() => {
     if (card.type !== "endScreen" && card.type !== "redirectToUrl") {
       return card.type;
@@ -78,32 +79,43 @@ export const EditorCardMenu = ({
       ? survey.questions.length === 1
       : survey.type === "link" && survey.endings.length === 1;
 
-  const handleSaveToQuestionBank = async () => {
+  const handleToggleQuestionBank = async () => {
     if (cardType !== "question") return;
 
     setIsSaving(true);
     try {
-      const questionToSave = card as TSurveyQuestion;
-      // Remove logic when saving to bank as it's survey-specific
-      const { logic, ...questionWithoutLogic } = questionToSave;
-
-      const result = await saveToQuestionBankAction({
-        environmentId,
-        question: questionWithoutLogic as TSurveyQuestion,
-      });
-
-      if (result?.data?.success) {
-        toast.success(t("environments.surveys.edit.question_saved_to_bank"));
+      if (savedBankItemId) {
+        // Already saved — remove from bank
+        const result = await deleteFromQuestionBankAction({ environmentId, questionId: savedBankItemId });
+        if (result?.data?.success) {
+          setSavedBankItemId(null);
+          toast.success("تم حذف السؤال من بنك الأسئلة");
+        } else {
+          toast.error("فشل حذف السؤال من بنك الأسئلة");
+        }
       } else {
-        // Show more detailed error message
-        const errorMessage = result?.serverError || result?.validationErrors?.toString() || "Unknown error";
-        console.error("Failed to save question to bank:", result);
-        toast.error(`${t("environments.surveys.edit.failed_to_save_question")}: ${errorMessage}`);
+        // Not saved — add to bank
+        const questionToSave = card as TSurveyQuestion;
+        const { logic, ...questionWithoutLogic } = questionToSave;
+
+        const result = await saveToQuestionBankAction({
+          environmentId,
+          question: questionWithoutLogic as TSurveyQuestion,
+        });
+
+        if (result?.data?.success && result.data.questionId) {
+          setSavedBankItemId(result.data.questionId);
+          toast.success(t("environments.surveys.edit.question_saved_to_bank"));
+        } else {
+          const errorMessage = result?.serverError || result?.validationErrors?.toString() || "Unknown error";
+          console.error("Failed to save question to bank:", result);
+          toast.error(`${t("environments.surveys.edit.failed_to_save_question")}: ${errorMessage}`);
+        }
       }
     } catch (error) {
-      console.error("Error saving question to bank:", error);
+      console.error("Error toggling question bank:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      toast.error(`${t("environments.surveys.edit.failed_to_save_question")}: ${errorMessage}`);
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -215,7 +227,9 @@ export const EditorCardMenu = ({
       </TooltipRenderer>
       {cardType === "question" && (
         <TooltipRenderer
-          tooltipContent={t("environments.surveys.edit.save_to_question_bank")}
+          tooltipContent={
+            savedBankItemId ? "إزالة من بنك الأسئلة" : t("environments.surveys.edit.save_to_question_bank")
+          }
           triggerClass="disabled:border-none">
           <Button
             variant="ghost"
@@ -223,10 +237,13 @@ export const EditorCardMenu = ({
             disabled={isSaving}
             onClick={(e) => {
               e.stopPropagation();
-              handleSaveToQuestionBank();
+              handleToggleQuestionBank();
             }}
             className="disabled:border-none">
-            <BookmarkIcon className={isSaving ? "animate-pulse" : ""} />
+            <BookmarkIcon
+              className={isSaving ? "animate-pulse" : ""}
+              style={savedBankItemId ? { color: "#1b335f", fill: "#1b335f" } : { color: "#94a3b8" }}
+            />
           </Button>
         </TooltipRenderer>
       )}

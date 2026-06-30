@@ -154,7 +154,7 @@ export const SurveyAnalysisCTA = ({
       icon: BellRing,
       tooltip: t("environments.surveys.summary.configure_alerts"),
       onClick: () => router.push(`/environments/${survey.environmentId}/settings/notifications`),
-      isVisible: !isReadOnly,
+      isVisible: false,
     },
     {
       icon: Eye,

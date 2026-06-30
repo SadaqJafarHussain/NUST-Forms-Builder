@@ -1,23 +1,21 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { OrganizationRole } from "@prisma/client";
+import { useRouter } from "next/navigation";
+import { FormProvider, useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { z } from "zod";
+import { TOrganizationRole, ZOrganizationRole } from "@formbricks/types/memberships";
+import { ZUserEmail, ZUserName, ZUserPassword } from "@formbricks/types/user";
 import { AddMemberRole } from "@/modules/ee/role-management/components/add-member-role";
 import { TOrganizationTeam } from "@/modules/ee/teams/team-list/types/team";
-import { Alert, AlertDescription } from "@/modules/ui/components/alert";
-import { Button } from "@/modules/ui/components/button";
 import { FormField, FormItem, FormLabel } from "@/modules/ui/components/form";
 import { Input } from "@/modules/ui/components/input";
 import { Label } from "@/modules/ui/components/label";
 import { MultiSelect } from "@/modules/ui/components/multi-select";
-import { Small } from "@/modules/ui/components/typography";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { OrganizationRole } from "@prisma/client";
-import { useTranslate } from "@tolgee/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormProvider, useForm } from "react-hook-form";
-import { z } from "zod";
-import { TOrganizationRole, ZOrganizationRole } from "@formbricks/types/memberships";
-import { ZUserName } from "@formbricks/types/user";
+import { PasswordInput } from "@/modules/ui/components/password-input";
+import { createMemberAccountAction } from "../../actions";
 
 interface IndividualInviteTabProps {
   setOpen: (v: boolean) => void;
@@ -27,28 +25,29 @@ interface IndividualInviteTabProps {
   isFormbricksCloud: boolean;
   environmentId: string;
   membershipRole?: TOrganizationRole;
+  organizationId: string;
 }
+
+const ZFormSchema = z.object({
+  name: ZUserName,
+  email: ZUserEmail,
+  password: ZUserPassword,
+  role: ZOrganizationRole,
+  teamIds: z.array(z.string()),
+});
+
+type TFormData = z.infer<typeof ZFormSchema>;
 
 export const IndividualInviteTab = ({
   setOpen,
-  onSubmit,
   teams,
   isAccessControlAllowed,
   isFormbricksCloud,
-  environmentId,
   membershipRole,
+  organizationId,
 }: IndividualInviteTabProps) => {
-  const ZFormSchema = z.object({
-    name: ZUserName,
-    email: z.string().min(1, { message: "Email is required" }).email({ message: "Invalid email" }),
-    role: ZOrganizationRole,
-    teamIds: z.array(z.string()),
-  });
-
   const router = useRouter();
 
-  type TFormData = z.infer<typeof ZFormSchema>;
-  const { t } = useTranslate();
   const form = useForm<TFormData>({
     resolver: zodResolver(ZFormSchema),
     defaultValues: {
@@ -59,21 +58,33 @@ export const IndividualInviteTab = ({
 
   const {
     register,
-    getValues,
     handleSubmit,
     reset,
     control,
-    watch,
     formState: { isSubmitting, errors },
   } = form;
 
-  const submitEventClass = async () => {
-    const data = getValues();
-    data.role = data.role || OrganizationRole.owner;
-    onSubmit([data]);
-    router.refresh();
-    setOpen(false);
-    reset();
+  const onSubmit = async (data: TFormData) => {
+    const result = await createMemberAccountAction({
+      organizationId,
+      name: data.name,
+      email: data.email.toLowerCase(),
+      password: data.password,
+      role: data.role || OrganizationRole.member,
+    });
+
+    if (result?.data) {
+      toast.success("تم إنشاء الحساب بنجاح");
+      router.refresh();
+      setOpen(false);
+      reset();
+    } else {
+      const msg =
+        (result as any)?.serverError ??
+        (result as any)?.validationErrors?.email?._errors?.[0] ??
+        "حدث خطأ، يرجى المحاولة مرة أخرى";
+      toast.error(msg);
+    }
   };
 
   const teamOptions = teams.map((team) => ({
@@ -83,97 +94,97 @@ export const IndividualInviteTab = ({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={handleSubmit(submitEventClass)} className="flex flex-col gap-6">
-        <div className="flex flex-col space-y-2">
-          <Label htmlFor="memberNameInput">{t("common.full_name")}</Label>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" dir="rtl">
+        {/* Name */}
+        <div className="flex flex-col space-y-1.5">
+          <Label htmlFor="memberNameInput" className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+            الاسم الكامل
+          </Label>
           <Input
             id="memberNameInput"
-            placeholder="e.g. Bob"
-            {...register("name", { required: true, validate: (value) => value.trim() !== "" })}
+            placeholder="مثال: أحمد محمد"
+            {...register("name")}
+            className="text-right"
           />
-          {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
+          {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
-        <div className="flex flex-col space-y-2">
-          <Label htmlFor="memberEmailInput">{t("common.email")}</Label>
+
+        {/* Email */}
+        <div className="flex flex-col space-y-1.5">
+          <Label htmlFor="memberEmailInput" className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+            البريد الإلكتروني
+          </Label>
           <Input
             id="memberEmailInput"
             type="email"
-            placeholder="e.g. bob@work.com"
-            {...register("email", { required: true })}
+            placeholder="example@nust.edu.iq"
+            dir="ltr"
+            {...register("email")}
           />
-          {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
-        </div>
-        <div>
-          <AddMemberRole
-            control={control}
-            isAccessControlAllowed={isAccessControlAllowed}
-            isFormbricksCloud={isFormbricksCloud}
-            membershipRole={membershipRole}
-          />
-          {watch("role") === "member" && (
-            <Alert className="mt-2" variant="info">
-              <AlertDescription>{t("environments.settings.teams.member_role_info_message")}</AlertDescription>
-            </Alert>
-          )}
+          {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
         </div>
 
-        {isAccessControlAllowed && (
+        {/* Password */}
+        <div className="flex flex-col space-y-1.5">
+          <Label htmlFor="memberPasswordInput" className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+            كلمة المرور
+          </Label>
+          <PasswordInput
+            id="memberPasswordInput"
+            placeholder="أدخل كلمة مرور للحساب"
+            value={form.watch("password") ?? ""}
+            onChange={(e) => form.setValue("password", e.target.value, { shouldValidate: true })}
+          />
+          {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
+        </div>
+
+        {/* Role */}
+        <AddMemberRole
+          control={control as any}
+          isAccessControlAllowed={isAccessControlAllowed}
+          isFormbricksCloud={isFormbricksCloud}
+          membershipRole={membershipRole}
+        />
+
+        {/* Teams */}
+        {isAccessControlAllowed && teamOptions.length > 0 && (
           <FormField
             control={control}
             name="teamIds"
             render={({ field }) => (
-              <FormItem className="flex flex-col space-y-2">
-                <FormLabel>{t("common.add_to_team")} </FormLabel>
-                <div className="space-y-2">
-                  <MultiSelect
-                    value={field.value}
-                    options={teamOptions}
-                    placeholder={t("environments.settings.teams.team_select_placeholder")}
-                    disabled={!teamOptions.length}
-                    onChange={(val) => field.onChange(val)}
-                  />
-                  {!teamOptions.length && (
-                    <Small className="font-normal text-amber-600">
-                      {t("environments.settings.teams.create_first_team_message")}
-                    </Small>
-                  )}
-                </div>
+              <FormItem className="flex flex-col space-y-1.5">
+                <FormLabel className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+                  إضافة إلى فريق
+                </FormLabel>
+                <MultiSelect
+                  value={field.value}
+                  options={teamOptions}
+                  placeholder="اختر فريقاً..."
+                  onChange={(val) => field.onChange(val)}
+                />
               </FormItem>
             )}
           />
         )}
 
-        {!isAccessControlAllowed && (
-          <Alert>
-            <AlertDescription className="flex">
-              {t("environments.settings.teams.upgrade_plan_notice_message")}
-              <Link
-                className="ml-1 underline"
-                target="_blank"
-                href={
-                  isFormbricksCloud
-                    ? `/environments/${environmentId}/settings/billing`
-                    : "https://formbricks.com/upgrade-self-hosting-license"
-                }>
-                {t("common.start_free_trial")}
-              </Link>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex items-end justify-end gap-x-2">
-          <Button
-            size="default"
+        {/* Actions */}
+        <div className="flex items-center justify-start gap-2 border-t border-slate-100 pt-4">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: "#1b335f" }}>
+            {isSubmitting && (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            )}
+            إنشاء الحساب
+          </button>
+          <button
             type="button"
-            variant="secondary"
-            onClick={() => {
-              setOpen(false);
-            }}>
-            {t("common.cancel")}
-          </Button>
-          <Button type="submit" size="default" loading={isSubmitting}>
-            {t("common.invite")}
-          </Button>
+            onClick={() => setOpen(false)}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+            إلغاء
+          </button>
         </div>
       </form>
     </FormProvider>

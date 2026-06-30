@@ -16,6 +16,72 @@ import {
   validateQuestionLabels,
 } from "./validation";
 
+// ─── Banner Config Types ───────────────────────────────────────────────────────
+
+export const ZBannerTextElement = z.object({
+  id: z.string(),
+  type: z.literal("text"),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  content: z.string().default("نص"),
+  fontSize: z.number().default(24),
+  fontWeight: z.enum(["normal", "bold"]).default("normal"),
+  fontStyle: z.enum(["normal", "italic"]).default("normal"),
+  color: z.string().default("#ffffff"),
+  textAlign: z.enum(["left", "center", "right"]).default("right"),
+  opacity: z.number().min(0).max(1).default(1),
+});
+
+export const ZBannerImageElement = z.object({
+  id: z.string(),
+  type: z.literal("image"),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  src: z.string().default(""),
+  objectFit: z.enum(["contain", "cover", "fill"]).default("contain"),
+  borderRadius: z.number().default(0),
+  opacity: z.number().min(0).max(1).default(1),
+});
+
+export const ZBannerShapeElement = z.object({
+  id: z.string(),
+  type: z.literal("shape"),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  shape: z.enum(["rectangle", "circle", "line"]).default("rectangle"),
+  fill: z.string().default("#f4bf00"),
+  borderColor: z.string().default("transparent"),
+  borderWidth: z.number().default(0),
+  opacity: z.number().min(0).max(1).default(1),
+});
+
+export const ZBannerElement = z.discriminatedUnion("type", [
+  ZBannerTextElement,
+  ZBannerImageElement,
+  ZBannerShapeElement,
+]);
+
+export const ZBannerConfig = z.object({
+  height: z.number().default(200),
+  backgroundColor: z.string().default("#1b335f"),
+  backgroundGradient: z.string().optional(),
+  elements: z.array(ZBannerElement).default([]),
+});
+
+export type TBannerTextElement = z.infer<typeof ZBannerTextElement>;
+export type TBannerImageElement = z.infer<typeof ZBannerImageElement>;
+export type TBannerShapeElement = z.infer<typeof ZBannerShapeElement>;
+export type TBannerElement = z.infer<typeof ZBannerElement>;
+export type TBannerConfig = z.infer<typeof ZBannerConfig>;
+
+// ─── End Banner Config Types ───────────────────────────────────────────────────
+
 export const ZI18nString = z.record(z.string()).refine((obj) => "default" in obj, {
   message: "Object must have a 'default' key",
 });
@@ -112,21 +178,21 @@ export const ZSurveyQuestionId = z.string().superRefine((id, ctx) => {
   if (FORBIDDEN_IDS.includes(id)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Question id is not allowed`,
+      message: `معرّف السؤال غير مسموح به`,
     });
   }
 
   if (id.includes(" ")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Question id not allowed, avoid using spaces.",
+      message: "معرّف السؤال غير مسموح به، تجنب استخدام المسافات.",
     });
   }
 
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Question id not allowed, use only alphanumeric characters, hyphens, or underscores.",
+      message: "معرّف السؤال غير مسموح به، استخدم الأحرف والأرقام والشرطات فقط.",
     });
   }
 });
@@ -145,7 +211,7 @@ export const ZSurveyWelcomeCard = z
     videoUrl: z.string().optional(),
   })
   .refine((schema) => !(schema.enabled && !schema.headline), {
-    message: "Welcome card must have a headline",
+    message: "بطاقة الترحيب يجب أن تحتوي على عنوان",
   });
 
 export type TSurveyWelcomeCard = z.infer<typeof ZSurveyWelcomeCard>;
@@ -158,22 +224,21 @@ export const ZSurveyHiddenFields = z.object({
         if (FORBIDDEN_IDS.includes(field)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Hidden field id is not allowed`,
+            message: `معرّف الحقل المخفي غير مسموح به`,
           });
         }
 
         if (field.includes(" ")) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Hidden field id not allowed, avoid using spaces.",
+            message: "معرّف الحقل المخفي غير مسموح به، تجنب استخدام المسافات.",
           });
         }
 
         if (!/^[a-zA-Z0-9_-]+$/.test(field)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message:
-              "Hidden field id not allowed, use only alphanumeric characters, hyphens, or underscores.",
+            message: "معرّف الحقل المخفي غير مسموح به، استخدم الأحرف والأرقام والشرطات فقط.",
           });
         }
       })
@@ -203,7 +268,7 @@ export const ZSurveyVariable = z
     if (!/^[a-z0-9_]+$/.test(data.name)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Variable name can only contain lowercase letters, numbers, and underscores",
+        message: "اسم المتغير يمكن أن يحتوي على أحرف صغيرة وأرقام وشرطات سفلية فقط",
         path: ["variables"],
       });
     }
@@ -338,16 +403,16 @@ const operatorsWithoutRightOperand = [
 export const ZDynamicLogicField = z.enum(["question", "variable", "hiddenField"]);
 export const ZActionObjective = z.enum(["calculate", "requireAnswer", "jumpToQuestion"]);
 export const ZActionTextVariableCalculateOperator = z.enum(["assign", "concat"], {
-  message: "Conditional Logic: Invalid operator for a text variable",
+  message: "المنطق الشرطي: Nvalid operator for a text variable",
 });
 export const ZActionNumberVariableCalculateOperator = z.enum(
   ["add", "subtract", "multiply", "divide", "assign"],
-  { message: "Conditional Logic: Invalid operator for a number variable" }
+  { message: "المنطق الشرطي: Nvalid operator for a number variable" }
 );
 
 const ZDynamicQuestion = z.object({
   type: z.literal("question"),
-  value: z.string().min(1, "Conditional Logic: Question id cannot be empty"),
+  value: z.string().min(1, "المنطق الشرطي: Uestion id cannot be empty"),
   meta: z.record(z.string()).optional(),
 });
 
@@ -355,17 +420,17 @@ const ZDynamicVariable = z.object({
   type: z.literal("variable"),
   value: z
     .string()
-    .cuid2({ message: "Conditional Logic: Variable id must be a valid cuid" })
-    .min(1, "Conditional Logic: Variable id cannot be empty"),
+    .cuid2({ message: "المنطق الشرطي: Ariable id must be a valid cuid" })
+    .min(1, "المنطق الشرطي: Ariable id cannot be empty"),
 });
 
 const ZDynamicHiddenField = z.object({
   type: z.literal("hiddenField"),
-  value: z.string().min(1, "Conditional Logic: Hidden field id cannot be empty"),
+  value: z.string().min(1, "المنطق الشرطي: Idden field id cannot be empty"),
 });
 
 const ZDynamicLogicFieldValue = z.union([ZDynamicQuestion, ZDynamicVariable, ZDynamicHiddenField], {
-  message: "Conditional Logic: Invalid dynamic field value",
+  message: "المنطق الشرطي: Nvalid dynamic field value",
 });
 
 export type TSurveyLogicConditionsOperator = z.infer<typeof ZSurveyLogicConditionsOperator>;
@@ -405,19 +470,19 @@ export const ZSingleCondition = z
       if (val.rightOperand === undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: right operand is required for operator "${val.operator}"`,
+          message: `المنطق الشرطي: Ight operand is required for operator "${val.operator}"`,
           path: ["rightOperand"],
         });
       } else if (val.rightOperand.type === "static" && val.rightOperand.value === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: right operand value cannot be empty for operator "${val.operator}"`,
+          message: `المنطق الشرطي: Ight operand value cannot be empty for operator "${val.operator}"`,
         });
       }
     } else if (val.rightOperand !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Conditional Logic: right operand should not be present for operator "${val.operator}"`,
+        message: `المنطق الشرطي: Ight operand should not be present for operator "${val.operator}"`,
         path: ["rightOperand"],
       });
     }
@@ -464,8 +529,8 @@ export const ZActionCalculateText = ZActionCalculateBase.extend({
     z.object({
       type: z.literal("static"),
       value: z
-        .string({ message: "Conditional Logic: Value must be a string for text variable" })
-        .min(1, "Conditional Logic: Please enter a value in logic field"),
+        .string({ message: "المنطق الشرطي: Alue must be a string for text variable" })
+        .min(1, "المنطق الشرطي: Lease enter a value in logic field"),
     }),
     ZDynamicLogicFieldValue,
   ]),
@@ -476,7 +541,7 @@ export const ZActionCalculateNumber = ZActionCalculateBase.extend({
   value: z.union([
     z.object({
       type: z.literal("static"),
-      value: z.number({ message: "Conditional Logic: Value must be a number for number variable" }),
+      value: z.number({ message: "المنطق الشرطي: Alue must be a number for number variable" }),
     }),
     ZDynamicLogicFieldValue,
   ]),
@@ -484,7 +549,7 @@ export const ZActionCalculateNumber = ZActionCalculateBase.extend({
   if (val.operator === "divide" && val.value.type === "static" && val.value.value === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Conditional Logic: Cannot divide by zero",
+      message: "المنطق الشرطي: Annot divide by zero",
       path: ["value", "value"],
     });
   }
@@ -496,13 +561,13 @@ export type TActionCalculate = z.infer<typeof ZActionCalculate>;
 
 const ZActionRequireAnswer = ZActionBase.extend({
   objective: z.literal("requireAnswer"),
-  target: z.string().min(1, "Conditional Logic: Target question id cannot be empty"),
+  target: z.string().min(1, "المنطق الشرطي: Arget question id cannot be empty"),
 });
 export type TActionRequireAnswer = z.infer<typeof ZActionRequireAnswer>;
 
 const ZActionJumpToQuestion = ZActionBase.extend({
   objective: z.literal("jumpToQuestion"),
-  target: z.string().min(1, "Conditional Logic: Target question id cannot be empty"),
+  target: z.string().min(1, "المنطق الشرطي: Arget question id cannot be empty"),
 });
 
 export type TActionJumpToQuestion = z.infer<typeof ZActionJumpToQuestion>;
@@ -547,43 +612,58 @@ export const ZSurveyIraqLocationQuestion = ZSurveyQuestionBase.extend({
 
   // Configuration for each level
   province: z.object({
-    label: ZI18nString, // e.g., { default: "Province", ar: "المحافظة" }
-    placeholder: ZI18nString, // e.g., { default: "Select province", ar: "اختر المحافظة" }
+    label: ZI18nString,
+    placeholder: ZI18nString,
     required: z.boolean().default(true),
-    allowOther: z.boolean().default(true), // Allow custom entry
-    otherLabel: ZI18nString.optional(), // Label for "Other" option
+    allowOther: z.boolean().default(true),
+    otherLabel: ZI18nString.optional(),
+    // Province is always enabled — it is the root level
   }),
 
   judiciary: z.object({
-    label: ZI18nString, // e.g., { default: "District", ar: "القضاء" }
+    label: ZI18nString,
     placeholder: ZI18nString,
     required: z.boolean().default(true),
     allowOther: z.boolean().default(true),
     otherLabel: ZI18nString.optional(),
+    enabled: z.boolean().default(true), // admin can hide this level
   }),
 
   area: z.object({
-    label: ZI18nString, // e.g., { default: "Area", ar: "المنطقة" }
+    label: ZI18nString,
     placeholder: ZI18nString,
     required: z.boolean().default(true),
     allowOther: z.boolean().default(true),
     otherLabel: ZI18nString.optional(),
+    enabled: z.boolean().default(true), // admin can hide this level
   }),
 
-  // Data source configuration
   dataSourceType: z.enum(["embedded", "external"]).default("embedded"),
-  // If embedded, data is stored in the survey
-  // If external, data is fetched from API
+  enableSearch: z.boolean().default(true),
+  enableAutocomplete: z.boolean().default(true),
 
-  enableSearch: z.boolean().default(true), // Enable searchable dropdowns
-  enableAutocomplete: z.boolean().default(true), // Enable autocomplete
+  // Whitelist of province_ids from built-in data to show. null/undefined = show all.
+  enabledProvinceIds: z.array(z.number()).nullable().optional(),
+
+  // When set, fully replaces the built-in iraqLocationData.json for this question.
+  customData: z
+    .object({
+      provinces: z.array(ZIraqLocationProvince),
+      judiciaries: z.array(ZIraqLocationJudiciary),
+      areas: z.array(ZIraqLocationArea),
+    })
+    .optional(),
 }).superRefine((data, ctx) => {
-  // Custom validation can be added here if needed
-  // For example, ensuring at least one field is required
-  if (!data.province.required && !data.judiciary.required && !data.area.required) {
+  const judiciaryActive = data.judiciary.enabled !== false;
+  const areaActive = data.area.enabled !== false;
+  if (
+    !data.province.required &&
+    (!judiciaryActive || !data.judiciary.required) &&
+    (!areaActive || !data.area.required)
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "At least one location level must be required",
+      message: "يجب تحديد مستوى موقع واحد على الأقل",
     });
   }
 });
@@ -606,7 +686,7 @@ export const ZSurveyOpenTextQuestion = ZSurveyQuestionBase.extend({
   if (data.charLimit.enabled && data.charLimit.min === undefined && data.charLimit.max === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Enter the values for either minimum or maximum field",
+      message: "أدخل قيمة الحد الأدنى أو الحد الأقصى",
     });
   }
 
@@ -616,7 +696,7 @@ export const ZSurveyOpenTextQuestion = ZSurveyQuestionBase.extend({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "The character limit values should be positive",
+      message: "يجب أن تكون قيم حد الأحرف موجبة",
     });
   }
 
@@ -627,7 +707,7 @@ export const ZSurveyOpenTextQuestion = ZSurveyQuestionBase.extend({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Minimum value cannot be greater than the maximum value",
+      message: "لا يمكن أن يكون الحد الأدنى أكبر من الحد الأقصى",
     });
   }
 });
@@ -653,7 +733,7 @@ export const ZSurveyMultipleChoiceQuestion = ZSurveyQuestionBase.extend({
   ]),
   choices: z
     .array(ZSurveyQuestionChoice)
-    .min(2, { message: "Multiple Choice Question must have at least two choices" }),
+    .min(2, { message: "سؤال الاختيار المتعدد يجب أن يحتوي على خيارين على الأقل" }),
   shuffleOption: ZShuffleOption.optional(),
   otherOptionPlaceholder: ZI18nString.optional(),
 });
@@ -703,7 +783,7 @@ export const ZSurveyPictureSelectionQuestion = ZSurveyQuestionBase.extend({
   allowMulti: z.boolean().optional().default(false),
   choices: z
     .array(ZSurveyPictureChoice)
-    .min(2, { message: "Picture Selection question must have atleast 2 choices" }),
+    .min(2, { message: "سؤال اختيار الصورة يجب أن يحتوي على خيارين على الأقل" }),
 });
 
 export type TSurveyPictureSelectionQuestion = z.infer<typeof ZSurveyPictureSelectionQuestion>;
@@ -719,7 +799,7 @@ export type TSurveyFileUploadQuestion = z.infer<typeof ZSurveyFileUploadQuestion
 
 export const ZSurveyCalQuestion = ZSurveyQuestionBase.extend({
   type: z.literal(TSurveyQuestionTypeEnum.Cal),
-  calUserName: z.string().min(1, { message: "Cal user name is required" }),
+  calUserName: z.string().min(1, { message: "اسم مستخدم Cal مطلوب" }),
   calHost: z.string().optional(),
 });
 
@@ -776,8 +856,8 @@ export const ZSurveyRankingQuestion = ZSurveyQuestionBase.extend({
   type: z.literal(TSurveyQuestionTypeEnum.Ranking),
   choices: z
     .array(ZSurveyQuestionChoice)
-    .min(2, { message: "Ranking Question must have at least two options" })
-    .max(25, { message: "Ranking Question can have at most 25 options" }),
+    .min(2, { message: "سؤال الترتيب يجب أن يحتوي على خيارين على الأقل" })
+    .max(25, { message: "سؤال الترتيب يمكن أن يحتوي على 25 خياراً كحد أقصى" }),
   otherOptionPlaceholder: ZI18nString.optional(),
   shuffleOption: ZShuffleOption.optional(),
 });
@@ -874,6 +954,7 @@ export const ZSurvey = z
     createdAt: z.date(),
     updatedAt: z.date(),
     name: z.string(),
+    description: z.string().optional().nullable(),
     type: ZSurveyType,
     environmentId: z.string(),
     createdBy: z.string().nullable(),
@@ -885,14 +966,14 @@ export const ZSurvey = z
     displayLimit: z.number().nullable(),
     welcomeCard: ZSurveyWelcomeCard,
     questions: ZSurveyQuestions.min(1, {
-      message: "Survey must have at least one question",
+      message: "يجب أن يحتوي الاستبيان على سؤال واحد على الأقل",
     }).superRefine((questions, ctx) => {
       const questionIds = questions.map((q) => q.id);
       const uniqueQuestionIds = new Set(questionIds);
       if (uniqueQuestionIds.size !== questionIds.length) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Question IDs must be unique",
+          message: "معرّفات الأسئلة يجب أن تكون فريدة",
           path: [questionIds.findIndex((id, index) => questionIds.indexOf(id) !== index), "id"],
         });
       }
@@ -903,7 +984,7 @@ export const ZSurvey = z
       if (uniqueEndingIds.size !== endingIds.length) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Ending IDs must be unique",
+          message: "معرّفات نهايات الاستبيان يجب أن تكون فريدة",
           path: [endingIds.findIndex((id, index) => endingIds.indexOf(id) !== index), "id"],
         });
       }
@@ -916,7 +997,7 @@ export const ZSurvey = z
       if (uniqueVariableIds.size !== variableIds.length) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Variable IDs must be unique",
+          message: "معرّفات المتغيرات يجب أن تكون فريدة",
           path: ["variables"],
         });
       }
@@ -927,7 +1008,7 @@ export const ZSurvey = z
       if (uniqueVariableNames.size !== variableNames.length) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Variable names must be unique",
+          message: "أسماء المتغيرات يجب أن تكون فريدة",
           path: ["variables"],
         });
       }
@@ -938,7 +1019,7 @@ export const ZSurvey = z
       })
     ),
     delay: z.number(),
-    autoComplete: z.number().min(1, { message: "Response limit must be greater than 0" }).nullable(),
+    autoComplete: z.number().min(1, { message: "يجب أن يكون حد الاستجابات أكبر من 0" }).nullable(),
     projectOverwrites: ZSurveyProjectOverwrites.nullable(),
     styling: ZSurveyStyling.nullable(),
     showLanguageSwitch: z.boolean().nullable(),
@@ -949,7 +1030,9 @@ export const ZSurvey = z
     recaptcha: ZSurveyRecaptcha.nullable(),
     isSingleResponsePerEmailEnabled: z.boolean(),
     isBackButtonHidden: z.boolean(),
-    pin: z.string().length(4, { message: "PIN must be a four digit number" }).nullish(),
+    isOnePage: z.boolean().default(true),
+    bannerConfig: ZBannerConfig.nullable().optional(),
+    pin: z.string().length(4, { message: "يجب أن يكون الرمز السري مكوّناً من أربعة أرقام" }).nullish(),
     displayPercentage: z.number().min(0.01).max(100).nullable(),
     languages: z.array(ZSurveyLanguage),
     metadata: ZSurveyMetadata,
@@ -1106,7 +1189,7 @@ export const ZSurvey = z
 
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Question ${String(questionIndex + 1)} has duplicate choice labels ${isDefaultOnly ? "" : "for the following languages:"}`,
+            message: `السؤال ${String(questionIndex + 1)} يحتوي على خيارات مكررة ${isDefaultOnly ? "" : "-fLang-"}`,
             path: ["questions", questionIndex, "choices"],
             params: isDefaultOnly ? undefined : { invalidLanguageCodes },
           });
@@ -1138,7 +1221,7 @@ export const ZSurvey = z
           if (!question.buttonUrl || question.buttonUrl.trim() === "") {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Question ${String(questionIndex + 1)}: Button URL is required when external button is enabled`,
+              message: `السؤال ${String(questionIndex + 1)}: رابط الزر مطلوب عند تفعيل الزر الخارجي`,
               path: ["questions", questionIndex, "buttonUrl"],
             });
           } else {
@@ -1147,7 +1230,7 @@ export const ZSurvey = z
               const errorMessage = parsedButtonUrl.error.issues[0].message;
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `Question ${String(questionIndex + 1)}: ${errorMessage}`,
+                message: `السؤال ${String(questionIndex + 1)}: ${errorMessage}`,
                 path: ["questions", questionIndex, "buttonUrl"],
               });
             }
@@ -1202,7 +1285,7 @@ export const ZSurvey = z
 
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Question ${String(questionIndex + 1)} has duplicate row labels ${isDefaultOnly ? "" : "for the following languages:"}`,
+            message: `السؤال ${String(questionIndex + 1)} يحتوي على تسميات صفوف مكررة ${isDefaultOnly ? "" : "-fLang-"}`,
             path: ["questions", questionIndex, "rows"],
             params: isDefaultOnly ? undefined : { invalidLanguageCodes },
           });
@@ -1219,7 +1302,7 @@ export const ZSurvey = z
 
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Question ${String(questionIndex + 1)} has duplicate column labels ${isDefaultOnly ? "" : "for the following languages:"}`,
+            message: `السؤال ${String(questionIndex + 1)} يحتوي على تسميات أعمدة مكررة ${isDefaultOnly ? "" : "-fLang-"}`,
             path: ["questions", questionIndex, "columns"],
             params: isDefaultOnly ? undefined : { invalidLanguageCodes },
           });
@@ -1231,7 +1314,7 @@ export const ZSurvey = z
         if (question.allowedFileExtensions && question.allowedFileExtensions.length === 0) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Question ${String(questionIndex + 1)} must have atleast one allowed file extension`,
+            message: `السؤال ${String(questionIndex + 1)} يجب أن يحتوي على امتداد ملف مسموح به واحد على الأقل`,
             path: ["questions", questionIndex, "allowedFileExtensions"],
           });
         }
@@ -1243,7 +1326,7 @@ export const ZSurvey = z
           if (!hostnameRegex.test(question.calHost)) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Question ${String(questionIndex + 1)} must have a valid host name`,
+              message: `السؤال ${String(questionIndex + 1)} يجب أن يحتوي على اسم مضيف صالح`,
               path: ["questions", questionIndex, "calHost"],
             });
           }
@@ -1263,7 +1346,7 @@ export const ZSurvey = z
         if (fields.every((field) => !field.show)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "At least one field must be shown in the Contact Info question",
+            message: "يجب إظهار حقل واحد على الأقل في سؤال معلومات الاتصال",
             path: ["questions", questionIndex],
           });
         }
@@ -1297,7 +1380,7 @@ export const ZSurvey = z
         if (fields.every((field) => !field.show)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "At least one field must be shown in the Address question",
+            message: "يجب إظهار حقل واحد على الأقل في سؤال العنوان",
             path: ["questions", questionIndex],
           });
         }
@@ -1432,7 +1515,7 @@ export const ZSurvey = z
         const questionIndex = questions.findIndex((q) => q.id === questionId);
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Cyclic logic detected 🔃 Please check the logic of question ${String(questionIndex + 1)}.`,
+          message: `المنطق الشرطي: تم الكشف عن منطق دائري 🔃 يرجى مراجعة منطق السؤال ${String(questionIndex + 1)}.`,
           path: ["questions", questionIndex, "logic"],
         });
       });
@@ -1471,7 +1554,7 @@ export const ZSurvey = z
           if (!ending.buttonLabel) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Ending card ${String(index + 1)}: Button label cannot be empty`,
+              message: `بطاقة النهاية ${String(index + 1)}: لا يمكن أن تكون تسمية الزر فارغة`,
               path: ["endings", index, "buttonLabel"],
             });
           } else {
@@ -1490,7 +1573,7 @@ export const ZSurvey = z
           if (!ending.buttonLink || ending.buttonLink.trim() === "") {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Ending card ${String(index + 1)}: Button link cannot be empty`,
+              message: `بطاقة النهاية ${String(index + 1)}: لا يمكن أن يكون رابط الزر فارغاً`,
               path: ["endings", index, "buttonLink"],
             });
           } else {
@@ -1499,7 +1582,7 @@ export const ZSurvey = z
               const errorMessage = parsedButtonLink.error.issues[0].message;
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `Ending card ${String(index + 1)}: ${errorMessage}`,
+                message: `بطاقة النهاية ${String(index + 1)}: ${errorMessage}`,
                 path: ["endings", index, "buttonLink"],
               });
             }
@@ -1510,7 +1593,7 @@ export const ZSurvey = z
         if (!ending.label || ending.label.trim() === "") {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Redirect Url label cannot be empty for ending Card ${String(index + 1)}.`,
+            message: `لا يمكن أن تكون تسمية الرابط فارغة في بطاقة النهاية ${String(index + 1)}`,
             path: ["endings", index, "label"],
           });
         }
@@ -1519,7 +1602,7 @@ export const ZSurvey = z
         if (!ending.url || ending.url.trim() === "") {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Ending card ${String(index + 1)}: Redirect URL cannot be empty`,
+            message: `بطاقة النهاية ${String(index + 1)}: لا يمكن أن يكون رابط إعادة التوجيه فارغاً`,
             path: ["endings", index, "url"],
           });
         } else {
@@ -1528,7 +1611,7 @@ export const ZSurvey = z
             const errorMessage = parsedUrl.error.issues[0].message;
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Ending card ${String(index + 1)}: ${errorMessage}`,
+              message: `بطاقة النهاية ${String(index + 1)}: ${errorMessage}`,
               path: ["endings", index, "url"],
             });
           }
@@ -1566,7 +1649,7 @@ export const ZSurvey = z
               if (!parsedEmailTo.success) {
                 ctx.addIssue({
                   code: z.ZodIssueCode.custom,
-                  message: `The action in follow up ${String(index + 1)} has an invalid email field`,
+                  message: `إجراء المتابعة رقم ${String(index + 1)} يحتوي على بريد إلكتروني غير صالح`,
                   path: ["followUps"],
                 });
               }
@@ -1577,7 +1660,7 @@ export const ZSurvey = z
               if (!followUp.trigger.properties?.endingIds?.length) {
                 ctx.addIssue({
                   code: z.ZodIssueCode.custom,
-                  message: `The trigger in follow up ${String(index + 1)} has no ending selected`,
+                  message: `مشغّل المتابعة رقم ${String(index + 1)} لا يحتوي على نهاية محددة`,
                   path: ["followUps"],
                 });
               }
@@ -1823,14 +1906,14 @@ const validateConditions = (
       if (!question) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Question ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Uestion ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
         return;
       } else if (questionIndex < questionIdx) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Question ${String(questionIndex + 1)} cannot refer to a question ${String(questionIdx + 1)} that appears later in the survey`,
+          message: `المنطق الشرطي: Uestion ${String(questionIndex + 1)} cannot refer to a question ${String(questionIdx + 1)} that appears later in the survey`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
         return;
@@ -1841,7 +1924,7 @@ const validateConditions = (
       if (isInvalidOperator) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Invalid operator "${operator}" for question type "${question.type}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Nvalid operator "${operator}" for question type "${question.type}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
       }
@@ -1863,7 +1946,7 @@ const validateConditions = (
         if (rightOperand !== undefined) {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Right operand should not be defined for operator "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ight operand should not be defined for operator "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         }
@@ -1879,7 +1962,7 @@ const validateConditions = (
           if (!ques) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Question ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Uestion ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -1904,7 +1987,7 @@ const validateConditions = (
             if (!validQuestionTypes.includes(ques.type)) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Invalid question type "${ques.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Nvalid question type "${ques.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -1916,7 +1999,7 @@ const validateConditions = (
           if (!variable) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -1927,7 +2010,7 @@ const validateConditions = (
           if (!field) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Hidden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Idden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -1935,7 +2018,7 @@ const validateConditions = (
           if (!rightOperand.value) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Static value is required in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Tatic value is required in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -1944,14 +2027,14 @@ const validateConditions = (
         if (rightOperand?.type !== "static") {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Right operand should be a static value for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ight operand should be a static value for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         } else if (condition.operator === "equals" || condition.operator === "doesNotEqual") {
           if (typeof rightOperand.value !== "string") {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand should be a string for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand should be a string for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -1959,7 +2042,7 @@ const validateConditions = (
             if (!choice) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Choice with label "${rightOperand.value}" does not exist in question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Hoice with label "${rightOperand.value}" does not exist in question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -1968,7 +2051,7 @@ const validateConditions = (
           if (!Array.isArray(rightOperand.value)) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand should be an array for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand should be an array for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -1976,7 +2059,7 @@ const validateConditions = (
               if (typeof value !== "string") {
                 issues.push({
                   code: z.ZodIssueCode.custom,
-                  message: `Conditional Logic: Right operand should be an array of strings for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                  message: `المنطق الشرطي: Ight operand should be an array of strings for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                   path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
                 });
               }
@@ -1987,7 +2070,7 @@ const validateConditions = (
             if (rightOperand.value.some((value) => !choices.includes(value))) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Choices selected in right operand does not exist in the choices of the question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Hoices selected in right operand does not exist in the choices of the question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2000,14 +2083,14 @@ const validateConditions = (
         if (rightOperand?.type !== "static") {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Right operand should be amongst the choice values for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ight operand should be amongst the choice values for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         } else if (condition.operator === "equals" || condition.operator === "doesNotEqual") {
           if (typeof rightOperand.value !== "string") {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand should be a string for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand should be a string for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -2015,7 +2098,7 @@ const validateConditions = (
             if (!choice) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Choice with label "${rightOperand.value}" does not exist in question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Hoice with label "${rightOperand.value}" does not exist in question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2028,7 +2111,7 @@ const validateConditions = (
           if (!Array.isArray(rightOperand.value)) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand should be an array for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand should be an array for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -2036,7 +2119,7 @@ const validateConditions = (
               if (typeof value !== "string") {
                 issues.push({
                   code: z.ZodIssueCode.custom,
-                  message: `Conditional Logic: Right operand should be an array of strings for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                  message: `المنطق الشرطي: Ight operand should be an array of strings for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                   path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
                 });
               }
@@ -2047,7 +2130,7 @@ const validateConditions = (
             if (rightOperand.value.some((value) => !choices.includes(value))) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Choices selected in right operand does not exist in the choices of the question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Hoices selected in right operand does not exist in the choices of the question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2064,13 +2147,13 @@ const validateConditions = (
           if (!variable) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (variable.type !== "number") {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable type should be number in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable type should be number in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2078,28 +2161,28 @@ const validateConditions = (
           if (typeof rightOperand.value !== "number") {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand should be a number for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand should be a number for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (question.type === TSurveyQuestionTypeEnum.NPS) {
             if (rightOperand.value < 0 || rightOperand.value > 10) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: NPS score should be between 0 and 10 for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: NPS score should be between 0 and 10 for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
           } else if (rightOperand.value < 1 || rightOperand.value > question.range) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Rating value should be between 1 and ${String(question.range)} for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ating value should be between 1 and ${String(question.range)} for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
         } else {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Right operand should be a variable or a static value for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ight operand should be a variable or a static value for "${operator}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         }
@@ -2111,7 +2194,7 @@ const validateConditions = (
           if (!ques) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Question ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Uestion ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else {
@@ -2119,7 +2202,7 @@ const validateConditions = (
             if (!validQuestionTypes.includes(question.type)) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Invalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Nvalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2131,13 +2214,13 @@ const validateConditions = (
           if (!variable) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (variable.type !== "text") {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable type should be text in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable type should be text in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2148,7 +2231,7 @@ const validateConditions = (
           if (!doesFieldExists) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Hidden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Idden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2158,13 +2241,13 @@ const validateConditions = (
           if (!date) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Please select a date value in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Lease select a date value in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (isNaN(new Date(date).getTime())) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Invalid date format for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Nvalid date format for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2175,14 +2258,14 @@ const validateConditions = (
           if (rightOperand?.value !== undefined) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand is not allowed in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand is not allowed in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
           if (!["isPartiallySubmitted", "isCompletelySubmitted"].includes(operator)) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Operator "${operator}" is not allowed in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Perator "${operator}" is not allowed in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2190,7 +2273,7 @@ const validateConditions = (
           if (rightOperand === undefined) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Right operand is required in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ight operand is required in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2198,7 +2281,7 @@ const validateConditions = (
             if (rightOperand.type !== "static") {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Right operand should be a static value in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Ight operand should be a static value in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2206,7 +2289,7 @@ const validateConditions = (
             if (rowIndex < 0 || rowIndex >= question.rows.length) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Invalid row index in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Nvalid row index in matrix question in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2219,7 +2302,7 @@ const validateConditions = (
       if (!variable) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
       } else {
@@ -2228,7 +2311,7 @@ const validateConditions = (
         if (isInvalidOperator) {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Invalid operator "${operator}" for variable ${variable.name} of type "${variable.type}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Nvalid operator "${operator}" for variable ${variable.name} of type "${variable.type}" in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         }
@@ -2241,7 +2324,7 @@ const validateConditions = (
           if (!question) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Question ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Uestion ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (variable.type === "number") {
@@ -2253,7 +2336,7 @@ const validateConditions = (
             ) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Invalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Nvalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2273,7 +2356,7 @@ const validateConditions = (
             if (!validQuestionTypes.includes(question.type)) {
               issues.push({
                 code: z.ZodIssueCode.custom,
-                message: `Conditional Logic: Invalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+                message: `المنطق الشرطي: Nvalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
                 path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
               });
             }
@@ -2285,13 +2368,13 @@ const validateConditions = (
           if (!foundVariable) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           } else if (variable.type !== foundVariable.type) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Variable type mismatch in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Ariable type mismatch in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2302,7 +2385,7 @@ const validateConditions = (
           if (!field) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Hidden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Idden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2315,7 +2398,7 @@ const validateConditions = (
       if (!hiddenField) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Hidden field ID ${hiddenFieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Idden field ID ${hiddenFieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
       }
@@ -2325,7 +2408,7 @@ const validateConditions = (
       if (isInvalidOperator) {
         issues.push({
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Invalid operator "${operator}" for hidden field in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Nvalid operator "${operator}" for hidden field in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
         });
       }
@@ -2338,7 +2421,7 @@ const validateConditions = (
         if (!question) {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Question ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Uestion ID ${questionId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         } else {
@@ -2357,7 +2440,7 @@ const validateConditions = (
           if (!validQuestionTypes.includes(question.type)) {
             issues.push({
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Invalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Nvalid question type "${question.type}" for right operand in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
             });
           }
@@ -2369,13 +2452,13 @@ const validateConditions = (
         if (!variable) {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Variable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ariable ID ${variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         } else if (variable.type !== "text") {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Variable type should be text in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Ariable type should be text in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         }
@@ -2386,7 +2469,7 @@ const validateConditions = (
         if (!field) {
           issues.push({
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Hidden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Idden field ID ${fieldId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex, "conditions"],
           });
         }
@@ -2426,7 +2509,7 @@ const validateActions = (
       if (!variable) {
         return {
           code: z.ZodIssueCode.custom,
-          message: `Conditional Logic: Variable ID ${action.variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: Ariable ID ${action.variableId} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic", logicIndex],
         };
       }
@@ -2437,7 +2520,7 @@ const validateActions = (
         if (!selectedVariable || selectedVariable.type !== variable.type) {
           return {
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Invalid variable type for variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Nvalid variable type for variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex],
           };
         }
@@ -2467,7 +2550,7 @@ const validateActions = (
           if (!selectedQuestion || !allowedQuestions.includes(selectedQuestion.type)) {
             return {
               code: z.ZodIssueCode.custom,
-              message: `Conditional Logic: Invalid question type for text variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+              message: `المنطق الشرطي: Nvalid question type for text variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
               path: ["questions", questionIndex, "logic", logicIndex],
             };
           }
@@ -2498,7 +2581,7 @@ const validateActions = (
         ) {
           return {
             code: z.ZodIssueCode.custom,
-            message: `Conditional Logic: Invalid question type for number variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `المنطق الشرطي: Nvalid question type for number variable in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex],
           };
         }
@@ -2512,7 +2595,7 @@ const validateActions = (
       if (!possibleQuestionIds.includes(action.target)) {
         return {
           code: z.ZodIssueCode.custom,
-          message: `Question ID ${action.target} does not exist in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+          message: `المنطق الشرطي: معرّف السؤال ${action.target} غير موجود في المنطق رقم ${String(logicIndex + 1)} للسؤال ${String(questionIndex + 1)}`,
           path: ["questions", questionIndex, "logic"],
         };
       }
@@ -2527,7 +2610,7 @@ const validateActions = (
 
           return {
             code: z.ZodIssueCode.custom,
-            message: `Question ${String(quesIdx + 1)} is already required in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+            message: `السؤال ${String(quesIdx + 1)} مطلوب بالفعل في المنطق رقم ${String(logicIndex + 1)} للسؤال ${String(questionIndex + 1)}`,
             path: ["questions", questionIndex, "logic", logicIndex],
           };
         }
@@ -2541,7 +2624,7 @@ const validateActions = (
   if (jumpToQuestionActions.length > 1) {
     actionIssues.push({
       code: z.ZodIssueCode.custom,
-      message: `Conditional Logic: Multiple jump actions are not allowed in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
+      message: `المنطق الشرطي: Ultiple jump actions are not allowed in logic no: ${String(logicIndex + 1)} of question ${String(questionIndex + 1)}`,
       path: ["questions", questionIndex, "logic"],
     });
   }
@@ -2559,7 +2642,7 @@ const validateLogicFallback = (survey: TSurvey, questionIdx: number): z.ZodIssue
     return [
       {
         code: z.ZodIssueCode.custom,
-        message: `Conditional Logic: Fallback logic is defined without any logic in question ${String(questionIdx + 1)}`,
+        message: `المنطق الشرطي: Allback logic is defined without any logic in question ${String(questionIdx + 1)}`,
         path: ["questions", questionIdx],
       },
     ];
@@ -2567,7 +2650,7 @@ const validateLogicFallback = (survey: TSurvey, questionIdx: number): z.ZodIssue
     return [
       {
         code: z.ZodIssueCode.custom,
-        message: `Conditional Logic: Fallback logic is defined with the same question in question ${String(questionIdx + 1)}`,
+        message: `المنطق الشرطي: Allback logic is defined with the same question in question ${String(questionIdx + 1)}`,
         path: ["questions", questionIdx],
       },
     ];
@@ -2589,7 +2672,7 @@ const validateLogicFallback = (survey: TSurvey, questionIdx: number): z.ZodIssue
     return [
       {
         code: z.ZodIssueCode.custom,
-        message: `Conditional Logic: Fallback question ID ${question.logicFallback} does not exist in question ${String(questionIdx + 1)}`,
+        message: `المنطق الشرطي: Allback question ID ${question.logicFallback} does not exist in question ${String(questionIdx + 1)}`,
         path: ["questions", questionIdx],
       },
     ];
@@ -2656,7 +2739,7 @@ export const ZSurveyCreateInput = makeSchemaOptional(ZSurvey.innerType())
   })
   .extend({
     name: z.string(), // Keep name required
-    questions: ZSurvey.innerType().shape.questions, // Keep questions required and with its original validation
+    questions: ZSurveyQuestions.default([]), // Allow empty questions array at creation time
     languages: z.array(ZSurveyLanguage).default([]),
     welcomeCard: ZSurveyWelcomeCard.default({
       enabled: false,
@@ -2665,7 +2748,7 @@ export const ZSurveyCreateInput = makeSchemaOptional(ZSurvey.innerType())
     type: ZSurveyType.default("link"),
     followUps: z.array(ZSurveyFollowUp.omit({ createdAt: true, updatedAt: true })).default([]),
   })
-  .superRefine(ZSurvey._def.effect.type === "refinement" ? ZSurvey._def.effect.refinement : () => null);
+  .superRefine(() => null); // Skip label validation at creation time; publish-time validation handles it
 
 export type TSurvey = z.infer<typeof ZSurvey>;
 

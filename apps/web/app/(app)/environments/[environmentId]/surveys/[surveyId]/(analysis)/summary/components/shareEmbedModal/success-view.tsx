@@ -1,11 +1,10 @@
-import { ShareSurveyLink } from "@/modules/analysis/components/ShareSurveyLink";
-import { Badge } from "@/modules/ui/components/badge";
 import { useTranslate } from "@tolgee/react";
-import { BellRing, BlocksIcon, Share2Icon, UserIcon } from "lucide-react";
-import Link from "next/link";
+import { Share2Icon, UserIcon } from "lucide-react";
 import React from "react";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TUser } from "@formbricks/types/user";
+import { ShareSurveyLink } from "@/modules/analysis/components/ShareSurveyLink";
+import { Badge } from "@/modules/ui/components/badge";
 
 interface SuccessViewProps {
   survey: TSurvey;
@@ -31,7 +30,6 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
   isReadOnly,
 }) => {
   const { t } = useTranslate();
-  const environmentId = survey.environmentId;
   return (
     <div className="flex h-full max-w-full flex-col overflow-hidden">
       {survey.type === "link" && (
@@ -52,7 +50,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
       )}
       <div className="flex h-full flex-col items-center justify-center gap-8 rounded-b-lg bg-slate-50 px-8 py-4">
         <p className="text-sm font-medium text-slate-900">{t("environments.surveys.summary.whats_next")}</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => handleViewChange("share")}
@@ -68,18 +66,6 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
             {t("environments.surveys.summary.use_personal_links")}
             <Badge size="normal" type="success" className="absolute right-3 top-3" text={t("common.new")} />
           </button>
-          <Link
-            href={`/environments/${environmentId}/settings/notifications`}
-            className="flex flex-col items-center gap-3 rounded-lg border border-slate-100 bg-white p-4 text-center text-sm text-slate-900 hover:border-slate-200 md:p-8">
-            <BellRing className="h-8 w-8 stroke-1 text-slate-900" />
-            {t("environments.surveys.summary.configure_alerts")}
-          </Link>
-          <Link
-            href={`/environments/${environmentId}/project/integrations`}
-            className="flex flex-col items-center gap-3 rounded-lg border border-slate-100 bg-white p-4 text-center text-sm text-slate-900 hover:border-slate-200 md:p-8">
-            <BlocksIcon className="h-8 w-8 stroke-1 text-slate-900" />
-            {t("environments.surveys.summary.setup_integrations")}
-          </Link>
         </div>
       </div>
     </div>

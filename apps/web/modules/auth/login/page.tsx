@@ -36,13 +36,13 @@ export const LoginPage = async () => {
   const samlSsoEnabled = isSamlSsoEnabled && SAML_OAUTH_ENABLED;
 
   return (
-    <div
-      dir="ltr"
-      className="grid min-h-screen w-full bg-gradient-to-tr from-slate-100 to-slate-50 lg:grid-cols-5">
-      <div className="col-span-2 hidden lg:flex">
+    <div dir="ltr" className="grid min-h-screen w-full lg:grid-cols-5">
+      <div className="col-span-3 hidden lg:flex">
         <Testimonial />
       </div>
-      <div className="col-span-3 flex flex-col items-center justify-center">
+      <div
+        className="col-span-2 flex flex-col items-center justify-center"
+        style={{ background: "linear-gradient(160deg, #f8fafc 0%, #f1f5f9 100%)" }}>
         <FormWrapper>
           <LoginForm
             emailAuthEnabled={EMAIL_AUTH_ENABLED}

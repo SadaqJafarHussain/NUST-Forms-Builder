@@ -99,8 +99,8 @@ export const AdminManagement = ({ organizationId }: AdminManagementProps) => {
       return;
     }
 
-    // Validate project selection for members
-    if (newAdmin.role === "member" && newAdmin.projectIds.length === 0) {
+    // Validate project selection for members and managers
+    if ((newAdmin.role === "member" || newAdmin.role === "manager") && newAdmin.projectIds.length === 0) {
       toast.error(t("environments.settings.general.select_projects_for_member"));
       return;
     }
@@ -113,7 +113,8 @@ export const AdminManagement = ({ organizationId }: AdminManagementProps) => {
         email: newAdmin.email,
         password: newAdmin.password,
         role: newAdmin.role as "owner" | "manager" | "member" | "viewer",
-        projectIds: newAdmin.role === "member" ? newAdmin.projectIds : undefined,
+        projectIds:
+          newAdmin.role === "member" || newAdmin.role === "manager" ? newAdmin.projectIds : undefined,
       });
 
       if (result?.data?.success) {
@@ -304,8 +305,8 @@ export const AdminManagement = ({ organizationId }: AdminManagementProps) => {
                 </div>
               </div>
 
-              {/* Project selection for members */}
-              {newAdmin.role === "member" && (
+              {/* Project selection for members and managers */}
+              {(newAdmin.role === "member" || newAdmin.role === "manager") && (
                 <div>
                   <Label>{t("environments.settings.general.assign_projects")}</Label>
                   <MultiSelect

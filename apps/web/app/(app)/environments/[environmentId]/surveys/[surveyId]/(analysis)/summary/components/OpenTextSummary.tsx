@@ -1,16 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
+import { TSurvey, TSurveyQuestionSummaryOpenText } from "@formbricks/types/surveys/types";
+import { TUserLocale } from "@formbricks/types/user";
 import { timeSince } from "@/lib/time";
 import { getContactIdentifier } from "@/lib/utils/contact";
 import { renderHyperlinkedContent } from "@/modules/analysis/utils";
 import { PersonAvatar } from "@/modules/ui/components/avatars";
 import { Button } from "@/modules/ui/components/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/modules/ui/components/table";
-import { useTranslate } from "@tolgee/react";
-import Link from "next/link";
-import { useState } from "react";
-import { TSurvey, TSurveyQuestionSummaryOpenText } from "@formbricks/types/surveys/types";
-import { TUserLocale } from "@formbricks/types/user";
 import { QuestionSummaryHeader } from "./QuestionSummaryHeader";
 
 interface OpenTextSummaryProps {
@@ -21,7 +19,6 @@ interface OpenTextSummaryProps {
 }
 
 export const OpenTextSummary = ({ questionSummary, environmentId, survey, locale }: OpenTextSummaryProps) => {
-  const { t } = useTranslate();
   const [visibleResponses, setVisibleResponses] = useState(10);
 
   const handleLoadMore = () => {
@@ -34,56 +31,54 @@ export const OpenTextSummary = ({ questionSummary, environmentId, survey, locale
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <QuestionSummaryHeader questionSummary={questionSummary} survey={survey} />
-      <div className="border-t border-slate-200"></div>
-      <div className="max-h-[40vh] overflow-y-auto">
-        <Table>
-          <TableHeader className="bg-slate-100">
-            <TableRow>
-              <TableHead>{t("common.user")}</TableHead>
-              <TableHead>{t("common.response")}</TableHead>
-              <TableHead>{t("common.time")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {questionSummary.samples.slice(0, visibleResponses).map((response) => (
-              <TableRow key={response.id}>
-                <TableCell>
-                  {response.contact ? (
-                    <Link
-                      className="ph-no-capture group flex items-center"
-                      href={`/environments/${environmentId}/contacts/${response.contact.id}`}>
-                      <div className="hidden md:flex">
-                        <PersonAvatar personId={response.contact.id} />
-                      </div>
-                      <p className="ph-no-capture break-all text-slate-600 group-hover:underline md:ml-2">
-                        {getContactIdentifier(response.contact, response.contactAttributes)}
-                      </p>
-                    </Link>
-                  ) : (
-                    <div className="group flex items-center">
-                      <div className="hidden md:flex">
-                        <PersonAvatar personId="anonymous" />
-                      </div>
-                      <p className="break-normal text-slate-600 md:ml-2">{t("common.anonymous")}</p>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {typeof response.value === "string"
-                    ? renderHyperlinkedContent(response.value)
-                    : response.value}
-                </TableCell>
-                <TableCell width={120}>
-                  {timeSince(new Date(response.updatedAt).toISOString(), locale)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="border-t border-slate-100" />
+      <div className="max-h-[50vh] overflow-y-auto" dir="rtl">
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_2fr_auto] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-2.5 text-xs font-semibold text-slate-500">
+          <span>المشارك</span>
+          <span>الإجابة</span>
+          <span>الوقت</span>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {questionSummary.samples.slice(0, visibleResponses).map((response) => (
+            <div
+              key={response.id}
+              className="grid grid-cols-[1fr_2fr_auto] items-start gap-4 px-5 py-3 hover:bg-slate-50">
+              {/* Participant */}
+              <div>
+                {response.contact ? (
+                  <Link
+                    className="ph-no-capture flex items-center gap-2 text-sm font-medium text-slate-700 hover:underline"
+                    href={`/environments/${environmentId}/contacts/${response.contact.id}`}>
+                    <PersonAvatar personId={response.contact.id} />
+                    <span className="ph-no-capture">
+                      {getContactIdentifier(response.contact, response.contactAttributes)}
+                    </span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <PersonAvatar personId="anonymous" />
+                    <span>مجهول</span>
+                  </div>
+                )}
+              </div>
+              {/* Response */}
+              <div className="text-sm font-medium text-slate-800" dir="auto">
+                {typeof response.value === "string"
+                  ? renderHyperlinkedContent(response.value)
+                  : response.value}
+              </div>
+              {/* Time */}
+              <div className="whitespace-nowrap text-xs text-slate-400">
+                {timeSince(new Date(response.updatedAt).toISOString(), locale)}
+              </div>
+            </div>
+          ))}
+        </div>
         {visibleResponses < questionSummary.samples.length && (
           <div className="flex justify-center py-4">
             <Button onClick={handleLoadMore} variant="secondary" size="sm">
-              {t("common.load_more")}
+              عرض المزيد
             </Button>
           </div>
         )}

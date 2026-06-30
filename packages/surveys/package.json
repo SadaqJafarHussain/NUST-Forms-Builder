@@ -23,7 +23,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.umd.cjs"
-    }
+    },
+    "./iraq-location-data": "./src/lib/iraqLocationData.json"
   },
   "scripts": {
     "dev": "vite build --watch --mode dev",

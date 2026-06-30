@@ -1,3 +1,4 @@
+import { prisma } from "@formbricks/database";
 import {
   DEFAULT_LOCALE,
   IS_FORMBRICKS_CLOUD,
@@ -39,8 +40,15 @@ export const SurveyEditorPage = async (props) => {
   const searchParams = await props.searchParams;
   const params = await props.params;
 
-  const { session, isMember, environment, hasReadAccess, currentUserMembership, projectPermission } =
-    await getEnvironmentAuth(params.environmentId);
+  const {
+    session,
+    isMember,
+    isViewer,
+    environment,
+    hasReadAccess,
+    currentUserMembership,
+    projectPermission,
+  } = await getEnvironmentAuth(params.environmentId);
 
   const t = await getTranslate();
   const [survey, projectWithTeamIds, actionClasses, contactAttributeKeys, responseCount, segments] =
@@ -62,7 +70,7 @@ export const SurveyEditorPage = async (props) => {
     throw new Error(t("common.organization_not_found"));
   }
 
-  const isSurveyCreationDeletionDisabled = isMember && hasReadAccess;
+  const isSurveyCreationDeletionDisabled = isViewer || (isMember && hasReadAccess);
   const [locale, userEmail] = await Promise.all([
     getUserLocale(session.user.id),
     getUserEmail(session.user.id),
@@ -77,6 +85,13 @@ export const SurveyEditorPage = async (props) => {
 
   const quotas = isQuotasAllowed && survey ? await getQuotas(survey.id) : [];
   const teamMemberDetails = await getTeamMemberDetails(projectWithTeamIds.teamIds);
+
+  const orgRow = await prisma.organization.findUnique({
+    where: { id: projectWithTeamIds.organizationId },
+    select: { defaultBannerConfig: true },
+  });
+  const orgHasDefaultBanner = !!orgRow?.defaultBannerConfig;
+  const orgDefaultBannerConfig = (orgRow?.defaultBannerConfig as any) ?? null;
 
   if (
     !survey ||
@@ -118,6 +133,8 @@ export const SurveyEditorPage = async (props) => {
       isStorageConfigured={IS_STORAGE_CONFIGURED}
       isQuotasAllowed={isQuotasAllowed}
       quotas={quotas}
+      orgHasDefaultBanner={orgHasDefaultBanner}
+      orgDefaultBannerConfig={orgDefaultBannerConfig}
     />
   );
 };

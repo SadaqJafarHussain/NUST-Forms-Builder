@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
+import { type Control, Controller } from "react-hook-form";
+import { TOrganizationRole } from "@formbricks/types/memberships";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { Label } from "@/modules/ui/components/label";
 import {
@@ -10,11 +13,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/modules/ui/components/select";
-import { Muted, P } from "@/modules/ui/components/typography";
-import { useTranslate } from "@tolgee/react";
-import { useMemo } from "react";
-import { type Control, Controller } from "react-hook-form";
-import { TOrganizationRole } from "@formbricks/types/memberships";
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: "مالك",
+  manager: "مدير",
+  member: "عضو",
+  billing: "مالية",
+};
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  owner: "صلاحيات كاملة على الجامعة والأقسام والكليات",
+  manager: "يدير الأعضاء والأقسام والكليات، لكن لا يمكنه حذف الجامعة",
+  member: "يمكنه الوصول إلى الأقسام والكليات المحددة له فقط",
+  billing: "يدير الفواتير والاشتراكات فقط",
+};
+
+const ROLE_STYLES: Record<string, { bg: string; color: string }> = {
+  owner: { bg: "#fef3c7", color: "#92400e" },
+  manager: { bg: "#e0e7ff", color: "#3730a3" },
+  member: { bg: "#f1f5f9", color: "#475569" },
+  billing: { bg: "#eff6ff", color: "#1d4ed8" },
+};
 
 interface AddMemberRoleProps {
   control: Control<{ name: string; email: string; role: TOrganizationRole; teamIds: string[] }>;
@@ -31,54 +50,54 @@ export function AddMemberRole({
 }: AddMemberRoleProps) {
   const { isMember, isOwner } = getAccessFlags(membershipRole);
 
-  const { t } = useTranslate();
-
   const roles = useMemo(() => {
     let rolesArray = ["member"];
-
     if (isOwner) {
       rolesArray.push("manager", "owner");
-      if (isFormbricksCloud) {
-        rolesArray.push("billing");
-      }
+      if (isFormbricksCloud) rolesArray.push("billing");
     }
     return rolesArray;
   }, [isOwner, isFormbricksCloud]);
 
   if (isMember) return null;
 
-  const rolesDescription = {
-    owner: t("environments.settings.teams.owner_role_description"),
-    manager: t("environments.settings.teams.manager_role_description"),
-    member: t("environments.settings.teams.member_role_description"),
-    billing: t("environments.settings.teams.billing_role_description"),
-  };
-
   return (
     <Controller
       control={control}
       name="role"
       render={({ field: { onChange, value } }) => (
-        <div className="flex flex-col space-y-2">
-          <Label>{t("common.role_organization")}</Label>
+        <div className="flex flex-col space-y-2" dir="rtl">
+          <Label className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+            الدور في الجامعة
+          </Label>
           <Select
             defaultValue={isAccessControlAllowed ? "member" : "owner"}
             disabled={!isAccessControlAllowed}
-            onValueChange={(v) => {
-              onChange(v as TOrganizationRole);
-            }}
+            onValueChange={(v) => onChange(v as TOrganizationRole)}
             value={value}>
-            <SelectTrigger className="capitalize">
+            <SelectTrigger>
               <SelectValue>
-                <P>{value}</P>
+                {value && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: ROLE_STYLES[value]?.bg, color: ROLE_STYLES[value]?.color }}>
+                    {ROLE_LABELS[value] ?? value}
+                  </span>
+                )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
-              <SelectGroup className="flex flex-col-reverse">
+            <SelectContent dir="rtl">
+              <SelectGroup>
                 {roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    <P className="capitalize">{role}</P>
-                    <Muted className="text-slate-500">{rolesDescription[role]}</Muted>
+                  <SelectItem key={role} value={role} className="py-2">
+                    <div className="flex flex-col gap-0.5">
+                      <span
+                        className="inline-block w-fit rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={{ backgroundColor: ROLE_STYLES[role]?.bg, color: ROLE_STYLES[role]?.color }}>
+                        {ROLE_LABELS[role] ?? role}
+                      </span>
+                      <span className="text-xs text-slate-400">{ROLE_DESCRIPTIONS[role]}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectGroup>

@@ -1,5 +1,12 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import { SendHorizonalIcon, ShareIcon, TrashIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { TMember } from "@formbricks/types/memberships";
+import { TOrganization } from "@formbricks/types/organizations";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import {
   createInviteTokenAction,
@@ -9,16 +16,8 @@ import {
 } from "@/modules/organization/settings/teams/actions";
 import { ShareInviteModal } from "@/modules/organization/settings/teams/components/invite-member/share-invite-modal";
 import { TInvite } from "@/modules/organization/settings/teams/types/invites";
-import { Button } from "@/modules/ui/components/button";
 import { DeleteDialog } from "@/modules/ui/components/delete-dialog";
 import { TooltipRenderer } from "@/modules/ui/components/tooltip";
-import { useTranslate } from "@tolgee/react";
-import { SendHorizonalIcon, ShareIcon, TrashIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import toast from "react-hot-toast";
-import { TMember } from "@formbricks/types/memberships";
-import { TOrganization } from "@formbricks/types/organizations";
 
 interface MemberActionsProps {
   organization: TOrganization;
@@ -109,55 +108,53 @@ export const MemberActions = ({ organization, member, invite, showDeleteButton }
   };
 
   return (
-    <div className="flex gap-2">
-      <TooltipRenderer tooltipContent={t("common.delete")} shouldRender={!!showDeleteButton}>
-        <Button
-          variant="destructive"
-          size="icon"
+    <div className="flex min-w-[125px] items-center gap-1.5">
+      <TooltipRenderer tooltipContent="حذف العضو" shouldRender={!!showDeleteButton}>
+        <button
           id="deleteMemberButton"
           disabled={!showDeleteButton}
-          onClick={() => setDeleteMemberModalOpen(true)}>
-          <TrashIcon />
-        </Button>
+          onClick={() => setDeleteMemberModalOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+          style={showDeleteButton ? { color: "#dc2626" } : { color: "#94a3b8" }}
+          onMouseEnter={(e) =>
+            showDeleteButton && ((e.currentTarget as HTMLElement).style.backgroundColor = "#fee2e2")
+          }
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}>
+          <TrashIcon className="h-4 w-4" />
+        </button>
       </TooltipRenderer>
 
-      <TooltipRenderer
-        tooltipContent={t("environments.settings.general.share_invite_link")}
-        shouldRender={!!invite}>
-        <Button
-          variant="secondary"
-          size="icon"
+      <TooltipRenderer tooltipContent="مشاركة رابط الدعوة" shouldRender={!!invite}>
+        <button
           id="shareInviteButton"
           disabled={!invite}
-          onClick={() => {
-            handleShareInvite();
-          }}>
-          <ShareIcon />
-        </Button>
+          onClick={handleShareInvite}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+          onMouseEnter={(e) => invite && ((e.currentTarget as HTMLElement).style.backgroundColor = "#f1f5f9")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}>
+          <ShareIcon className="h-4 w-4" />
+        </button>
       </TooltipRenderer>
 
-      <TooltipRenderer
-        tooltipContent={t("environments.settings.general.resend_invitation_email")}
-        shouldRender={!!invite}>
-        <Button
-          variant="secondary"
-          size="icon"
+      <TooltipRenderer tooltipContent="إعادة إرسال الدعوة" shouldRender={!!invite}>
+        <button
           id="resendInviteButton"
           disabled={!invite}
-          onClick={() => {
-            handleResendInvite();
-          }}>
-          <SendHorizonalIcon />
-        </Button>
+          onClick={handleResendInvite}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+          onMouseEnter={(e) => invite && ((e.currentTarget as HTMLElement).style.backgroundColor = "#f1f5f9")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}>
+          <SendHorizonalIcon className="h-4 w-4" />
+        </button>
       </TooltipRenderer>
 
       <DeleteDialog
         open={isDeleteMemberModalOpen}
         setOpen={setDeleteMemberModalOpen}
-        deleteWhat={`${memberName} ${t("environments.settings.general.from_your_organization")}`}
+        deleteWhat={`${memberName} من الجامعة`}
         onDelete={handleDeleteMember}
         isDeleting={isDeleting}
-        text={t("environments.settings.general.delete_member_confirmation")}
+        text="سيتم حذف هذا العضو نهائياً من الجامعة. لا يمكن التراجع عن هذا الإجراء."
       />
 
       {showShareInviteModal && (

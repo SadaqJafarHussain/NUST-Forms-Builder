@@ -58,7 +58,7 @@ export const getQuestionTypes = (t: TFnType): TQuestion[] => [
     icon: MessageSquareTextIcon,
     preset: {
       headline: createI18nString("", []),
-      placeholder: createI18nString(t("templates.free_text_placeholder"), []),
+      placeholder: createI18nString("", []),
       longAnswer: true,
       inputType: "text",
       buttonLabel: createI18nString(t("templates.next"), []),
@@ -319,6 +319,7 @@ export const getQuestionTypes = (t: TFnType): TQuestion[] => [
         required: true,
         allowOther: true,
         otherLabel: createI18nString(t("templates.iraq_location_other_label") || "Other", []),
+        enabled: true,
       },
       area: {
         label: createI18nString(t("templates.iraq_location_area_label") || "Area", []),
@@ -326,6 +327,7 @@ export const getQuestionTypes = (t: TFnType): TQuestion[] => [
         required: true,
         allowOther: true,
         otherLabel: createI18nString(t("templates.iraq_location_other_label") || "Other", []),
+        enabled: true,
       },
       buttonLabel: createI18nString(t("templates.next"), []),
       backButtonLabel: createI18nString(t("templates.back"), []),

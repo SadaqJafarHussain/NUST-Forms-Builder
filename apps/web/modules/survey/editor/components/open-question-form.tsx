@@ -1,12 +1,5 @@
 "use client";
 
-import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
-import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
-import { AdvancedOptionToggle } from "@/modules/ui/components/advanced-option-toggle";
-import { Button } from "@/modules/ui/components/button";
-import { Input } from "@/modules/ui/components/input";
-import { Label } from "@/modules/ui/components/label";
-import { OptionsSwitch } from "@/modules/ui/components/options-switch";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useTranslate } from "@tolgee/react";
 import { HashIcon, LinkIcon, MailIcon, MessageSquareTextIcon, PhoneIcon, PlusIcon } from "lucide-react";
@@ -17,6 +10,13 @@ import {
   TSurveyOpenTextQuestionInputType,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
+import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
+import { AdvancedOptionToggle } from "@/modules/ui/components/advanced-option-toggle";
+import { Button } from "@/modules/ui/components/button";
+import { Input } from "@/modules/ui/components/input";
+import { Label } from "@/modules/ui/components/label";
+import { OptionsSwitch } from "@/modules/ui/components/options-switch";
 
 interface OpenQuestionFormProps {
   localSurvey: TSurvey;
@@ -58,7 +58,7 @@ export const OpenQuestionForm = ({
   const handleInputChange = (inputType: TSurveyOpenTextQuestionInputType) => {
     const updatedAttributes = {
       inputType: inputType,
-      placeholder: createI18nString(getPlaceholderByInputType(inputType), surveyLanguageCodes),
+      placeholder: createI18nString("", surveyLanguageCodes),
       longAnswer: inputType === "text" ? question.longAnswer : false,
       charLimit: {
         min: undefined,
@@ -133,14 +133,11 @@ export const OpenQuestionForm = ({
           </Button>
         )}
       </div>
-      <div className="mt-2">
+      <div className="mt-2" dir="rtl">
         <QuestionFormInput
           id="placeholder"
-          value={
-            question.placeholder
-              ? question.placeholder
-              : createI18nString(defaultPlaceholder, surveyLanguageCodes)
-          }
+          value={question.placeholder ?? createI18nString("", surveyLanguageCodes)}
+          placeholder={defaultPlaceholder}
           localSurvey={localSurvey}
           questionIdx={questionIdx}
           isInvalid={isInvalid}
@@ -241,8 +238,8 @@ const getPlaceholderByInputType = (inputType: TSurveyOpenTextQuestionInputType) 
     case "number":
       return "42";
     case "phone":
-      return "+1 123 456 789";
+      return "+966 50 000 0000";
     default:
-      return "Type your answer here...";
+      return "اكتب إجابتك هنا...";
   }
 };

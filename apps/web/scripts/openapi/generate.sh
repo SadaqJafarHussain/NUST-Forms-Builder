@@ -14,7 +14,7 @@ echo "Building OpenAPI document generator..."
 
 # Build using the permanent vite config (from apps/web directory)
 cd "$APPS_WEB_DIR"
-vite build --config scripts/openapi/vite.config.ts
+vite build --config scripts/openapi/vite.config.mts
 
 echo "Generating OpenAPI YAML..."
 

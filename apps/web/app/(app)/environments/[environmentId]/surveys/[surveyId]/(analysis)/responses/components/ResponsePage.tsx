@@ -126,8 +126,38 @@ export const ResponsePage = ({
   }, [filters]);
 
   return (
-    <>
-      <div className="flex gap-1.5">
+    <div dir="rtl">
+      {/* Response count banner */}
+      {!isFetchingFirstPage && (
+        <div
+          className="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          style={{ borderRight: "4px solid #1b335f" }}>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ backgroundColor: "#1b335f18" }}>
+            <svg
+              className="h-5 w-5"
+              style={{ color: "#1b335f" }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-bold text-slate-800">
+              {responses.length} {responses.length === 0 ? "ردود" : "رد"}
+            </p>
+            <p className="text-xs text-slate-500">إجمالي الردود المسترجعة حتى الآن</p>
+          </div>
+        </div>
+      )}
+      <div className="mb-3">
         <CustomFilter survey={surveyMemoized} locale={locale} />
       </div>
       <ResponseDataView
@@ -146,6 +176,6 @@ export const ResponsePage = ({
         isQuotasAllowed={isQuotasAllowed}
         quotas={quotas}
       />
-    </>
+    </div>
   );
 };

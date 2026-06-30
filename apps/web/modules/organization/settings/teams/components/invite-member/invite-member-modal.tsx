@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { TOrganizationRole } from "@formbricks/types/memberships";
 import { TOrganizationTeam } from "@/modules/ee/teams/team-list/types/team";
 import {
   Dialog,
@@ -10,9 +12,6 @@ import {
   DialogTitle,
 } from "@/modules/ui/components/dialog";
 import { TabToggle } from "@/modules/ui/components/tab-toggle";
-import { useTranslate } from "@tolgee/react";
-import { useState } from "react";
-import { TOrganizationRole } from "@formbricks/types/memberships";
 import { BulkInviteTab } from "./bulk-invite-tab";
 import { IndividualInviteTab } from "./individual-invite-tab";
 
@@ -26,6 +25,7 @@ interface InviteMemberModalProps {
   environmentId: string;
   membershipRole?: TOrganizationRole;
   isStorageConfigured: boolean;
+  organizationId: string;
 }
 
 export const InviteMemberModal = ({
@@ -38,10 +38,9 @@ export const InviteMemberModal = ({
   environmentId,
   membershipRole,
   isStorageConfigured,
+  organizationId,
 }: InviteMemberModalProps) => {
   const [type, setType] = useState<"individual" | "bulk">("individual");
-
-  const { t } = useTranslate();
 
   const tabs = {
     individual: (
@@ -53,6 +52,7 @@ export const InviteMemberModal = ({
         isFormbricksCloud={isFormbricksCloud}
         teams={teams}
         membershipRole={membershipRole}
+        organizationId={organizationId}
       />
     ),
     bulk: (
@@ -70,16 +70,16 @@ export const InviteMemberModal = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent disableCloseOnOutsideClick unconstrained>
         <DialogHeader>
-          <DialogTitle>{t("environments.settings.teams.invite_member")}</DialogTitle>
-          <DialogDescription>{t("environments.settings.teams.invite_member_description")}</DialogDescription>
+          <DialogTitle dir="rtl">دعوة عضو جديد</DialogTitle>
+          <DialogDescription dir="rtl">أدخل بيانات العضو وحدّد دوره في الجامعة</DialogDescription>
         </DialogHeader>
 
         <DialogBody className="flex flex-col gap-6" unconstrained>
           <TabToggle
             id="type"
             options={[
-              { value: "individual", label: t("environments.settings.teams.individual") },
-              { value: "bulk", label: t("environments.settings.teams.bulk_invite") },
+              { value: "individual", label: "دعوة فردية" },
+              { value: "bulk", label: "دعوة جماعية" },
             ]}
             onChange={(inviteType) => setType(inviteType)}
             defaultSelected={type}

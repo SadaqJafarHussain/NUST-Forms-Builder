@@ -1,5 +1,6 @@
 import { type Response } from "@prisma/client";
 import { notFound } from "next/navigation";
+import { prisma } from "@formbricks/database";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import {
   IMPRINT_URL,
@@ -15,6 +16,7 @@ import { getOrganizationIdFromEnvironmentId } from "@/modules/survey/lib/organiz
 import { getResponseCountBySurveyId } from "@/modules/survey/lib/response";
 import { getOrganizationBilling } from "@/modules/survey/lib/survey";
 import { LinkSurvey } from "@/modules/survey/link/components/link-survey";
+import { OnepageForm } from "@/modules/survey/link/components/one-page-form";
 import { PinScreen } from "@/modules/survey/link/components/pin-screen";
 import { SurveyInactive } from "@/modules/survey/link/components/survey-inactive";
 import { getEmailVerificationDetails } from "@/modules/survey/link/lib/helper";
@@ -66,6 +68,7 @@ export const renderSurvey = async ({
         status={survey.status}
         surveyClosedMessage={survey.surveyClosedMessage}
         project={project || undefined}
+        bannerConfig={survey.bannerConfig ?? null}
       />
     );
   }
@@ -89,6 +92,12 @@ export const renderSurvey = async ({
   if (!project) {
     throw new Error("Project not found");
   }
+
+  const orgRow = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { defaultBannerConfig: true },
+  });
+  const orgDefaultBannerConfig = (orgRow?.defaultBannerConfig as any) ?? null;
 
   const getLanguageCode = (): string => {
     if (!langParam || !isMultiLanguageAllowed) return "default";
@@ -131,6 +140,25 @@ export const renderSurvey = async ({
         contactId={contactId}
         recaptchaSiteKey={RECAPTCHA_SITE_KEY}
         isSpamProtectionEnabled={isSpamProtectionEnabled}
+      />
+    );
+  }
+
+  // One-page (MS Forms style): show all questions on one scrollable page
+  if (survey.isOnePage) {
+    // Mirror the same determineStyling logic used by LinkSurvey
+    const effectiveStyling =
+      project.styling.allowStyleOverwrite && survey.styling?.overwriteThemeStyling
+        ? survey.styling
+        : project.styling;
+    return (
+      <OnepageForm
+        survey={survey}
+        publicDomain={publicDomain}
+        isPreview={isPreview}
+        projectName={project.name}
+        orgDefaultBannerConfig={orgDefaultBannerConfig}
+        styling={effectiveStyling}
       />
     );
   }

@@ -50,8 +50,11 @@ CacheHandler.onCreation(() => {
         redisClient = createClient(settings);
         redisClient.on("error", (e) => {
           console.error("Redis error", e);
-          global.cacheHandlerConfig = null;
-          global.cacheHandlerConfigPromise = null;
+          // Only reset if we haven't already fallen back to LRU.
+          // If cacheHandlerConfig is already set (LRU fallback), keep it.
+          if (!global.cacheHandlerConfig) {
+            global.cacheHandlerConfigPromise = null;
+          }
         });
       } catch (error) {
         console.error("Failed to create Redis client:", error);

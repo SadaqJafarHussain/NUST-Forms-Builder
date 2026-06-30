@@ -13,7 +13,6 @@ import { useSignOut } from "@/modules/auth/hooks/use-sign-out";
 import { Button } from "@/modules/ui/components/button";
 import { FormControl, FormError, FormField, FormItem, FormLabel } from "@/modules/ui/components/form";
 import { Input } from "@/modules/ui/components/input";
-import { Label } from "@/modules/ui/components/label";
 import { resetPasswordAction, updateUserAction } from "../actions";
 
 // Schema & types - locale removed since we only support Arabic
@@ -136,81 +135,148 @@ export const EditProfileDetailsForm = ({
     setIsResettingPassword(false);
   };
 
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "؟";
+
   return (
     <>
       <FormProvider {...form}>
-        <form className="w-full max-w-sm" onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("common.full_name")}</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="text"
-                    required
-                    placeholder={t("common.full_name")}
-                    isInvalid={!!form.formState.errors.name}
-                  />
-                </FormControl>
-                <FormError />
-              </FormItem>
-            )}
-          />
+        <div dir="rtl" className="w-full max-w-lg">
+          {/* User avatar card */}
+          <div className="mb-6 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div
+              className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
+              style={{ backgroundColor: "#1b335f" }}>
+              {initials}
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800">{user.name}</p>
+              <p className="text-sm text-slate-500">{user.email}</p>
+              <span
+                className="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: "#1b335f18", color: "#1b335f" }}>
+                {user.identityProvider === "email" ? "حساب محلي" : user.identityProvider?.toUpperCase()}
+              </span>
+            </div>
+          </div>
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem className="mt-4">
-                <FormLabel>{t("common.email")}</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="email"
-                    required
-                    isInvalid={!!form.formState.errors.email}
-                    disabled={user.identityProvider !== "email"}
-                  />
-                </FormControl>
-                <FormError />
-              </FormItem>
-            )}
-          />
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+            {/* Name */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+                    الاسم الكامل
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="text"
+                      required
+                      placeholder="أدخل اسمك الكامل"
+                      isInvalid={!!form.formState.errors.name}
+                      className="text-right"
+                    />
+                  </FormControl>
+                  <FormError />
+                </FormItem>
+              )}
+            />
 
-          {/* Language selection removed - Arabic only mode */}
+            {/* Email */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold" style={{ color: "#1b335f" }}>
+                    البريد الإلكتروني
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      required
+                      dir="ltr"
+                      isInvalid={!!form.formState.errors.email}
+                      disabled={user.identityProvider !== "email"}
+                      className="text-left"
+                    />
+                  </FormControl>
+                  {user.identityProvider !== "email" && (
+                    <p className="text-xs text-slate-400">
+                      البريد الإلكتروني مرتبط بموفر خارجي ولا يمكن تغييره من هنا
+                    </p>
+                  )}
+                  <FormError />
+                </FormItem>
+              )}
+            />
 
+            {/* Save button */}
+            <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
+              <button
+                type="submit"
+                disabled={isSubmitting || !isDirty}
+                className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: "#1b335f" }}>
+                {isSubmitting && (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
+                حفظ التغييرات
+              </button>
+              {isDirty && (
+                <button
+                  type="button"
+                  onClick={() => form.reset()}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                  إلغاء
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Password reset section */}
           {isPasswordResetEnabled && (
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="reset-password">{t("auth.forgot-password.reset_password")}</Label>
-              <p className="mt-1 text-sm text-slate-500">
-                {t("auth.forgot-password.reset_password_description")}
+            <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-5 w-1 rounded-full" style={{ backgroundColor: "#f4bf00" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "#1b335f" }}>
+                  إعادة تعيين كلمة المرور
+                </h3>
+              </div>
+              <p className="mb-3 text-xs text-slate-500">
+                سيتم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني
               </p>
-              <div className="flex items-center justify-between gap-2">
-                <Input type="email" id="reset-password" defaultValue={user.email} disabled />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  defaultValue={user.email}
+                  disabled
+                  dir="ltr"
+                  className="text-left text-sm"
+                />
                 <Button
                   onClick={handleResetPassword}
                   loading={isResettingPassword}
                   disabled={isResettingPassword}
-                  size="default"
-                  variant="secondary">
-                  {t("auth.forgot-password.reset_password")}
+                  size="sm"
+                  variant="secondary"
+                  className="flex-shrink-0">
+                  إرسال الرابط
                 </Button>
               </div>
             </div>
           )}
-
-          <Button
-            type="submit"
-            className="mt-4"
-            size="sm"
-            loading={isSubmitting}
-            disabled={isSubmitting || !isDirty}>
-            {t("common.update")}
-          </Button>
-        </form>
+        </div>
       </FormProvider>
 
       <PasswordConfirmationModal

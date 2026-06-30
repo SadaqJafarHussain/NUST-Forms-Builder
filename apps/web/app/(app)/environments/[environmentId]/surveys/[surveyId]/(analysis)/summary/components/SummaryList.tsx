@@ -98,7 +98,7 @@ export const SummaryList = ({ summary, environment, responseCount, survey, local
   };
 
   return (
-    <div className="mt-10 space-y-8">
+    <div className="mt-10 space-y-8" dir="rtl">
       {survey.type === "app" && responseCount === 0 && !environment.appSetupCompleted ? (
         <EmptyAppSurveys environment={environment} />
       ) : summary.length === 0 ? (

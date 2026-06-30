@@ -1,0 +1,77 @@
+services:
+
+  postgres:
+    restart: always
+    image: pgvector/pgvector:pg17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - internal
+
+  redis:
+    restart: always
+    image: valkey/valkey@sha256:12ba4f45a7c3e1d0f076acd616cb230834e75a77e8516dde382720af32832d6d
+    command: valkey-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  app:
+    restart: always
+    image: ${DOCKER_IMAGE}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - uploads:/home/nextjs/apps/web/uploads
+    environment:
+      WEBAPP_URL: ${WEBAPP_URL}
+      NEXTAUTH_URL: ${WEBAPP_URL}
+      DATABASE_URL: "postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/formbricks?schema=public"
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      CRON_SECRET: ${CRON_SECRET}
+      REDIS_URL: redis://redis:6379
+      EMAIL_VERIFICATION_DISABLED: 1
+      PASSWORD_RESET_DISABLED: 1
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL}
+      S3_REGION: ${S3_REGION}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-0}
+    networks:
+      - internal
+      - web
+
+  caddy:
+    restart: always
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+    networks:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
+  web:
+    driver: bridge

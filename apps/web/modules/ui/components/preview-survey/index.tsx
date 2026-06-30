@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientLogo } from "@/modules/ui/components/client-logo";
-import { MediaBackground } from "@/modules/ui/components/media-background";
-import { ResetProgressButton } from "@/modules/ui/components/reset-progress-button";
-import { SurveyInline } from "@/modules/ui/components/survey";
 import { Environment, Project } from "@prisma/client";
 import { useTranslate } from "@tolgee/react";
 import { Variants, motion } from "framer-motion";
@@ -11,6 +7,11 @@ import { ExpandIcon, MonitorIcon, ShrinkIcon, SmartphoneIcon } from "lucide-reac
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TProjectStyling } from "@formbricks/types/project";
 import { TSurvey, TSurveyQuestionId, TSurveyStyling } from "@formbricks/types/surveys/types";
+import { FormBanner } from "@/modules/survey/link/components/form-banner";
+import { ClientLogo } from "@/modules/ui/components/client-logo";
+import { MediaBackground } from "@/modules/ui/components/media-background";
+import { ResetProgressButton } from "@/modules/ui/components/reset-progress-button";
+import { SurveyInline } from "@/modules/ui/components/survey";
 import { Modal } from "./components/modal";
 import { TabOption } from "./components/tab-option";
 
@@ -281,25 +282,28 @@ export const PreviewSurvey = ({
                   />
                 </Modal>
               ) : (
-                <div className="flex h-full w-full flex-col justify-center px-1">
-                  <div className="absolute left-5 top-5">
-                    {!styling.isLogoHidden && (
-                      <ClientLogo environmentId={environment.id} projectLogo={project.logo} previewSurvey />
-                    )}
-                  </div>
-                  <div className="z-10 w-full rounded-lg border border-transparent">
-                    <SurveyInline
-                      isPreviewMode={true}
-                      survey={{ ...survey, type: "link" }}
-                      isBrandingEnabled={project.linkSurveyBranding}
-                      languageCode={languageCode}
-                      responseCount={42}
-                      styling={styling}
-                      getSetQuestionId={(f: (value: string) => void) => {
-                        setQuestionId = f;
-                      }}
-                      isSpamProtectionEnabled={isSpamProtectionEnabled}
-                    />
+                <div className="flex h-full w-full flex-col overflow-y-auto">
+                  <FormBanner />
+                  <div className="flex flex-1 flex-col justify-center px-1">
+                    <div className="absolute left-5 top-5">
+                      {!styling.isLogoHidden && (
+                        <ClientLogo environmentId={environment.id} projectLogo={project.logo} previewSurvey />
+                      )}
+                    </div>
+                    <div className="z-10 w-full rounded-lg border border-transparent">
+                      <SurveyInline
+                        isPreviewMode={true}
+                        survey={{ ...survey, type: "link" }}
+                        isBrandingEnabled={project.linkSurveyBranding}
+                        languageCode={languageCode}
+                        responseCount={42}
+                        styling={styling}
+                        getSetQuestionId={(f: (value: string) => void) => {
+                          setQuestionId = f;
+                        }}
+                        isSpamProtectionEnabled={isSpamProtectionEnabled}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -385,32 +389,35 @@ export const PreviewSurvey = ({
                 />
               </Modal>
             ) : (
-              <MediaBackground
-                surveyType={survey.type}
-                styling={styling}
-                ContentRef={ContentRef as React.RefObject<HTMLDivElement>}
-                isEditorView>
-                <div className="absolute left-5 top-5">
-                  {!styling.isLogoHidden && (
-                    <ClientLogo environmentId={environment.id} projectLogo={project.logo} previewSurvey />
-                  )}
-                </div>
-                <div className="z-0 w-full max-w-4xl rounded-lg border-transparent">
-                  <SurveyInline
-                    isPreviewMode={true}
-                    survey={{ ...survey, type: "link" }}
-                    isBrandingEnabled={project.linkSurveyBranding}
-                    isRedirectDisabled={true}
-                    languageCode={languageCode}
-                    responseCount={42}
-                    styling={styling}
-                    getSetQuestionId={(f: (value: string) => void) => {
-                      setQuestionId = f;
-                    }}
-                    isSpamProtectionEnabled={isSpamProtectionEnabled}
-                  />
-                </div>
-              </MediaBackground>
+              <div className="flex flex-1 flex-col overflow-hidden rounded-b-lg">
+                <FormBanner />
+                <MediaBackground
+                  surveyType={survey.type}
+                  styling={styling}
+                  ContentRef={ContentRef as React.RefObject<HTMLDivElement>}
+                  isEditorView>
+                  <div className="absolute left-5 top-5">
+                    {!styling.isLogoHidden && (
+                      <ClientLogo environmentId={environment.id} projectLogo={project.logo} previewSurvey />
+                    )}
+                  </div>
+                  <div className="z-0 w-full max-w-4xl rounded-lg border-transparent">
+                    <SurveyInline
+                      isPreviewMode={true}
+                      survey={{ ...survey, type: "link" }}
+                      isBrandingEnabled={project.linkSurveyBranding}
+                      isRedirectDisabled={true}
+                      languageCode={languageCode}
+                      responseCount={42}
+                      styling={styling}
+                      getSetQuestionId={(f: (value: string) => void) => {
+                        setQuestionId = f;
+                      }}
+                      isSpamProtectionEnabled={isSpamProtectionEnabled}
+                    />
+                  </div>
+                </MediaBackground>
+              </div>
             )}
           </div>
         )}

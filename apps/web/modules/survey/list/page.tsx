@@ -1,105 +1,89 @@
-import { PlusIcon } from "lucide-react";
 import { Metadata } from "next";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 import { DEFAULT_LOCALE, SURVEYS_PER_PAGE } from "@/lib/constants";
 import { getPublicDomain } from "@/lib/getPublicUrl";
+import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
+import { getAccessFlags } from "@/lib/membership/utils";
+import { getOrganizationByEnvironmentId } from "@/lib/organization/service";
 import { getUserLocale } from "@/lib/user/service";
 import { getEnvironmentAuth } from "@/modules/environments/lib/utils";
 import { getProjectWithTeamIdsByEnvironmentId } from "@/modules/survey/lib/project";
+import { DepartmentHeader } from "@/modules/survey/list/components/department-header";
+import { NewFormButton } from "@/modules/survey/list/components/new-form-button";
+import { QuickStartSection } from "@/modules/survey/list/components/quick-start-section";
 import { SurveysList } from "@/modules/survey/list/components/survey-list";
 import { getSurveyCount } from "@/modules/survey/list/lib/survey";
-import { TemplateContainerWithPreview } from "@/modules/survey/templates/components/template-container";
-import { Button } from "@/modules/ui/components/button";
-import { PageContentWrapper } from "@/modules/ui/components/page-content-wrapper";
-import { PageHeader } from "@/modules/ui/components/page-header";
-import { getTranslate } from "@/tolgee/server";
 
 export const metadata: Metadata = {
-  title: "Your Surveys",
+  title: "فورماتي",
 };
 
 interface SurveyTemplateProps {
-  params: Promise<{
-    environmentId: string;
-  }>;
+  params: Promise<{ environmentId: string }>;
 }
 
 export const SurveysPage = async ({ params: paramsProps }: SurveyTemplateProps) => {
   const publicDomain = getPublicDomain();
   const params = await paramsProps;
-  const t = await getTranslate();
   const project = await getProjectWithTeamIdsByEnvironmentId(params.environmentId);
+  if (!project) throw new Error("Project not found");
 
-  if (!project) {
-    throw new Error(t("common.project_not_found"));
-  }
-
-  const { session, isBilling, environment, isReadOnly } = await getEnvironmentAuth(params.environmentId);
-
-  if (isBilling) {
-    return redirect(`/environments/${params.environmentId}/settings/billing`);
-  }
-
-  const surveyCount = await getSurveyCount(params.environmentId);
+  const { session, environment, isReadOnly, isMember } = await getEnvironmentAuth(params.environmentId);
+  const surveyCount = await getSurveyCount(params.environmentId, isMember ? session.user.id : undefined);
   const currentProjectChannel = project.config.channel ?? null;
   const locale = (await getUserLocale(session.user.id)) ?? DEFAULT_LOCALE;
 
-  const CreateSurveyButton = () => {
-    return (
-      <Button size="sm" asChild>
-        <Link href={`/environments/${environment.id}/surveys/templates`} suppressHydrationWarning>
-          {t("environments.surveys.new_survey")}
-          <PlusIcon />
-        </Link>
-      </Button>
-    );
-  };
+  const organization = await getOrganizationByEnvironmentId(params.environmentId);
+  const membership = organization
+    ? await getMembershipByUserIdOrganizationId(session.user.id, organization.id)
+    : null;
+  const { isOwner, isManager } = getAccessFlags(membership?.role);
+  const canEditDepartment = isOwner || isManager;
 
-  const projectWithRequiredProps = {
-    ...project,
-    brandColor: project.styling?.brandColor?.light ?? null,
-    highlightBorderColor: null,
-  };
+  return (
+    <div className="min-h-full" style={{ backgroundColor: "#f3f3f3" }}>
+      {/* Top action bar — white, clean */}
+      <div className="border-b border-slate-200 bg-white px-8 py-4" dir="rtl">
+        <div className="flex items-center gap-3">
+          {!isReadOnly && <NewFormButton environmentId={environment.id} userId={session.user.id} />}
+        </div>
+      </div>
 
-  if (surveyCount === 0)
-    return (
-      <TemplateContainerWithPreview
-        userId={session.user.id}
-        environment={environment}
-        project={projectWithRequiredProps}
-        isTemplatePage={false}
-      />
-    );
+      {/* Page content */}
+      <div className="px-8 py-6">
+        {/* Department name header */}
+        <DepartmentHeader projectId={project.id} projectName={project.name} canEdit={canEditDepartment} />
 
-  let content;
-  if (surveyCount > 0) {
-    content = (
-      <>
-        <PageHeader pageTitle={t("common.surveys")} cta={isReadOnly ? <></> : <CreateSurveyButton />} />
-        <SurveysList
-          environmentId={environment.id}
-          isReadOnly={isReadOnly}
-          publicDomain={publicDomain}
-          userId={session.user.id}
-          surveysPerPage={SURVEYS_PER_PAGE}
-          currentProjectChannel={currentProjectChannel}
-          locale={locale}
-        />
-      </>
-    );
-  } else if (isReadOnly) {
-    content = (
-      <>
-        <h1 className="px-6 text-3xl font-extrabold text-slate-700" suppressHydrationWarning>
-          {t("environments.surveys.no_surveys_created_yet")}
-        </h1>
-        <h2 className="px-6 text-lg font-medium text-slate-500" suppressHydrationWarning>
-          {t("environments.surveys.read_only_user_not_allowed_to_create_survey_warning")}
-        </h2>
-      </>
-    );
-  }
+        {/* Template section */}
+        {!isReadOnly && <QuickStartSection environmentId={environment.id} userId={session.user.id} />}
 
-  return <PageContentWrapper>{content}</PageContentWrapper>;
+        {/* My forms label */}
+        <p className="mb-4 text-sm font-semibold text-slate-600" dir="rtl">
+          فورماتي
+        </p>
+
+        {/* Survey grid or empty state */}
+        {surveyCount === 0 && !isReadOnly ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
+            <span className="text-5xl">📋</span>
+            <p className="text-base font-medium text-slate-700">لا توجد فورمات بعد</p>
+            <p className="text-sm text-slate-500">اختر قالباً من الأعلى أو أنشئ فورم فارغ</p>
+          </div>
+        ) : surveyCount === 0 && isReadOnly ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
+            <p className="text-lg font-semibold text-slate-700">لا توجد فورمات بعد</p>
+          </div>
+        ) : (
+          <SurveysList
+            environmentId={environment.id}
+            isReadOnly={isReadOnly}
+            publicDomain={publicDomain}
+            userId={session.user.id}
+            surveysPerPage={SURVEYS_PER_PAGE}
+            currentProjectChannel={currentProjectChannel}
+            locale={locale}
+          />
+        )}
+      </div>
+    </div>
+  );
 };

@@ -1,8 +1,4 @@
 import "server-only";
-import {
-  getOrganizationByEnvironmentId,
-  subscribeOrganizationMembersToSurveyResponses,
-} from "@/lib/organization/service";
 import { ActionClass, Prisma } from "@prisma/client";
 import { cache as reactCache } from "react";
 import { prisma } from "@formbricks/database";
@@ -11,6 +7,10 @@ import { ZId, ZOptionalNumber } from "@formbricks/types/common";
 import { DatabaseError, InvalidInputError, ResourceNotFoundError } from "@formbricks/types/errors";
 import { TSegment, ZSegmentFilters } from "@formbricks/types/segment";
 import { TSurvey, TSurveyCreateInput, ZSurvey, ZSurveyCreateInput } from "@formbricks/types/surveys/types";
+import {
+  getOrganizationByEnvironmentId,
+  subscribeOrganizationMembersToSurveyResponses,
+} from "@/lib/organization/service";
 import { getActionClasses } from "../actionClass/service";
 import { ITEMS_PER_PAGE } from "../constants";
 import { capturePosthogEnvironmentEvent } from "../posthogServer";
@@ -31,6 +31,7 @@ export const selectSurvey = {
   createdAt: true,
   updatedAt: true,
   name: true,
+  description: true,
   type: true,
   environmentId: true,
   createdBy: true,
@@ -50,6 +51,8 @@ export const selectSurvey = {
   isVerifyEmailEnabled: true,
   isSingleResponsePerEmailEnabled: true,
   isBackButtonHidden: true,
+  isOnePage: true,
+  bannerConfig: true,
   redirectUrl: true,
   projectOverwrites: true,
   styling: true,

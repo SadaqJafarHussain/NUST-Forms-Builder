@@ -6,6 +6,7 @@ import { ZId } from "@formbricks/types/common";
 import { InvalidInputError, OperationNotAllowedError, ValidationError } from "@formbricks/types/errors";
 import { ZOrganizationRole } from "@formbricks/types/memberships";
 import { ZOrganizationUpdateInput } from "@formbricks/types/organizations";
+import { ZBannerConfig } from "@formbricks/types/surveys/types";
 import { ZUserEmail, ZUserName, ZUserPassword } from "@formbricks/types/user";
 import { hashPassword } from "@/lib/auth";
 import { createMembership, updateMembership } from "@/lib/membership/service";
@@ -148,6 +149,8 @@ export const createAdminAction = authenticatedActionClient.schema(ZCreateAdminAc
       // Check if user already exists
       const existingUser = await getUserByEmail(parsedInput.email.toLowerCase());
 
+      const hashedPassword = await hashPassword(parsedInput.password);
+
       let user;
       if (existingUser) {
         // User exists - check if they're already a member of this organization
@@ -155,18 +158,23 @@ export const createAdminAction = authenticatedActionClient.schema(ZCreateAdminAc
         const isAlreadyMember = existingMembers.some((m) => m.userId === existingUser.id);
 
         if (isAlreadyMember) {
-          throw new InvalidInputError("User is already a member of this organization");
+          throw new InvalidInputError("هذا المستخدم عضو في الجامعة مسبقاً");
         }
 
-        // Add existing user to organization
+        // Update the password to what the admin set, so the member can log in
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { password: hashedPassword, emailVerified: new Date() },
+        });
+
         user = existingUser;
       } else {
-        // Create new user
-        const hashedPassword = await hashPassword(parsedInput.password);
+        // Create new user — admin-created accounts skip email verification
         user = await createUser({
           email: parsedInput.email.toLowerCase(),
           name: parsedInput.name,
           password: hashedPassword,
+          emailVerified: new Date(),
         });
       }
 
@@ -175,8 +183,12 @@ export const createAdminAction = authenticatedActionClient.schema(ZCreateAdminAc
         accepted: true,
       });
 
-      // If role is member and projectIds are provided, assign user to projects
-      if (parsedInput.role === "member" && parsedInput.projectIds && parsedInput.projectIds.length > 0) {
+      // If role is member or manager and projectIds are provided, assign user to projects
+      if (
+        (parsedInput.role === "member" || parsedInput.role === "manager") &&
+        parsedInput.projectIds &&
+        parsedInput.projectIds.length > 0
+      ) {
         await prisma.userProject.createMany({
           data: parsedInput.projectIds.map((projectId: string) => ({
             userId: user.id,
@@ -258,6 +270,51 @@ export const deleteAdminAction = authenticatedActionClient.schema(ZDeleteAdminAc
     }
   )
 );
+
+// Update organization default banner config
+const ZUpdateDefaultBannerAction = z.object({
+  organizationId: ZId,
+  defaultBannerConfig: ZBannerConfig.nullable(),
+});
+
+export const updateDefaultBannerAction = authenticatedActionClient
+  .schema(ZUpdateDefaultBannerAction)
+  .action(async ({ ctx, parsedInput }) => {
+    await checkAuthorizationUpdated({
+      userId: ctx.user.id,
+      organizationId: parsedInput.organizationId,
+      access: [{ type: "organization", roles: ["owner", "manager"] }],
+    });
+
+    await prisma.organization.update({
+      where: { id: parsedInput.organizationId },
+      data: { defaultBannerConfig: parsedInput.defaultBannerConfig ?? undefined },
+    });
+
+    return { success: true };
+  });
+
+// Get organization default banner config
+const ZGetDefaultBannerAction = z.object({
+  organizationId: ZId,
+});
+
+export const getDefaultBannerAction = authenticatedActionClient
+  .schema(ZGetDefaultBannerAction)
+  .action(async ({ ctx, parsedInput }) => {
+    await checkAuthorizationUpdated({
+      userId: ctx.user.id,
+      organizationId: parsedInput.organizationId,
+      access: [{ type: "organization", roles: ["owner", "manager", "member"] }],
+    });
+
+    const org = await prisma.organization.findUnique({
+      where: { id: parsedInput.organizationId },
+      select: { defaultBannerConfig: true },
+    });
+
+    return { defaultBannerConfig: org?.defaultBannerConfig ?? null };
+  });
 
 // Get projects for organization
 const ZGetProjectsAction = z.object({

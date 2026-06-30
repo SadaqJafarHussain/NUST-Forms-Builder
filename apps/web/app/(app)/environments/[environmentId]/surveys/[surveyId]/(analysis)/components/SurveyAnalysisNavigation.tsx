@@ -1,11 +1,10 @@
 "use client";
 
-import { revalidateSurveyIdPath } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/actions";
-import { SecondaryNavigation } from "@/modules/ui/components/secondary-navigation";
-import { useTranslate } from "@tolgee/react";
 import { InboxIcon, PresentationIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { TSurvey } from "@formbricks/types/surveys/types";
+import { revalidateSurveyIdPath } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/actions";
+import { SecondaryNavigation } from "@/modules/ui/components/secondary-navigation";
 
 interface SurveyAnalysisNavigationProps {
   environmentId: string;
@@ -19,14 +18,13 @@ export const SurveyAnalysisNavigation = ({
   activeId,
 }: SurveyAnalysisNavigationProps) => {
   const pathname = usePathname();
-  const { t } = useTranslate();
 
   const url = `/environments/${environmentId}/surveys/${survey.id}`;
 
   const navigation = [
     {
       id: "summary",
-      label: t("common.summary"),
+      label: "ملخص",
       icon: <PresentationIcon className="h-5 w-5" />,
       href: `${url}/summary?referer=true`,
       current: pathname?.includes("/summary"),
@@ -36,7 +34,7 @@ export const SurveyAnalysisNavigation = ({
     },
     {
       id: "responses",
-      label: t("common.responses"),
+      label: "الردود",
       icon: <InboxIcon className="h-5 w-5" />,
       href: `${url}/responses?referer=true`,
       current: pathname?.includes("/responses"),

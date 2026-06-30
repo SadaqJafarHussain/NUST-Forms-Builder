@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTranslate } from "@tolgee/react";
 import { signIn } from "next-auth/react";
 import Link from "next/dist/client/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,14 +49,12 @@ interface LoginFormProps {
 
 export const LoginForm = ({
   emailAuthEnabled,
-  publicSignUpEnabled,
   passwordResetEnabled,
   googleOAuthEnabled,
   githubOAuthEnabled,
   azureOAuthEnabled,
   oidcOAuthEnabled,
   oidcDisplayName,
-  isMultiOrgEnabled,
   isSsoEnabled,
   samlSsoEnabled,
   samlTenant,
@@ -67,7 +64,6 @@ export const LoginForm = ({
   const searchParams = useSearchParams();
   const emailRef = useRef<HTMLInputElement>(null);
   const callbackUrl = searchParams?.get("callbackUrl") ?? "";
-  const { t } = useTranslate();
 
   const form = useForm<TLoginForm>({
     defaultValues: {
@@ -126,13 +122,12 @@ export const LoginForm = ({
   const [totpLogin, setTotpLogin] = useState(false);
   const [totpBackup, setTotpBackup] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const inviteToken = callbackUrl ? new URL(callbackUrl).searchParams.get("token") : null;
 
-  const formLabel = useMemo(() => {
-    if (totpBackup) return t("auth.login.enter_your_backup_code");
-    if (totpLogin) return t("auth.login.enter_your_two_factor_authentication_code");
-    return t("auth.login.login_to_your_account");
-  }, [t, totpBackup, totpLogin]);
+  const formLabelAr = useMemo(() => {
+    if (totpBackup) return "أدخل رمز النسخ الاحتياطي";
+    if (totpLogin) return "أدخل رمز المصادقة الثنائية";
+    return "تسجيل الدخول";
+  }, [totpBackup, totpLogin]);
 
   const TwoFactorComponent = useMemo(() => {
     if (totpBackup) return <TwoFactorBackup form={form} />;
@@ -142,15 +137,58 @@ export const LoginForm = ({
 
   return (
     <FormProvider {...form}>
+      <style>{`
+        .nust-input {
+          display: block;
+          width: 100%;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-size: 0.875rem;
+          color: #1e293b;
+          background: #f8fafc;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          outline: none;
+        }
+        .nust-input:focus {
+          border-color: #1b335f;
+          background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(27, 51, 95, 0.1);
+        }
+        .nust-input::placeholder { color: #94a3b8; }
+        .nust-btn {
+          background-color: #1b335f !important;
+          color: #ffffff !important;
+          border: none !important;
+          transition: background-color 0.15s !important;
+        }
+        .nust-btn:hover:not(:disabled) { background-color: #0f314c !important; }
+        .nust-btn:disabled { opacity: 0.65 !important; }
+        .nust-link { color: #1b335f; font-weight: 600; text-decoration: underline; font-size: 0.75rem; }
+        .nust-link:hover { color: #0f314c; }
+      `}</style>
+
       <div dir="ltr" className="text-left">
-        {" "}
-        {/* Force LTR */}
-        <h1 className="mb-4 text-center font-semibold text-slate-700">{formLabel}</h1>
-        <div className="space-y-2">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        {/* Arabic heading with navy left accent */}
+        <div className="mb-6 border-r-0" dir="rtl">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-1 rounded-full" style={{ backgroundColor: "#f4bf00" }} />
+            <h1 className="text-lg font-bold" style={{ color: "#1b335f" }}>
+              {formLabelAr}
+            </h1>
+          </div>
+          {!totpLogin && !totpBackup && (
+            <p className="mt-1 text-xs text-slate-400">أدخل بياناتك للوصول إلى المنصة</p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             {TwoFactorComponent}
+
             {showLogin && (
-              <div className={cn(totpLogin && "hidden", "space-y-2")}>
+              <div className={cn(totpLogin && "hidden", "space-y-3")}>
+                {/* Email field */}
                 <FormField
                   control={form.control}
                   name="email"
@@ -158,15 +196,22 @@ export const LoginForm = ({
                     <FormItem className="w-full">
                       <FormControl>
                         <div>
+                          <label
+                            htmlFor="email"
+                            className="mb-1 block text-xs font-semibold"
+                            style={{ color: "#1b335f", direction: "rtl" }}>
+                            البريد الإلكتروني
+                          </label>
                           <input
                             id="email"
+                            ref={emailRef}
                             type="email"
                             autoComplete="email"
                             required
                             value={field.value}
-                            onChange={(email) => field.onChange(email)}
-                            placeholder="work@email.com"
-                            className="focus:border-brand-dark focus:ring-brand-dark block w-full rounded-md border-slate-300 shadow-sm sm:text-sm"
+                            onChange={(e) => field.onChange(e)}
+                            placeholder="example@nust.edu.iq"
+                            className="nust-input"
                           />
                           {error?.message && <FormError className="text-left">{error.message}</FormError>}
                         </div>
@@ -174,6 +219,8 @@ export const LoginForm = ({
                     </FormItem>
                   )}
                 />
+
+                {/* Password field */}
                 <FormField
                   control={form.control}
                   name="password"
@@ -181,14 +228,27 @@ export const LoginForm = ({
                     <FormItem className="w-full">
                       <FormControl>
                         <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <label
+                              htmlFor="password"
+                              className="text-xs font-semibold"
+                              style={{ color: "#1b335f" }}>
+                              كلمة المرور
+                            </label>
+                            {passwordResetEnabled && (
+                              <Link href="/auth/forgot-password" className="nust-link text-xs">
+                                نسيت كلمة المرور؟
+                              </Link>
+                            )}
+                          </div>
                           <PasswordInput
                             id="password"
                             autoComplete="current-password"
-                            placeholder="*******"
+                            placeholder="••••••••"
                             required
-                            className="focus:border-brand-dark focus:ring-brand-dark block w-full rounded-md border-slate-300 pr-8 shadow-sm sm:text-sm"
+                            className="nust-input pr-10"
                             value={field.value}
-                            onChange={(password) => field.onChange(password)}
+                            onChange={(e) => field.onChange(e)}
                           />
                           {error?.message && <FormError className="text-left">{error.message}</FormError>}
                         </div>
@@ -196,19 +256,9 @@ export const LoginForm = ({
                     </FormItem>
                   )}
                 />
-                {passwordResetEnabled && (
-                  <div className="ml-1 text-left transition-all duration-500 ease-in-out">
-                    {" "}
-                    {/* Align left */}
-                    <Link
-                      href="/auth/forgot-password"
-                      className="hover:text-brand-dark text-xs text-slate-500">
-                      {t("auth.login.forgot_your_password")}
-                    </Link>
-                  </div>
-                )}
               </div>
             )}
+
             {emailAuthEnabled && (
               <Button
                 onClick={() => {
@@ -219,13 +269,14 @@ export const LoginForm = ({
                     formRef.current.requestSubmit();
                   }
                 }}
-                className="relative w-full justify-center"
+                className="nust-btn relative mt-1 w-full justify-center rounded-lg py-2.5 text-sm font-semibold"
                 loading={form.formState.isSubmitting}>
-                {totpLogin ? t("common.submit") : t("auth.login.login_with_email")}
+                {totpLogin ? "تأكيد" : showLogin ? "تسجيل الدخول" : "المتابعة"}
               </Button>
             )}
           </form>
 
+          {/* SSO section */}
           {isSsoEnabled && (
             <SSOOptions
               googleOAuthEnabled={googleOAuthEnabled}
@@ -241,44 +292,28 @@ export const LoginForm = ({
             />
           )}
         </div>
-        {publicSignUpEnabled && !totpLogin && isMultiOrgEnabled && (
-          <div className="mt-9 text-left text-xs">
-            <span className="leading-5 text-slate-500">{t("auth.login.new_to_formbricks")}</span>
-            <br />
-            <Link
-              href={inviteToken ? `/auth/signup?inviteToken=${inviteToken}` : "/auth/signup"}
-              className="font-semibold text-slate-600 underline hover:text-slate-700">
-              {t("auth.login.create_an_account")}
-            </Link>
-          </div>
-        )}
+
+        {/* 2FA backup options */}
         {totpLogin && !totpBackup && (
-          <div className="mt-9 text-left text-xs">
-            <span className="leading-5 text-slate-500">{t("auth.login.lost_access")}</span>
-            <br />
-            <div className="flex flex-col">
-              <button
-                type="button"
-                className="font-semibold text-slate-600 underline hover:text-slate-700"
-                onClick={() => setTotpBackup(true)}>
-                {t("auth.login.use_a_backup_code")}
-              </button>
-              <button
-                type="button"
-                className="mt-4 font-semibold text-slate-600 underline hover:text-slate-700"
-                onClick={() => setTotpLogin(false)}>
-                {t("common.go_back")}
-              </button>
-            </div>
+          <div className="mt-6 space-y-2 text-center text-xs">
+            <button type="button" className="nust-link block w-full" onClick={() => setTotpBackup(true)}>
+              استخدام رمز النسخ الاحتياطي
+            </button>
+            <button
+              type="button"
+              className="block w-full text-slate-400 underline hover:text-slate-600"
+              onClick={() => setTotpLogin(false)}>
+              العودة
+            </button>
           </div>
         )}
         {totpBackup && (
-          <div className="mt-9 text-left text-xs">
+          <div className="mt-6 text-center text-xs">
             <button
               type="button"
-              className="font-semibold text-slate-600 underline hover:text-slate-700"
+              className="text-slate-400 underline hover:text-slate-600"
               onClick={() => setTotpBackup(false)}>
-              {t("common.go_back")}
+              العودة
             </button>
           </div>
         )}

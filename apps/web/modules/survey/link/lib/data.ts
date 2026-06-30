@@ -1,12 +1,12 @@
 import "server-only";
-import { cache } from "@/lib/cache";
-import { transformPrismaSurvey } from "@/modules/survey/lib/utils";
 import { Prisma } from "@prisma/client";
 import { cache as reactCache } from "react";
 import { createCacheKey } from "@formbricks/cache";
 import { prisma } from "@formbricks/database";
 import { DatabaseError, ResourceNotFoundError } from "@formbricks/types/errors";
 import { TSurvey } from "@formbricks/types/surveys/types";
+import { cache } from "@/lib/cache";
+import { transformPrismaSurvey } from "@/modules/survey/lib/utils";
 
 /**
  * Comprehensive survey data fetcher for link surveys
@@ -22,6 +22,7 @@ export const getSurveyWithMetadata = reactCache(async (surveyId: string) => {
         createdAt: true,
         updatedAt: true,
         name: true,
+        description: true,
         type: true,
         environmentId: true,
         createdBy: true,
@@ -44,6 +45,8 @@ export const getSurveyWithMetadata = reactCache(async (surveyId: string) => {
         // Authentication & access
         isVerifyEmailEnabled: true,
         isSingleResponsePerEmailEnabled: true,
+        isOnePage: true,
+        bannerConfig: true,
         redirectUrl: true,
         pin: true,
         isBackButtonHidden: true,

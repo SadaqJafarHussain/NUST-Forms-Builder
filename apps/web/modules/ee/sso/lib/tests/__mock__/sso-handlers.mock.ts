@@ -58,6 +58,7 @@ export const mockOrganization: Organization = {
   },
   createdAt: new Date(),
   updatedAt: new Date(),
+  defaultBannerConfig: null,
 };
 
 // Mock user with OpenID fields

@@ -1,6 +1,6 @@
 import { TolgeeStaticData } from "@tolgee/react";
 import { Metadata } from "next";
-import { Cairo } from "next/font/google";
+import localFont from "next/font/local";
 import React from "react";
 import { SentryProvider } from "@/app/sentry/SentryProvider";
 import { IS_PRODUCTION, SENTRY_DSN, SENTRY_ENVIRONMENT, SENTRY_RELEASE } from "@/lib/constants";
@@ -9,9 +9,12 @@ import { getTolgee } from "@/tolgee/server";
 import "../modules/ui/globals.css";
 import "../styles/rtl.css";
 
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "600", "700"],
+const cairo = localFont({
+  src: [
+    { path: "../public/fonts/cairo/cairo-arabic.woff2", weight: "400 700", style: "normal" },
+    { path: "../public/fonts/cairo/cairo-latin-ext.woff2", weight: "400 700", style: "normal" },
+    { path: "../public/fonts/cairo/cairo-latin.woff2", weight: "400 700", style: "normal" },
+  ],
   variable: "--font-cairo",
   display: "swap",
 });

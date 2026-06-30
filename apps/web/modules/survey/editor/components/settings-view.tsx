@@ -1,9 +1,12 @@
+"use client";
+
 import { ActionClass, Environment, OrganizationRole } from "@prisma/client";
 import { TContactAttributeKey } from "@formbricks/types/contact-attribute-key";
 import { TSegment } from "@formbricks/types/segment";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TargetingCard } from "@/modules/ee/contacts/segments/components/targeting-card";
 import { TTeamPermission } from "@/modules/ee/teams/project-teams/types/team";
+import { DisplayModeCard } from "@/modules/survey/editor/components/display-mode-card";
 import { HowToSendCard } from "@/modules/survey/editor/components/how-to-send-card";
 import { RecontactOptionsCard } from "@/modules/survey/editor/components/recontact-options-card";
 import { ResponseOptionsCard } from "@/modules/survey/editor/components/response-options-card";
@@ -24,7 +27,6 @@ interface SettingsViewProps {
   isSpamProtectionAllowed: boolean;
   projectPermission: TTeamPermission | null;
   isFormbricksCloud: boolean;
-  // Quotas removed - not needed
   isQuotasAllowed?: boolean;
   quotas?: unknown[];
 }
@@ -46,7 +48,8 @@ export const SettingsView = ({
   const isAppSurvey = localSurvey.type === "app";
 
   return (
-    <div className="mt-12 space-y-3 p-5">
+    <div className="space-y-3 p-4" dir="rtl">
+      <DisplayModeCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />
       <HowToSendCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} environment={environment} />
 
       {localSurvey.type === "app" ? (

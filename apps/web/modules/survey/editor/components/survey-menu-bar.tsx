@@ -3,7 +3,7 @@
 import { Project } from "@prisma/client";
 import { useTranslate } from "@tolgee/react";
 import { isEqual } from "lodash";
-import { ArrowLeftIcon, SettingsIcon } from "lucide-react";
+import { ArrowLeftIcon, BookmarkIcon, PaintbrushIcon, SettingsIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -11,7 +11,6 @@ import { getLanguageLabel } from "@formbricks/i18n-utils/src/utils";
 import { TSegment } from "@formbricks/types/segment";
 import {
   TSurvey,
-  TSurveyEditorTabs,
   TSurveyQuestion,
   ZSurvey,
   ZSurveyEndScreenCard,
@@ -19,10 +18,9 @@ import {
 } from "@formbricks/types/surveys/types";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import { createSegmentAction } from "@/modules/ee/contacts/segments/actions";
+import { deleteSurveyAction } from "@/modules/survey/list/actions";
 import { Alert, AlertButton, AlertTitle } from "@/modules/ui/components/alert";
 import { AlertDialog } from "@/modules/ui/components/alert-dialog";
-import { Button } from "@/modules/ui/components/button";
-import { Input } from "@/modules/ui/components/input";
 import { updateSurveyAction } from "../actions";
 import { isSurveyValid } from "../lib/validation";
 
@@ -31,8 +29,6 @@ interface SurveyMenuBarProps {
   survey: TSurvey;
   setLocalSurvey: (survey: TSurvey) => void;
   environmentId: string;
-  activeId: TSurveyEditorTabs;
-  setActiveId: React.Dispatch<React.SetStateAction<TSurveyEditorTabs>>;
   setInvalidQuestions: React.Dispatch<React.SetStateAction<string[]>>;
   project: Project;
   responseCount: number;
@@ -42,6 +38,12 @@ interface SurveyMenuBarProps {
   locale: string;
   setIsCautionDialogOpen: (open: boolean) => void;
   isStorageConfigured: boolean;
+  showSettingsPanel: boolean;
+  onToggleSettings: () => void;
+  showDesignPanel: boolean;
+  onToggleDesign: () => void;
+  isStylingTabVisible: boolean;
+  orgHasDefaultBanner: boolean;
 }
 
 export const SurveyMenuBar = ({
@@ -49,16 +51,19 @@ export const SurveyMenuBar = ({
   survey,
   environmentId,
   setLocalSurvey,
-  activeId,
-  setActiveId,
   setInvalidQuestions,
-  project,
   responseCount,
   selectedLanguageCode,
   isCxMode,
   locale,
   setIsCautionDialogOpen,
   isStorageConfigured = true,
+  showSettingsPanel,
+  onToggleSettings,
+  showDesignPanel,
+  onToggleDesign,
+  isStylingTabVisible,
+  orgHasDefaultBanner,
 }: SurveyMenuBarProps) => {
   const { t } = useTranslate();
   const router = useRouter();
@@ -67,12 +72,16 @@ export const SurveyMenuBar = ({
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [isSurveyPublishing, setIsSurveyPublishing] = useState(false);
   const [isSurveySaving, setIsSurveySaving] = useState(false);
+  const [showSaveAsTemplateDialog, setShowSaveAsTemplateDialog] = useState(false);
+  const [templateFormName, setTemplateFormName] = useState("");
+  const [templateFormDesc, setTemplateFormDesc] = useState("");
+  const [templateFormCategory, setTemplateFormCategory] = useState("استبيانات الرضا والجودة");
 
   useEffect(() => {
-    if (audiencePrompt && activeId === "settings") {
+    if (audiencePrompt && showSettingsPanel) {
       setAudiencePrompt(false);
     }
-  }, [activeId, audiencePrompt]);
+  }, [showSettingsPanel, audiencePrompt]);
 
   useEffect(() => {
     setIsLinkSurvey(localSurvey.type === "link");
@@ -116,11 +125,26 @@ export const SurveyMenuBar = ({
     if (localSurvey.status !== "draft" && containsEmptyTriggers) return true;
   }, [containsEmptyTriggers, isSurveySaving, localSurvey.status]);
 
+  // True when this is a brand-new form that was never explicitly saved (no questions in DB yet)
+  const isNewEmptyForm = survey.questions.length === 0;
+
+  const handleDeleteAndGoBack = async () => {
+    try {
+      await deleteSurveyAction({ surveyId: localSurvey.id });
+    } catch (_) {
+      // ignore — just navigate away
+    }
+    router.push(`/environments/${environmentId}/surveys`);
+  };
+
   const handleBack = () => {
     const { updatedAt, ...localSurveyRest } = localSurvey;
     const { updatedAt: _, ...surveyRest } = survey;
 
-    if (!isEqual(localSurveyRest, surveyRest)) {
+    if (isEqual(localSurveyRest, surveyRest) && isNewEmptyForm) {
+      // New form, nothing changed — delete silently and go back
+      handleDeleteAndGoBack();
+    } else if (!isEqual(localSurveyRest, surveyRest)) {
       setConfirmDialogOpen(true);
     } else {
       router.back();
@@ -153,7 +177,25 @@ export const SurveyMenuBar = ({
     return localSurvey.segment;
   };
 
+  const translateZodError = (msg: string): string => {
+    const map: Record<string, string> = {
+      "String must contain at least 1 character(s)": "هذا الحقل مطلوب",
+      Required: "هذا الحقل مطلوب",
+      "Invalid url": "رابط غير صالح",
+      "Invalid email": "بريد إلكتروني غير صالح",
+      "Survey must have at least one question": "يجب أن يحتوي الفورم على سؤال واحد على الأقل",
+      "At least one question is required": "يجب إضافة سؤال واحد على الأقل",
+    };
+    return map[msg] ?? msg;
+  };
+
   const validateSurveyWithZod = (): boolean => {
+    // Check title first
+    if (!localSurvey.name.trim()) {
+      toast.error("يرجى إدخال عنوان للفورم قبل الحفظ أو النشر");
+      return false;
+    }
+
     const localSurveyValidation = ZSurvey.safeParse(localSurvey);
     if (!localSurveyValidation.success) {
       const currentError = localSurveyValidation.error.errors[0];
@@ -172,11 +214,12 @@ export const SurveyMenuBar = ({
         );
       } else if (currentError.path[0] === "endings") {
         const endingIdx = typeof currentError.path[1] === "number" ? currentError.path[1] : -1;
-        setInvalidQuestions((prevInvalidQuestions) =>
-          prevInvalidQuestions
-            ? [...prevInvalidQuestions, localSurvey.endings[endingIdx].id]
-            : [localSurvey.endings[endingIdx].id]
-        );
+        const ending = endingIdx >= 0 ? localSurvey.endings[endingIdx] : undefined;
+        if (ending) {
+          setInvalidQuestions((prevInvalidQuestions) =>
+            prevInvalidQuestions ? [...prevInvalidQuestions, ending.id] : [ending.id]
+          );
+        }
       }
 
       if (currentError.code === "custom") {
@@ -188,9 +231,9 @@ export const SurveyMenuBar = ({
 
           const messageSplit = currentError.message.split("-fLang-")[0];
 
-          toast.error(`${messageSplit} ${invalidLanguageLabels.join(", ")}`);
+          toast.error(`${translateZodError(messageSplit)} ${invalidLanguageLabels.join(", ")}`);
         } else {
-          toast.error(currentError.message, {
+          toast.error(translateZodError(currentError.message), {
             className: "w-fit !max-w-md",
           });
         }
@@ -198,7 +241,7 @@ export const SurveyMenuBar = ({
         return false;
       }
 
-      toast.error(currentError.message);
+      toast.error(translateZodError(currentError.message));
       return false;
     }
 
@@ -275,133 +318,225 @@ export const SurveyMenuBar = ({
   const handleSurveyPublish = async () => {
     setIsSurveyPublishing(true);
 
-    const isSurveyValidatedWithZod = validateSurveyWithZod();
-
-    if (!isSurveyValidatedWithZod) {
-      setIsSurveyPublishing(false);
-      return;
-    }
-
     try {
+      const isSurveyValidatedWithZod = validateSurveyWithZod();
+      if (!isSurveyValidatedWithZod) {
+        setIsSurveyPublishing(false);
+        return;
+      }
+
+      // Banner gate: must have a custom banner OR org default banner
+      if (!localSurvey.bannerConfig && !orgHasDefaultBanner) {
+        toast.error(
+          "لا يمكن نشر النموذج بدون بانر. صمّم بانراً مخصصاً من الإعدادات، أو اطلب من المسؤول تعيين بانر افتراضي للجامعة.",
+          { duration: 5000 }
+        );
+        setIsSurveyPublishing(false);
+        return;
+      }
+
       const isSurveyValidResult = isSurveyValid(localSurvey, selectedLanguageCode, t, responseCount);
       if (!isSurveyValidResult) {
         setIsSurveyPublishing(false);
         return;
       }
+
+      // Strip isDraft from questions (same as handleSurveySave)
+      const cleanQuestions = localSurvey.questions.map((question) => {
+        const { isDraft, ...rest } = question;
+        return rest;
+      });
+
       const status = "inProgress";
       const segment = await handleSegmentUpdate();
       clearSurveyLocalStorage();
 
-      await updateSurveyAction({
+      const updatedSurveyResponse = await updateSurveyAction({
         ...localSurvey,
+        questions: cleanQuestions,
         status,
         segment,
       });
+
       setIsSurveyPublishing(false);
-      router.push(`/environments/${environmentId}/surveys/${localSurvey.id}/summary?success=true`);
+
+      if (updatedSurveyResponse?.data) {
+        toast.success("تم نشر الفورم بنجاح!");
+        window.location.href = `/environments/${environmentId}/surveys/${localSurvey.id}/summary?success=true`;
+      } else {
+        const errorMessage = getFormattedErrorMessage(updatedSurveyResponse);
+        toast.error(errorMessage || t("environments.surveys.edit.error_publishing_survey"));
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Publish error:", error);
       toast.error(t("environments.surveys.edit.error_publishing_survey"));
       setIsSurveyPublishing(false);
     }
   };
 
+  const handleOpenSaveAsTemplate = () => {
+    setTemplateFormName(localSurvey.name || "");
+    setTemplateFormDesc("");
+    setTemplateFormCategory("استبيانات الرضا والجودة");
+    setShowSaveAsTemplateDialog(true);
+  };
+
+  const handleSaveAsTemplate = () => {
+    if (!templateFormName.trim()) {
+      toast.error("يرجى إدخال اسم للقالب");
+      return;
+    }
+    try {
+      const existing = JSON.parse(localStorage.getItem("nust_custom_templates") ?? "[]");
+      const newTemplate = {
+        id: `ct_${Date.now()}`,
+        name: templateFormName.trim(),
+        description: templateFormDesc.trim(),
+        category: templateFormCategory,
+        savedAt: new Date().toISOString(),
+        preset: {
+          name: templateFormName.trim(),
+          welcomeCard: localSurvey.welcomeCard,
+          questions: localSurvey.questions,
+          endings: localSurvey.endings,
+          hiddenFields: localSurvey.hiddenFields,
+        },
+      };
+      localStorage.setItem("nust_custom_templates", JSON.stringify([...existing, newTemplate]));
+      setShowSaveAsTemplateDialog(false);
+      toast.success("تم حفظ الفورم كقالب بنجاح");
+    } catch (_) {
+      toast.error("حدث خطأ أثناء حفظ القالب");
+    }
+  };
+
   return (
-    <div className="border-b border-slate-200 bg-white px-5 py-2.5 sm:flex sm:items-center sm:justify-between">
-      <div className="flex h-full items-center space-x-2 whitespace-nowrap">
+    <div
+      className="relative flex items-center justify-between px-5 py-2.5"
+      style={{ backgroundColor: "#1b335f", borderBottom: "1px solid #0f314c" }}
+      dir="rtl">
+      {/* Right side: back button */}
+      <div className="flex h-full items-center gap-3">
         {!isCxMode && (
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-full"
-            onClick={() => {
-              handleBack();
-            }}>
-            <ArrowLeftIcon />
-            {t("common.back")}
-          </Button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white">
+            <ArrowLeftIcon className="h-4 w-4 rotate-180" />
+            رجوع
+          </button>
         )}
-        <div className="hidden pl-4 font-semibold md:block">{project.name} / </div>
-        <Input
-          value={localSurvey.name}
-          onChange={(e) => {
-            const updatedSurvey = { ...localSurvey, name: e.target.value };
-            setLocalSurvey(updatedSurvey);
-          }}
-          className="h-8 w-72 border-slate-300 bg-white px-2 py-0 text-sm font-medium focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-          placeholder={t("environments.surveys.edit.survey_name")}
-        />
       </div>
 
-      <div className="mt-3 flex items-center gap-2 sm:ml-4 sm:mt-0">
+      {/* Center: form name + saved status */}
+      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
+        <span className="max-w-sm truncate text-sm font-semibold text-white">
+          {localSurvey.name || "فورم بدون عنوان"}
+        </span>
+        {!isEqual(localSurvey, survey) ? (
+          <span className="text-xs text-white/50">· غير محفوظ</span>
+        ) : (
+          <span className="text-xs text-white/50">· محفوظ</span>
+        )}
+      </div>
+
+      {/* Left side: settings toggle + alerts + action buttons */}
+      <div className="flex items-center gap-2">
+        {isStylingTabVisible && (
+          <button
+            type="button"
+            onClick={onToggleDesign}
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+            style={
+              showDesignPanel
+                ? { backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }
+                : { color: "rgba(255,255,255,0.75)" }
+            }>
+            {showDesignPanel ? <XIcon className="h-4 w-4" /> : <PaintbrushIcon className="h-4 w-4" />}
+            التصميم
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onToggleSettings}
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+          style={
+            showSettingsPanel
+              ? { backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }
+              : { color: "rgba(255,255,255,0.75)" }
+          }>
+          {showSettingsPanel ? <XIcon className="h-4 w-4" /> : <SettingsIcon className="h-4 w-4" />}
+          الإعدادات
+        </button>
         {!isStorageConfigured && (
-          <div>
-            <Alert variant="warning" size="small">
-              <AlertTitle>{t("common.storage_not_configured")}</AlertTitle>
-              <AlertButton className="flex items-center justify-center">
-                <a
-                  className="flex h-full w-full items-center justify-center !bg-white"
-                  href="https://formbricks.com/docs/self-hosting/configuration/file-uploads"
-                  target="_blank"
-                  rel="noopener noreferrer">
-                  <span>{t("common.learn_more")}</span>
-                </a>
-              </AlertButton>
-            </Alert>
-          </div>
+          <Alert variant="warning" size="small">
+            <AlertTitle>{t("common.storage_not_configured")}</AlertTitle>
+            <AlertButton className="flex items-center justify-center">
+              <a
+                className="flex h-full w-full items-center justify-center !bg-white"
+                href="https://formbricks.com/docs/self-hosting/configuration/file-uploads"
+                target="_blank"
+                rel="noopener noreferrer">
+                <span>{t("common.learn_more")}</span>
+              </a>
+            </AlertButton>
+          </Alert>
         )}
         {responseCount > 0 && (
-          <div>
-            <Alert variant="warning" size="small">
-              <AlertTitle>{t("environments.surveys.edit.caution_text")}</AlertTitle>
-              <AlertButton onClick={() => setIsCautionDialogOpen(true)}>{t("common.learn_more")}</AlertButton>
-            </Alert>
-          </div>
+          <Alert variant="warning" size="small">
+            <AlertTitle>{t("environments.surveys.edit.caution_text")}</AlertTitle>
+            <AlertButton onClick={() => setIsCautionDialogOpen(true)}>{t("common.learn_more")}</AlertButton>
+          </Alert>
         )}
         {!isCxMode && (
-          <Button
-            disabled={disableSave}
-            variant="secondary"
-            size="sm"
-            loading={isSurveySaving}
-            onClick={() => handleSurveySave()}
-            type="submit">
-            {t("common.save")}
-          </Button>
+          <button
+            type="button"
+            onClick={handleOpenSaveAsTemplate}
+            className="flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            title="حفظ كقالب">
+            <BookmarkIcon className="h-4 w-4" />
+            قالب
+          </button>
         )}
-
+        {!isCxMode && (
+          <button
+            type="button"
+            disabled={!!disableSave}
+            onClick={() => handleSurveySave()}
+            className="rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50">
+            {isSurveySaving ? "..." : "حفظ"}
+          </button>
+        )}
         {localSurvey.status !== "draft" && (
-          <Button
-            disabled={disableSave}
-            className="mr-3"
-            size="sm"
-            loading={isSurveySaving}
-            onClick={() => handleSaveAndGoBack()}>
-            {t("environments.surveys.edit.save_and_close")}
-          </Button>
+          <button
+            type="button"
+            disabled={!!disableSave}
+            onClick={() => handleSaveAndGoBack()}
+            className="rounded-md border border-white/30 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50">
+            {isSurveySaving ? "..." : "حفظ وإغلاق"}
+          </button>
         )}
         {localSurvey.status === "draft" && audiencePrompt && !isLinkSurvey && (
-          <Button
-            size="sm"
+          <button
+            type="button"
             onClick={() => {
               setAudiencePrompt(false);
-              setActiveId("settings");
-            }}>
-            {t("environments.surveys.edit.continue_to_settings")}
-            <SettingsIcon />
-          </Button>
+              onToggleSettings();
+            }}
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-[#1b335f] transition-colors hover:opacity-90"
+            style={{ backgroundColor: "#f4bf00" }}>
+            متابعة للإعدادات
+          </button>
         )}
-        {/* Always display Publish button for link surveys for better CR */}
         {localSurvey.status === "draft" && (!audiencePrompt || isLinkSurvey) && (
-          <Button
-            size="sm"
+          <button
+            type="button"
             disabled={isSurveySaving || containsEmptyTriggers}
-            loading={isSurveyPublishing}
-            onClick={handleSurveyPublish}>
-            {isCxMode
-              ? t("environments.surveys.edit.save_and_close")
-              : t("environments.surveys.edit.publish")}
-          </Button>
+            onClick={handleSurveyPublish}
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-[#1b335f] transition-colors hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: "#f4bf00" }}>
+            {isSurveyPublishing ? "..." : isCxMode ? "حفظ وإغلاق" : "نشر"}
+          </button>
         )}
       </div>
       <AlertDialog
@@ -414,10 +549,84 @@ export const SurveyMenuBar = ({
         declineBtnVariant="destructive"
         onDecline={() => {
           setConfirmDialogOpen(false);
-          router.back();
+          if (isNewEmptyForm) {
+            handleDeleteAndGoBack();
+          } else {
+            router.back();
+          }
         }}
         onConfirm={handleSaveAndGoBack}
       />
+
+      {/* Save as Template dialog */}
+      {showSaveAsTemplateDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" dir="rtl">
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white shadow-xl"
+            style={{ border: "1px solid #e2e8f0" }}>
+            <div
+              className="flex items-center justify-between rounded-t-2xl px-5 py-4"
+              style={{ backgroundColor: "#1b335f" }}>
+              <h2 className="text-base font-bold text-white">حفظ كقالب</h2>
+              <button
+                onClick={() => setShowSaveAsTemplateDialog(false)}
+                className="text-white/70 hover:text-white">
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-4 p-5">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  اسم القالب <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={templateFormName}
+                  onChange={(e) => setTemplateFormName(e.target.value)}
+                  placeholder="مثال: استبيان رضا الطلاب"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#1b335f]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">وصف مختصر</label>
+                <textarea
+                  value={templateFormDesc}
+                  onChange={(e) => setTemplateFormDesc(e.target.value)}
+                  placeholder="اشرح الغرض من هذا القالب..."
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#1b335f]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">التصنيف</label>
+                <select
+                  value={templateFormCategory}
+                  onChange={(e) => setTemplateFormCategory(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#1b335f]">
+                  <option>استبيانات الرضا والجودة</option>
+                  <option>استبيانات الموظفين</option>
+                  <option>ملاحظات ومقترحات</option>
+                  <option>تطوير وتخطيط</option>
+                  <option>أخرى</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleSaveAsTemplate}
+                  className="flex-1 rounded-lg py-2 text-sm font-semibold text-[#1b335f] transition-colors hover:opacity-90"
+                  style={{ backgroundColor: "#f4bf00" }}>
+                  حفظ كقالب
+                </button>
+                <button
+                  onClick={() => setShowSaveAsTemplateDialog(false)}
+                  className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

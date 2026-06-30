@@ -150,36 +150,39 @@ export const SingleResponseCardHeader = ({
   const deleteSubmissionToolTip = <>{t("environments.surveys.responses.this_response_is_in_progress")}</>;
 
   return (
-    <div className="space-y-2 border-b border-slate-200 px-6 pb-4 pt-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center justify-center space-x-4">
+    <div
+      dir="rtl"
+      className="border-b border-slate-200 px-6 pb-4 pt-0"
+      style={{ borderTop: "4px solid #1b335f", borderRadius: "0.75rem 0.75rem 0 0" }}>
+      {/* Status strip */}
+      <div className="flex items-center justify-between py-3">
+        {/* Right side: person info */}
+        <div className="flex items-center gap-3">
           {pageType === "response" && (
             <TooltipRenderer shouldRender={renderTooltip} tooltipContent={tooltipContent}>
-              <div className="group">
+              <div className="group flex items-center gap-3">
                 {response.contact?.id ? (
                   user ? (
                     <Link
-                      className="flex items-center space-x-2"
+                      className="flex items-center gap-2"
                       href={`/environments/${environmentId}/contacts/${response.contact.id}`}>
                       <PersonAvatar personId={response.contact.id} />
-                      <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600 hover:underline">
+                      <h3 className="ph-no-capture font-semibold text-slate-700 hover:underline">
                         {displayIdentifier}
                       </h3>
                       {response.contact.userId && <IdBadge id={response.contact.userId} />}
                     </Link>
                   ) : (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <PersonAvatar personId={response.contact.id} />
-                      <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600">
-                        {displayIdentifier}
-                      </h3>
+                      <h3 className="ph-no-capture font-semibold text-slate-700">{displayIdentifier}</h3>
                       {response.contact.userId && <IdBadge id={response.contact.userId} />}
                     </div>
                   )
                 ) : (
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2">
                     <PersonAvatar personId="anonymous" />
-                    <h3 className="ml-4 pb-1 font-semibold text-slate-600">{t("common.anonymous")}</h3>
+                    <h3 className="font-semibold text-slate-500">مجهول</h3>
                   </div>
                 )}
               </div>
@@ -187,7 +190,7 @@ export const SingleResponseCardHeader = ({
           )}
 
           {pageType === "people" && (
-            <div className="flex items-center justify-center space-x-2 rounded-full bg-slate-100 p-1 px-2 text-sm text-slate-600">
+            <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
               {(survey.type === "link" || environment.appSetupCompleted) && (
                 <SurveyStatusIndicator status={survey.status} />
               )}
@@ -198,16 +201,35 @@ export const SingleResponseCardHeader = ({
               </Link>
             </div>
           )}
+
+          {/* Status badge */}
+          {response.finished ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{ backgroundColor: "#16a34a18", color: "#16a34a" }}>
+              مكتمل
+            </span>
+          ) : (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{ backgroundColor: "#f59e0b18", color: "#d97706" }}>
+              غير مكتمل
+            </span>
+          )}
+
           {response.language && response.language !== "default" && (
-            <div className="flex space-x-2 rounded-full bg-slate-700 px-2 py-1 text-xs text-white">
-              <div>{getLanguageLabel(response.language, locale)}</div>
-              <LanguagesIcon className="h-4 w-4" />
+            <div className="flex items-center gap-1 rounded-full bg-slate-700 px-2 py-1 text-xs text-white">
+              <LanguagesIcon className="h-3 w-3" />
+              <span>{getLanguageLabel(response.language, locale)}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center space-x-4 text-sm">
-          <time className="text-slate-500" dateTime={timeSince(response.createdAt.toISOString(), locale)}>
+        {/* Left side: time + delete */}
+        <div className="flex items-center gap-4 text-sm">
+          <time
+            className="text-xs text-slate-400"
+            dateTime={timeSince(response.createdAt.toISOString(), locale)}>
             {timeSince(response.createdAt.toISOString(), locale)}
           </time>
           {user &&
@@ -215,19 +237,19 @@ export const SingleResponseCardHeader = ({
             (canResponseBeDeleted ? (
               <TrashIcon
                 onClick={() => setDeleteDialogOpen(true)}
-                className="h-4 w-4 cursor-pointer text-slate-500 hover:text-red-700"
-                aria-label="Delete response"
+                className="h-4 w-4 cursor-pointer text-slate-400 hover:text-red-600"
+                aria-label="حذف الرد"
               />
             ) : (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
                     <TrashIcon
-                      className="h-4 w-4 cursor-not-allowed text-slate-400"
-                      aria-label="Cannot delete response in progress"
+                      className="h-4 w-4 cursor-not-allowed text-slate-300"
+                      aria-label="لا يمكن حذف رد قيد التنفيذ"
                     />
                   </TooltipTrigger>
-                  <TooltipContent side="left">{deleteSubmissionToolTip}</TooltipContent>
+                  <TooltipContent side="right">{deleteSubmissionToolTip}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ))}

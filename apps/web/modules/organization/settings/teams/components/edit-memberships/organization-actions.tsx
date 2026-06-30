@@ -1,5 +1,12 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import { XIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { TOrganizationRole } from "@formbricks/types/memberships";
+import { TOrganization } from "@formbricks/types/organizations";
 import { FORMBRICKS_ENVIRONMENT_ID_LS } from "@/lib/localStorage";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
@@ -16,13 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/modules/ui/components/dialog";
-import { useTranslate } from "@tolgee/react";
-import { XIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { TOrganizationRole } from "@formbricks/types/memberships";
-import { TOrganization } from "@formbricks/types/organizations";
 
 interface OrganizationActionsProps {
   role: TOrganizationRole;
@@ -132,24 +132,26 @@ export const OrganizationActions = ({
 
   return (
     <>
-      <div className="mb-4 flex justify-end space-x-2 text-right">
-        {role !== "owner" && isMultiOrgEnabled && (
-          <Button variant="secondary" size="sm" onClick={() => setLeaveOrganizationModalOpen(true)}>
-            {t("environments.settings.general.leave_organization")}
-            <XIcon />
-          </Button>
-        )}
+      <div className="mb-4 flex items-center justify-between" dir="rtl">
+        <p className="text-sm text-slate-500">إدارة أعضاء المنصة وصلاحياتهم</p>
+        <div className="flex items-center gap-2">
+          {role !== "owner" && isMultiOrgEnabled && (
+            <Button variant="secondary" size="sm" onClick={() => setLeaveOrganizationModalOpen(true)}>
+              <XIcon className="h-4 w-4" />
+              مغادرة الجامعة
+            </Button>
+          )}
 
-        {!isInviteDisabled && isOwnerOrManager && !isUserManagementDisabledFromUi && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setInviteMemberModalOpen(true);
-            }}>
-            {t("environments.settings.teams.invite_member")}
-          </Button>
-        )}
+          {!isInviteDisabled && isOwnerOrManager && !isUserManagementDisabledFromUi && (
+            <Button
+              size="sm"
+              onClick={() => setInviteMemberModalOpen(true)}
+              style={{ backgroundColor: "#1b335f", color: "#ffffff" }}
+              className="hover:opacity-90">
+              + دعوة عضو جديد
+            </Button>
+          )}
+        </div>
       </div>
       <InviteMemberModal
         open={isInviteMemberModalOpen}
@@ -161,31 +163,30 @@ export const OrganizationActions = ({
         environmentId={environmentId}
         teams={teams}
         isStorageConfigured={isStorageConfigured}
+        organizationId={organization.id}
       />
 
       <Dialog open={isLeaveOrganizationModalOpen} onOpenChange={setLeaveOrganizationModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("environments.settings.general.leave_organization_title")}</DialogTitle>
-            <DialogDescription>
-              {t("environments.settings.general.leave_organization_description")}
-            </DialogDescription>
+            <DialogTitle dir="rtl">مغادرة الجامعة</DialogTitle>
+            <DialogDescription dir="rtl">هل أنت متأكد من رغبتك في مغادرة هذه الجامعة؟</DialogDescription>
           </DialogHeader>
           {isLeaveOrganizationDisabled && (
-            <p className="mt-2 text-sm text-red-700">
-              {t("environments.settings.general.cannot_leave_only_organization")}
+            <p className="mt-2 text-sm text-red-700" dir="rtl">
+              لا يمكنك مغادرة الجامعة الوحيدة المرتبطة بحسابك.
             </p>
           )}
           <DialogFooter>
             <Button variant="secondary" onClick={() => setLeaveOrganizationModalOpen(false)}>
-              {t("common.cancel")}
+              إلغاء
             </Button>
             <Button
               variant="destructive"
               onClick={handleLeaveOrganization}
               loading={loading}
               disabled={isLeaveOrganizationDisabled}>
-              {t("environments.settings.general.leave_organization_ok_btn_text")}
+              تأكيد المغادرة
             </Button>
           </DialogFooter>
         </DialogContent>

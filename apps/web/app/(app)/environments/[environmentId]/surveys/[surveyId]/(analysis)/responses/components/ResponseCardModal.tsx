@@ -77,7 +77,7 @@ export const ResponseCardModal = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent width="wide">
-        <DialogTitle className="sr-only">Response Details</DialogTitle>
+        <DialogTitle className="sr-only">تفاصيل الرد</DialogTitle>
         <DialogBody>
           <SingleResponseCard
             survey={survey}
@@ -93,16 +93,28 @@ export const ResponseCardModal = ({
           />
         </DialogBody>
         <DialogFooter>
-          <Button onClick={handleBack} disabled={currentIndex === 0} variant="outline" size="icon">
-            <ChevronLeft />
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={currentIndex === responses.length - 1}
-            variant="outline"
-            size="icon">
-            <ChevronRight />
-          </Button>
+          {/* RTL: right button = go to previous (السابق), left = go to next (التالي) */}
+          <div dir="rtl" className="flex w-full items-center justify-between">
+            <Button
+              onClick={handleBack}
+              disabled={currentIndex === 0}
+              variant="outline"
+              className="flex items-center gap-1 text-sm">
+              <ChevronRight className="h-4 w-4" />
+              السابق
+            </Button>
+            <span className="text-sm text-slate-400">
+              {currentIndex + 1} / {responses.length}
+            </span>
+            <Button
+              onClick={handleNext}
+              disabled={currentIndex === responses.length - 1}
+              variant="outline"
+              className="flex items-center gap-1 text-sm">
+              التالي
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

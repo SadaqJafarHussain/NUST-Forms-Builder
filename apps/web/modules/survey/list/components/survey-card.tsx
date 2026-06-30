@@ -1,16 +1,29 @@
 "use client";
 
-import { useTranslate } from "@tolgee/react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { TUserLocale } from "@formbricks/types/user";
-import { cn } from "@/lib/cn";
-import { convertDateString, timeSince } from "@/lib/time";
+import { timeSince } from "@/lib/time";
 import { useSingleUseId } from "@/modules/survey/hooks/useSingleUseId";
-import { SurveyTypeIndicator } from "@/modules/survey/list/components/survey-type-indicator";
 import { TSurvey } from "@/modules/survey/list/types/surveys";
-import { SurveyStatusIndicator } from "@/modules/ui/components/survey-status-indicator";
 import { SurveyDropDownMenu } from "./survey-dropdown-menu";
+
+// Gradient pairs for card thumbnails
+const GRADIENTS = [
+  ["#1b335f", "#2563eb"],
+  ["#7c3aed", "#a855f7"],
+  ["#0891b2", "#0e7490"],
+  ["#d97706", "#f59e0b"],
+  ["#16a34a", "#15803d"],
+  ["#e11d48", "#be123c"],
+  ["#0f766e", "#0d9488"],
+  ["#9333ea", "#7c3aed"],
+];
+
+const getGradient = (id: string): [string, string] => {
+  const i = (id.charCodeAt(0) + id.charCodeAt(id.length - 1)) % GRADIENTS.length;
+  return GRADIENTS[i] as [string, string];
+};
 
 interface SurveyCardProps {
   survey: TSurvey;
@@ -31,93 +44,104 @@ export const SurveyCard = ({
   locale,
   onSurveysCopied,
 }: SurveyCardProps) => {
-  const { t } = useTranslate();
-  const surveyStatusLabel = (() => {
-    switch (survey.status) {
-      case "inProgress":
-        return t("common.in_progress");
-      case "completed":
-        return t("common.completed");
-      case "draft":
-        return t("common.draft");
-      case "paused":
-        return t("common.paused");
-      default:
-        return undefined;
-    }
-  })();
-
   const isSurveyCreationDeletionDisabled = isReadOnly;
-
   const { refreshSingleUseId } = useSingleUseId(survey, isReadOnly);
+  const [from, to] = getGradient(survey.id);
 
-  const linkHref = useMemo(() => {
-    return survey.status === "draft"
-      ? `/environments/${environmentId}/surveys/${survey.id}/edit`
-      : `/environments/${environmentId}/surveys/${survey.id}/summary`;
-  }, [survey.status, survey.id, environmentId]);
+  const linkHref = useMemo(
+    () =>
+      survey.status === "draft"
+        ? `/environments/${environmentId}/surveys/${survey.id}/edit`
+        : `/environments/${environmentId}/surveys/${survey.id}/summary`,
+    [survey.status, survey.id, environmentId]
+  );
 
   const isDraftAndReadOnly = survey.status === "draft" && isReadOnly;
 
+  const statusLabel =
+    survey.status === "draft"
+      ? "مسودة"
+      : survey.status === "inProgress"
+        ? "نشط"
+        : survey.status === "paused"
+          ? "موقوف"
+          : "مكتمل";
+
+  const statusColor =
+    survey.status === "inProgress"
+      ? "#16a34a"
+      : survey.status === "paused"
+        ? "#f59e0b"
+        : survey.status === "completed"
+          ? "#64748b"
+          : "#94a3b8";
+
   const CardContent = (
-    <>
+    <div
+      className="group relative flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{ border: "1px solid #e8edf2" }}
+      dir="rtl">
+      {/* Thumbnail — gradient with subtle form-line decorations */}
       <div
-        className={cn(
-          "grid w-full grid-cols-8 place-items-center gap-3 rounded-xl border border-slate-200 bg-white px-8 py-4 shadow-sm transition-colors ease-in-out",
-          !isDraftAndReadOnly && "hover:border-slate-400"
-        )}>
-        <div className="col-span-2 flex max-w-full items-center justify-self-start text-sm font-medium text-slate-900">
-          <div className="w-full truncate">{survey.name}</div>
+        className="relative flex-shrink-0 overflow-hidden"
+        style={{
+          height: 132,
+          background: `linear-gradient(135deg, ${from}, ${to})`,
+        }}>
+        {/* Decorative "form preview" lines */}
+        <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-20">
+          <div className="mb-2 h-2 w-3/4 rounded-full bg-white" />
+          <div className="mb-1.5 h-1.5 w-1/2 rounded-full bg-white" />
+          <div className="mb-1.5 h-1.5 w-2/3 rounded-full bg-white" />
+          <div className="h-1.5 w-2/5 rounded-full bg-white" />
         </div>
-        <div
-          className={cn(
-            "col-span-1 flex w-fit items-center gap-2 whitespace-nowrap rounded-full py-1 text-sm text-slate-800",
-            "pl-1 pr-2 rtl:pl-2 rtl:pr-1",
-            surveyStatusLabel === "In Progress" && "bg-emerald-50",
-            surveyStatusLabel === "Completed" && "bg-slate-200",
-            surveyStatusLabel === "Draft" && "bg-slate-100",
-            surveyStatusLabel === "Paused" && "bg-slate-100"
-          )}>
-          <SurveyStatusIndicator status={survey.status} /> {surveyStatusLabel}{" "}
-        </div>
-        <div className="col-span-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-slate-600">
-          {survey.responseCount}
-        </div>
-        <div className="col-span-1 flex justify-between">
-          <SurveyTypeIndicator type={survey.type} />
-        </div>
-        <div className="col-span-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-slate-600">
-          {convertDateString(survey.createdAt.toString())}
-        </div>
-        <div className="col-span-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-slate-600">
-          {timeSince(survey.updatedAt.toString(), locale)}
-        </div>
-        <div className="col-span-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-slate-600">
-          {survey.creator ? survey.creator.name : "-"}
-        </div>
+
+        {/* Status badge */}
+        <span
+          className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+          style={{ backgroundColor: statusColor + "cc" }}>
+          {statusLabel}
+        </span>
+
+        {/* 3-dot menu */}
+        <button
+          className="absolute left-1 top-1"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}>
+          <SurveyDropDownMenu
+            survey={survey}
+            key={`surveys-${survey.id}`}
+            environmentId={environmentId}
+            publicDomain={publicDomain}
+            disabled={isDraftAndReadOnly}
+            refreshSingleUseId={refreshSingleUseId}
+            isSurveyCreationDeletionDisabled={isSurveyCreationDeletionDisabled}
+            deleteSurvey={deleteSurvey}
+            onSurveysCopied={onSurveysCopied}
+          />
+        </button>
       </div>
-      <button
-        className="absolute right-3 top-3.5 rtl:left-3 rtl:right-auto"
-        onClick={(e) => e.stopPropagation()}>
-        <SurveyDropDownMenu
-          survey={survey}
-          key={`surveys-${survey.id}`}
-          environmentId={environmentId}
-          publicDomain={publicDomain}
-          disabled={isDraftAndReadOnly}
-          refreshSingleUseId={refreshSingleUseId}
-          isSurveyCreationDeletionDisabled={isSurveyCreationDeletionDisabled}
-          deleteSurvey={deleteSurvey}
-          onSurveysCopied={onSurveysCopied}
-        />
-      </button>
-    </>
+
+      {/* Info section */}
+      <div className="flex flex-col gap-0.5 bg-white px-3 py-3">
+        <p className="truncate text-sm font-semibold text-slate-800 group-hover:text-[#1b335f]">
+          {survey.name}
+        </p>
+        <p className="text-xs text-slate-400">
+          {survey.responseCount > 0 ? `${survey.responseCount} استجابة` : "لا توجد استجابات"}
+          {" · "}
+          {timeSince(survey.updatedAt.toString(), locale)}
+        </p>
+      </div>
+    </div>
   );
 
   return isDraftAndReadOnly ? (
-    <div className="relative block">{CardContent}</div>
+    <div className="block">{CardContent}</div>
   ) : (
-    <Link href={linkHref} key={survey.id} className="relative block">
+    <Link href={linkHref} key={survey.id} className="block">
       {CardContent}
     </Link>
   );

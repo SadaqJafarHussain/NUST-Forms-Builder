@@ -1,3 +1,8 @@
+import { useEffect } from "preact/hooks";
+import { useTranslation } from "react-i18next";
+import { type TJsEnvironmentStateSurvey } from "@formbricks/types/js";
+import { type TResponseData, type TResponseVariables } from "@formbricks/types/responses";
+import { type TSurveyEndScreenCard, type TSurveyRedirectUrlCard } from "@formbricks/types/surveys/types";
 import { SubmitButton } from "@/components/buttons/submit-button";
 import { Headline } from "@/components/general/headline";
 import { LoadingSpinner } from "@/components/general/loading-spinner";
@@ -6,11 +11,6 @@ import { Subheader } from "@/components/general/subheader";
 import { ScrollableContainer } from "@/components/wrappers/scrollable-container";
 import { getLocalizedValue } from "@/lib/i18n";
 import { replaceRecallInfo } from "@/lib/recall";
-import { useEffect } from "preact/hooks";
-import { useTranslation } from "react-i18next";
-import { type TJsEnvironmentStateSurvey } from "@formbricks/types/js";
-import { type TResponseData, type TResponseVariables } from "@formbricks/types/responses";
-import { type TSurveyEndScreenCard, type TSurveyRedirectUrlCard } from "@formbricks/types/surveys/types";
 
 interface EndingCardProps {
   survey: TJsEnvironmentStateSurvey;
@@ -46,21 +46,60 @@ export function EndingCard({
     ) : null;
 
   const checkmark = (
-    <div className="fb-text-brand fb-flex fb-flex-col fb-items-center fb-justify-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth="1.5"
-        stroke="currentColor"
-        className="fb-h-24 fb-w-24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <span className="fb-bg-brand fb-mb-[10px] fb-inline-block fb-h-1 fb-w-16 fb-rounded-[100%]" />
+    <div className="fb-flex fb-flex-col fb-items-center fb-justify-center fb-gap-4 fb-pb-4">
+      {/* NUST logo + gold ring */}
+      <div
+        style={{ padding: "4px", borderRadius: "50%", backgroundColor: "#f4bf00", display: "inline-flex" }}>
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            backgroundColor: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 6,
+          }}>
+          <img
+            src="/images/logo.png"
+            alt="NUST"
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        </div>
+      </div>
+      {/* Green checkmark badge */}
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          backgroundColor: "#16a34a18",
+          border: "2px solid #16a34a40",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 24,
+          color: "#16a34a",
+          fontWeight: "bold",
+        }}>
+        ✓
+      </div>
+      {/* Status badge */}
+      <span
+        style={{
+          backgroundColor: "#16a34a18",
+          color: "#15803d",
+          border: "1px solid #16a34a40",
+          borderRadius: 999,
+          padding: "2px 14px",
+          fontSize: 13,
+          fontWeight: 600,
+        }}>
+        تم الإرسال بنجاح
+      </span>
+      {/* Gold divider */}
+      <div style={{ width: 48, height: 3, borderRadius: 999, backgroundColor: "#f4bf00" }} />
     </div>
   );
 
@@ -181,7 +220,7 @@ export function EndingCard({
             <div className="fb-my-3">
               <LoadingSpinner />
             </div>
-            <h1 className="fb-text-brand">{t("common.sending_responses")}</h1>
+            <h1 style={{ color: "#1b335f" }}>جارٍ إرسال ردك…</h1>
           </>
         )}
       </div>

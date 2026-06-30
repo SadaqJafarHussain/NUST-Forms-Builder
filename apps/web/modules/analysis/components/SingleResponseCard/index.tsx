@@ -105,7 +105,9 @@ export const SingleResponseCard = ({
 
   return (
     <div className="group relative">
-      <div className="relative z-20 my-6 rounded-xl border border-slate-200 bg-white shadow-sm transition-all">
+      <div
+        className="relative z-20 my-6 rounded-xl border border-slate-200 bg-white shadow-sm transition-all"
+        dir="rtl">
         <SingleResponseCardHeader
           pageType="response"
           response={response}

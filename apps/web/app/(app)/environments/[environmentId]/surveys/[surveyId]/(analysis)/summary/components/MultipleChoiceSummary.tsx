@@ -1,11 +1,5 @@
 "use client";
 
-import { getChoiceIdByValue } from "@/lib/response/utils";
-import { getContactIdentifier } from "@/lib/utils/contact";
-import { PersonAvatar } from "@/modules/ui/components/avatars";
-import { Button } from "@/modules/ui/components/button";
-import { IdBadge } from "@/modules/ui/components/id-badge";
-import { ProgressBar } from "@/modules/ui/components/progress-bar";
 import { useTranslate } from "@tolgee/react";
 import { InboxIcon } from "lucide-react";
 import Link from "next/link";
@@ -18,6 +12,9 @@ import {
   TSurveyQuestionTypeEnum,
   TSurveyType,
 } from "@formbricks/types/surveys/types";
+import { getContactIdentifier } from "@/lib/utils/contact";
+import { PersonAvatar } from "@/modules/ui/components/avatars";
+import { Button } from "@/modules/ui/components/button";
 import { convertFloatToNDecimal } from "../lib/utils";
 import { QuestionSummaryHeader } from "./QuestionSummaryHeader";
 
@@ -85,14 +82,16 @@ export const MultipleChoiceSummary = ({
           ) : undefined
         }
       />
-      <div className="space-y-5 px-4 pb-6 pt-4 text-sm md:px-6 md:text-base">
+      <div className="space-y-4 px-4 pb-6 pt-4 md:px-6" dir="rtl">
         {results.map((result, resultsIdx) => {
-          const choiceId = getChoiceIdByValue(result.value, questionSummary.question);
+          const palette = ["#1b335f", "#2563eb", "#16a34a", "#f4bf00", "#7c3aed", "#ea580c", "#0891b2"];
+          const color = palette[resultsIdx % palette.length];
+          const pct = convertFloatToNDecimal(result.percentage, 1);
           return (
             <Fragment key={result.value}>
               <button
                 type="button"
-                className="group w-full cursor-pointer"
+                className="group w-full cursor-pointer rounded-xl border border-slate-100 bg-slate-50 p-4 text-right transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
                 onClick={() =>
                   setFilter(
                     questionSummary.question.id,
@@ -104,24 +103,33 @@ export const MultipleChoiceSummary = ({
                     [result.value]
                   )
                 }>
-                <div className="text flex flex-col justify-between px-2 pb-2 sm:flex-row">
-                  <div className="mr-8 flex w-full justify-between space-x-2 sm:justify-normal">
-                    <p className="font-semibold text-slate-700 underline-offset-4 group-hover:underline">
-                      {results.length - resultsIdx} - {result.value}
+                {/* Choice label + stats */}
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                      style={{ backgroundColor: color }}>
+                      {resultsIdx + 1}
+                    </span>
+                    <p className="font-semibold text-slate-800 underline-offset-4 group-hover:underline">
+                      {result.value}
                     </p>
-                    {choiceId && <IdBadge id={choiceId} />}
                   </div>
-                  <div className="flex w-full space-x-2">
-                    <p className="flex w-full pt-1 text-slate-600 sm:items-end sm:justify-end sm:pt-0">
-                      {result.count} {result.count === 1 ? t("common.selection") : t("common.selections")}
-                    </p>
-                    <p className="rounded-lg bg-slate-100 px-2 text-slate-700">
-                      {convertFloatToNDecimal(result.percentage, 2)}%
-                    </p>
+                  <div className="flex flex-shrink-0 items-center gap-3">
+                    <span className="text-sm text-slate-500">{result.count} رد</span>
+                    <span
+                      className="min-w-[3.5rem] rounded-lg px-2 py-0.5 text-center text-base font-bold text-white"
+                      style={{ backgroundColor: color }}>
+                      {pct}%
+                    </span>
                   </div>
                 </div>
-                <div className="group-hover:opacity-80">
-                  <ProgressBar barColor="bg-brand-dark" progress={result.percentage / 100} />
+                {/* Progress bar */}
+                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${result.percentage}%`, backgroundColor: color }}
+                  />
                 </div>
               </button>
               {result.others && result.others.length > 0 && (

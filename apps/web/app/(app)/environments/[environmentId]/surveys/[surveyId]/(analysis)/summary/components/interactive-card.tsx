@@ -1,7 +1,7 @@
 "use client";
 
-import { BaseCard } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/base-card";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { BaseCard } from "@/app/(app)/environments/[environmentId]/surveys/[surveyId]/(analysis)/summary/components/base-card";
 
 interface InteractiveCardProps {
   tab: "dropOffs" | "quotas";
@@ -12,6 +12,8 @@ interface InteractiveCardProps {
   isLoading: boolean;
   onClick: () => void;
   isActive: boolean;
+  accentColor?: string;
+  icon?: React.ReactNode;
 }
 
 export const InteractiveCard = ({
@@ -23,6 +25,8 @@ export const InteractiveCard = ({
   isLoading,
   onClick,
   isActive,
+  accentColor,
+  icon,
 }: InteractiveCardProps) => {
   return (
     <BaseCard
@@ -32,13 +36,15 @@ export const InteractiveCard = ({
       isLoading={isLoading}
       onClick={onClick}
       testId={`${tab}-toggle`}
-      id={`${tab}-toggle`}>
-      <div className="flex w-full items-end justify-between">
-        <span className="text-2xl font-bold text-slate-800">
-          {isLoading ? <div className="h-6 w-12 animate-pulse rounded-full bg-slate-200"></div> : value}
+      id={`${tab}-toggle`}
+      accentColor={accentColor}
+      icon={icon}>
+      <div className="flex w-full items-center justify-between">
+        <span className="text-3xl font-bold text-slate-800">
+          {isLoading ? <div className="h-8 w-16 animate-pulse rounded-full bg-slate-200"></div> : value}
         </span>
         {!isLoading && (
-          <div className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100">
             {isActive ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
           </div>
         )}

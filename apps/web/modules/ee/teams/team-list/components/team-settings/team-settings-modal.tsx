@@ -1,5 +1,13 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslate } from "@tolgee/react";
+import { PlusIcon, Trash2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
+import { FormProvider, SubmitHandler, useForm, useWatch } from "react-hook-form";
+import toast from "react-hot-toast";
+import { TOrganizationRole } from "@formbricks/types/memberships";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import { ZTeamPermission } from "@/modules/ee/teams/project-teams/types/team";
@@ -37,14 +45,6 @@ import {
 } from "@/modules/ui/components/select";
 import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { Muted } from "@/modules/ui/components/typography";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useTranslate } from "@tolgee/react";
-import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo } from "react";
-import { FormProvider, SubmitHandler, useForm, useWatch } from "react-hook-form";
-import toast from "react-hot-toast";
-import { TOrganizationRole } from "@formbricks/types/memberships";
 
 interface TeamSettingsModalProps {
   open: boolean;
@@ -403,7 +403,7 @@ export const TeamSettingsModal = ({
                                       value={project.projectId}
                                       disabled={!isOwnerOrManager}>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select project" />
+                                        <SelectValue placeholder="اختر القسم/الكلية" />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {projectOpts.map((option) => (
@@ -433,7 +433,7 @@ export const TeamSettingsModal = ({
                                       value={project.permission}
                                       disabled={!isOwnerOrManager}>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select project role" />
+                                        <SelectValue placeholder="اختر دور القسم/الكلية" />
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value={ZTeamPermission.enum.read}>

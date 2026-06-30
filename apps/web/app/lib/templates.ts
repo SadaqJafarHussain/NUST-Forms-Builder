@@ -1,3 +1,7 @@
+import { createId } from "@paralleldrive/cuid2";
+import { TFnType } from "@tolgee/react";
+import { TSurvey, TSurveyOpenTextQuestion, TSurveyQuestionTypeEnum } from "@formbricks/types/surveys/types";
+import { TTemplate } from "@formbricks/types/templates";
 import {
   buildCTAQuestion,
   buildConsentQuestion,
@@ -13,10 +17,6 @@ import {
   hiddenFieldsDefault,
 } from "@/app/lib/survey-builder";
 import { createI18nString } from "@/lib/i18n/utils";
-import { createId } from "@paralleldrive/cuid2";
-import { TFnType } from "@tolgee/react";
-import { TSurvey, TSurveyOpenTextQuestion, TSurveyQuestionTypeEnum } from "@formbricks/types/surveys/types";
-import { TTemplate } from "@formbricks/types/templates";
 
 const cartAbandonmentSurvey = (t: TFnType): TTemplate => {
   const reusableQuestionIds = [createId(), createId(), createId()];
@@ -3701,6 +3701,7 @@ export const previewSurvey = (projectName: string, t: TFnType) => {
     showLanguageSwitch: false,
     followUps: [],
     isBackButtonHidden: false,
+    isOnePage: true,
     metadata: {},
   } as TSurvey;
 };

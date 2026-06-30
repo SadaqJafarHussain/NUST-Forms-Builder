@@ -1,4 +1,12 @@
 import "server-only";
+import { createId } from "@paralleldrive/cuid2";
+import { Prisma } from "@prisma/client";
+import { cache as reactCache } from "react";
+import { z } from "zod";
+import { prisma } from "@formbricks/database";
+import { logger } from "@formbricks/logger";
+import { DatabaseError, ResourceNotFoundError } from "@formbricks/types/errors";
+import { TSurveyFilterCriteria } from "@formbricks/types/surveys/types";
 import { getOrganizationByEnvironmentId } from "@/lib/organization/service";
 import { checkForInvalidImagesInQuestions } from "@/lib/survey/utils";
 import { validateInputs } from "@/lib/utils/validate";
@@ -8,14 +16,6 @@ import { buildOrderByClause, buildWhereClause } from "@/modules/survey/lib/utils
 import { doesEnvironmentExist } from "@/modules/survey/list/lib/environment";
 import { getProjectWithLanguagesByEnvironmentId } from "@/modules/survey/list/lib/project";
 import { TProjectWithLanguages, TSurvey } from "@/modules/survey/list/types/surveys";
-import { createId } from "@paralleldrive/cuid2";
-import { Prisma } from "@prisma/client";
-import { cache as reactCache } from "react";
-import { z } from "zod";
-import { prisma } from "@formbricks/database";
-import { logger } from "@formbricks/logger";
-import { DatabaseError, ResourceNotFoundError } from "@formbricks/types/errors";
-import { TSurveyFilterCriteria } from "@formbricks/types/surveys/types";
 
 export const surveySelect: Prisma.SurveySelect = {
   id: true,
@@ -593,22 +593,25 @@ export const copySurveyToOtherEnvironment = async (
   }
 };
 
-export const getSurveyCount = reactCache(async (environmentId: string): Promise<number> => {
-  validateInputs([environmentId, z.string().cuid2()]);
-  try {
-    const surveyCount = await prisma.survey.count({
-      where: {
-        environmentId: environmentId,
-      },
-    });
+export const getSurveyCount = reactCache(
+  async (environmentId: string, creatorId?: string): Promise<number> => {
+    validateInputs([environmentId, z.string().cuid2()]);
+    try {
+      const surveyCount = await prisma.survey.count({
+        where: {
+          environmentId,
+          ...(creatorId ? { createdBy: creatorId } : {}),
+        },
+      });
 
-    return surveyCount;
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      logger.error(error, "Error getting survey count");
-      throw new DatabaseError(error.message);
+      return surveyCount;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        logger.error(error, "Error getting survey count");
+        throw new DatabaseError(error.message);
+      }
+
+      throw error;
     }
-
-    throw error;
   }
-});
+);

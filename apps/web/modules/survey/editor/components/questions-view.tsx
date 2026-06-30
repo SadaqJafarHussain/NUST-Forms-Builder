@@ -430,17 +430,30 @@ export const QuestionsView = ({
     <div className="w-full py-6" dir="rtl">
       <div className="mx-auto max-w-3xl px-5">
         {/* MS Forms-style form title header */}
-        <div className="mb-6 overflow-hidden rounded-xl shadow-md" style={{ borderTop: "8px solid #f4bf00" }}>
+        <div
+          className="mb-6 overflow-hidden rounded-xl shadow-md"
+          style={{ borderTop: `8px solid ${!localSurvey.name.trim() ? "#ef4444" : "#f4bf00"}` }}>
           <div className="bg-white px-6 py-5">
             <input
               type="text"
               value={localSurvey.name}
               onChange={(e) => setLocalSurvey({ ...localSurvey, name: e.target.value })}
-              placeholder="عنوان الفورم"
-              className="w-full bg-transparent text-2xl font-bold text-slate-800 placeholder-slate-300 focus:outline-none"
+              placeholder="أدخل عنوان الفورم..."
+              className="w-full bg-transparent text-2xl font-bold text-slate-800 placeholder:text-base placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
               dir="rtl"
             />
-            <p className="mt-1 text-xs text-slate-400">انقر لتعديل عنوان الفورم</p>
+            {!localSurvey.name.trim() && (
+              <p className="mt-1 text-xs text-red-500">* عنوان الفورم مطلوب قبل النشر</p>
+            )}
+            {/* Optional description */}
+            <textarea
+              value={(localSurvey as any).description ?? ""}
+              onChange={(e) => setLocalSurvey({ ...localSurvey, description: e.target.value } as any)}
+              placeholder="أضف وصفاً للفورم (اختياري)..."
+              rows={2}
+              className="mt-3 w-full resize-none bg-transparent text-sm text-slate-600 placeholder-slate-300 focus:outline-none"
+              dir="rtl"
+            />
           </div>
         </div>
 
@@ -471,23 +484,6 @@ export const QuestionsView = ({
             suggestions={suggestions}
           />
         </DndContext>
-
-        {localSurvey.questions.length === 0 && (
-          <div className="mb-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white py-16 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-              <svg
-                className="h-7 w-7 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </div>
-            <p className="text-base font-medium text-slate-600">ابدأ بإضافة سؤال</p>
-            <p className="mt-1 text-sm text-slate-400">اختر نوع السؤال من الأزرار أدناه</p>
-          </div>
-        )}
 
         <AddQuestionButton
           addQuestion={addQuestion}

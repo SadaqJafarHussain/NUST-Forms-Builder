@@ -1,13 +1,12 @@
 "use client";
 
-import { recallToHeadline } from "@/lib/utils/recall";
-import { formatTextWithSlashes } from "@/modules/survey/editor/lib/utils";
-import { getQuestionTypes } from "@/modules/survey/lib/questions";
-import { IdBadge } from "@/modules/ui/components/id-badge";
 import { useTranslate } from "@tolgee/react";
 import { InboxIcon } from "lucide-react";
 import type { JSX } from "react";
 import { TSurvey, TSurveyQuestionSummary } from "@formbricks/types/surveys/types";
+import { recallToHeadline } from "@/lib/utils/recall";
+import { formatTextWithSlashes } from "@/modules/survey/editor/lib/utils";
+import { getQuestionTypes } from "@/modules/survey/lib/questions";
 
 interface HeadProps {
   questionSummary: TSurveyQuestionSummary;
@@ -24,38 +23,55 @@ export const QuestionSummaryHeader = ({
 }: HeadProps) => {
   const { t } = useTranslate();
   const questionType = getQuestionTypes(t).find((type) => type.id === questionSummary.question.type);
+  const questionIndex = survey.questions.findIndex((q) => q.id === questionSummary.question.id);
 
   return (
-    <div className="space-y-2 px-4 pb-5 pt-6 md:px-6">
-      <div className={"align-center flex justify-between gap-4"}>
-        <h3 className="pb-1 text-lg font-semibold text-slate-900 md:text-xl">
-          {formatTextWithSlashes(
-            recallToHeadline(questionSummary.question.headline, survey, true, "default")["default"],
-            "@",
-            ["text-lg"]
+    <div dir="rtl" style={{ borderTop: "4px solid #1b335f" }} className="rounded-t-xl">
+      <div className="px-5 pb-4 pt-5 md:px-6">
+        {/* Question number + title */}
+        <div className="mb-3 flex items-start gap-3">
+          {questionIndex >= 0 && (
+            <span
+              className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+              style={{ backgroundColor: "#1b335f" }}>
+              {questionIndex + 1}
+            </span>
           )}
-        </h3>
-      </div>
-      <div className="flex space-x-2 text-xs font-semibold text-slate-600 md:text-sm">
-        <div className="flex items-center rounded-lg bg-slate-100 p-2">
-          {questionType && <questionType.icon className="mr-2 h-4 w-4" />}
-          {questionType ? questionType.label : t("environments.surveys.summary.unknown_question_type")}{" "}
-          {t("common.question")}
+          <h3 className="text-lg font-bold leading-snug text-slate-900 md:text-xl">
+            {formatTextWithSlashes(
+              recallToHeadline(questionSummary.question.headline, survey, true, "default")["default"],
+              "@",
+              ["text-lg"]
+            )}
+          </h3>
         </div>
-        {showResponses && (
-          <div className="flex items-center rounded-lg bg-slate-100 p-2">
-            <InboxIcon className="mr-2 h-4 w-4" />
-            {`${questionSummary.responseCount} ${t("common.responses")}`}
-          </div>
-        )}
-        {additionalInfo}
-        {!questionSummary.question.required && (
-          <div className="flex items-center rounded-lg bg-slate-100 p-2">
-            {t("environments.surveys.edit.optional")}
-          </div>
-        )}
+
+        {/* Badges row */}
+        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+          {questionType && (
+            <span
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-white"
+              style={{ backgroundColor: "#1b335f" }}>
+              <questionType.icon className="h-3.5 w-3.5" />
+              {questionType.label}
+            </span>
+          )}
+          {showResponses && (
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200">
+              <InboxIcon className="h-3.5 w-3.5" />
+              {questionSummary.responseCount} رد
+            </span>
+          )}
+          {additionalInfo && (
+            <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-blue-700 ring-1 ring-blue-200">
+              {additionalInfo}
+            </span>
+          )}
+          {!questionSummary.question.required && (
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-500">اختياري</span>
+          )}
+        </div>
       </div>
-      <IdBadge id={questionSummary.question.id} label={t("common.question_id")} />
     </div>
   );
 };

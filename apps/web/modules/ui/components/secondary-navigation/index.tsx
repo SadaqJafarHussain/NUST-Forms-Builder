@@ -1,5 +1,5 @@
-import { cn } from "@/lib/cn";
 import Link from "next/link";
+import { cn } from "@/lib/cn";
 
 interface SecondaryNavbarProps {
   navigation: {
@@ -16,7 +16,7 @@ interface SecondaryNavbarProps {
 export const SecondaryNavigation = ({ navigation, activeId, loading, ...props }: SecondaryNavbarProps) => {
   return (
     <div {...props}>
-      <nav className="flex h-10 w-full items-center space-x-4" aria-label="Tabs">
+      <nav className="flex h-10 w-full items-center space-x-4" aria-label="Tabs" dir="rtl">
         {loading
           ? navigation.map((navElem) => (
               <div className="group flex h-full flex-col truncate" key={navElem.id}>
@@ -49,8 +49,8 @@ export const SecondaryNavigation = ({ navigation, activeId, loading, ...props }:
                         {...(navElem.onClick ? { onClick: navElem.onClick } : {})}
                         className={cn(
                           navElem.id === activeId
-                            ? "font-semibold text-slate-900"
-                            : "text-slate-500 hover:text-slate-700",
+                            ? "font-semibold text-[#1b335f]"
+                            : "text-slate-500 hover:text-[#1b335f]",
                           "flex h-full items-center px-3 text-sm font-medium",
                           navElem.hidden && "hidden"
                         )}
@@ -74,9 +74,10 @@ export const SecondaryNavigation = ({ navigation, activeId, loading, ...props }:
                     <div
                       className={cn(
                         "bottom-0 mt-auto h-[2px] w-full rounded-t-lg transition-all duration-150 ease-in-out",
-                        navElem.id === activeId ? "bg-brand-dark" : "bg-transparent group-hover:bg-slate-300",
+                        navElem.id !== activeId && "bg-transparent group-hover:bg-slate-300",
                         navElem.hidden && "hidden"
                       )}
+                      style={navElem.id === activeId ? { backgroundColor: "#f4bf00" } : undefined}
                     />
                   </div>
                 )

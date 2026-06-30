@@ -1,16 +1,14 @@
 "use client";
 
+import { TMember, TOrganizationRole } from "@formbricks/types/memberships";
+import { TOrganization } from "@formbricks/types/organizations";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { getFormattedDateTimeString } from "@/lib/utils/datetime";
 import { EditMembershipRole } from "@/modules/ee/role-management/components/edit-membership-role";
 import { MemberActions } from "@/modules/organization/settings/teams/components/edit-memberships/member-actions";
 import { isInviteExpired } from "@/modules/organization/settings/teams/lib/utils";
 import { TInvite } from "@/modules/organization/settings/teams/types/invites";
-import { Badge } from "@/modules/ui/components/badge";
 import { TooltipRenderer } from "@/modules/ui/components/tooltip";
-import { useTranslate } from "@tolgee/react";
-import { TMember, TOrganizationRole } from "@formbricks/types/memberships";
-import { TOrganization } from "@formbricks/types/organizations";
 
 interface MembersInfoProps {
   organization: TOrganization;
@@ -39,27 +37,55 @@ export const MembersInfo = ({
   isUserManagementDisabledFromUi,
 }: MembersInfoProps) => {
   const allMembers = [...members, ...invites];
-  const { t } = useTranslate();
 
   const getMembershipBadge = (member: TMember | TInvite) => {
     if (isInvitee(member)) {
       return isInviteExpired(member) ? (
-        <Badge type="gray" text="Expired" size="tiny" data-testid="expired-badge" />
+        <span
+          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
+          data-testid="expired-badge">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+          منتهية
+        </span>
       ) : (
-        <TooltipRenderer
-          tooltipContent={`${t("environments.settings.general.invited_on", {
-            date: getFormattedDateTimeString(member.createdAt),
-          })}`}>
-          <Badge type="warning" text="Pending" size="tiny" />
+        <TooltipRenderer tooltipContent={`دُعي بتاريخ ${getFormattedDateTimeString(member.createdAt)}`}>
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ backgroundColor: "#fef3c7", color: "#d97706" }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+            معلّق
+          </span>
         </TooltipRenderer>
       );
     }
 
     if (!member.isActive) {
-      return <Badge type="gray" text="Inactive" size="tiny" />;
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+          غير نشط
+        </span>
+      );
     }
 
-    return <Badge type="success" text="Active" size="tiny" />;
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+        style={{ backgroundColor: "#dcfce7", color: "#16a34a" }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#22c55e" }} />
+        نشط
+      </span>
+    );
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "؟";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const { isOwner, isManager } = getAccessFlags(currentUserRole);
@@ -92,19 +118,29 @@ export const MembersInfo = ({
   };
 
   return (
-    <div className="max-w-full space-y-4 px-4 py-3" id="membersInfoWrapper">
-      {allMembers.map((member) => (
+    <div className="divide-y divide-slate-100" id="membersInfoWrapper">
+      {allMembers.map((member, idx) => (
         <div
           id="singleMemberInfo"
-          className="flex w-full max-w-full items-center gap-x-4 text-left text-sm text-slate-900"
-          key={member.email}>
-          <div className="ph-no-capture w-1/2 overflow-hidden">
-            <p className="w-full truncate">{member.name}</p>
-          </div>
-          <div className="ph-no-capture w-1/2 overflow-hidden">
-            <p className="w-full truncate"> {member.email}</p>
+          className="flex w-full items-center gap-x-4 px-5 py-3.5 text-sm transition-colors hover:bg-slate-50"
+          key={member.email}
+          style={{ direction: "rtl" }}>
+          {/* Avatar + name */}
+          <div className="ph-no-capture flex w-1/2 items-center gap-3 overflow-hidden">
+            <div
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+              style={{ backgroundColor: idx % 2 === 0 ? "#1b335f" : "#0f314c" }}>
+              {getInitials(member.name ?? "")}
+            </div>
+            <p className="truncate font-medium text-slate-800">{member.name || "—"}</p>
           </div>
 
+          {/* Email */}
+          <div className="ph-no-capture w-1/2 overflow-hidden">
+            <p className="truncate text-slate-500">{member.email}</p>
+          </div>
+
+          {/* Role */}
           {isAccessControlAllowed && allMembers?.length > 0 && (
             <div className="ph-no-capture min-w-[100px]">
               <EditMembershipRole
@@ -121,8 +157,11 @@ export const MembersInfo = ({
               />
             </div>
           )}
+
+          {/* Status badge */}
           <div className="min-w-[80px]">{getMembershipBadge(member)}</div>
 
+          {/* Actions */}
           {!isUserManagementDisabledFromUi && (
             <MemberActions
               organization={organization}

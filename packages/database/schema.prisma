@@ -329,6 +329,7 @@ model Survey {
   createdAt           DateTime                @default(now()) @map(name: "created_at")
   updatedAt           DateTime                @updatedAt @map(name: "updated_at")
   name                String
+  description         String?
   redirectUrl         String?
   type                SurveyType              @default(app)
   environment         Environment             @relation(fields: [environmentId], references: [id], onDelete: Cascade)
@@ -376,6 +377,9 @@ model Survey {
   isVerifyEmailEnabled            Boolean          @default(false)
   isSingleResponsePerEmailEnabled Boolean          @default(false)
   isBackButtonHidden              Boolean          @default(false)
+  isOnePage                       Boolean          @default(true)
+  /// [BannerConfig]
+  bannerConfig                    Json?
   pin                             String?
   displayPercentage               Decimal?
   languages                       SurveyLanguage[]
@@ -571,7 +575,6 @@ model Environment {
   segments          Segment[]
   integration       Integration[]
   ApiKeyEnvironment ApiKeyEnvironment[]
-  questionBankItems QuestionBankItem[]
 
   @@index([projectId])
 }
@@ -635,20 +638,23 @@ model Project {
 /// @property whitelabel - Whitelabel configuration for the organization
 /// @property isAIEnabled - Controls access to AI-powered features
 model Organization {
-  id          String       @id @default(cuid())
-  createdAt   DateTime     @default(now()) @map(name: "created_at")
-  updatedAt   DateTime     @updatedAt @map(name: "updated_at")
-  name        String
-  memberships Membership[]
-  projects    Project[]
+  id                  String             @id @default(cuid())
+  createdAt           DateTime           @default(now()) @map(name: "created_at")
+  updatedAt           DateTime           @updatedAt @map(name: "updated_at")
+  name                String
+  memberships         Membership[]
+  projects            Project[]
   /// [OrganizationBilling]
-  billing     Json
+  billing             Json
   /// [OrganizationWhitelabel]
-  whitelabel  Json         @default("{}")
-  invites     Invite[]
-  isAIEnabled Boolean      @default(false)
-  teams       Team[]
-  apiKeys     ApiKey[]
+  whitelabel          Json               @default("{}")
+  invites             Invite[]
+  isAIEnabled         Boolean            @default(false)
+  /// [BannerConfig]
+  defaultBannerConfig Json?
+  teams               Team[]
+  apiKeys             ApiKey[]
+  questionBankItems   QuestionBankItem[]
 }
 
 enum OrganizationRole {
@@ -1012,16 +1018,16 @@ model QuestionBankItem {
   type     String // openText, rating, nps, etc.
   category String? // User-defined category
 
-  // Relations
-  environmentId String      @map("environment_id")
-  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  // Relations - org-wide scope (not per environment)
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdBy String? @map("created_by")
 
   // Stats
   usageCount Int @default(0) @map("usage_count")
 
-  @@index([environmentId])
+  @@index([organizationId])
   @@index([type])
   @@index([category])
   @@map("question_bank_items")

@@ -1,10 +1,7 @@
 import type { Session } from "next-auth";
-import { MainNavigation } from "@/app/(app)/environments/[environmentId]/components/MainNavigation";
-import { TopControlBar } from "@/app/(app)/environments/[environmentId]/components/TopControlBar";
-import { getOrganizationsByUserId } from "@/app/(app)/environments/[environmentId]/lib/organization";
-import { getProjectsByUserId } from "@/app/(app)/environments/[environmentId]/lib/project";
+import { TopNavbar } from "@/app/(app)/environments/[environmentId]/components/TopNavbar";
 import { IS_FORMBRICKS_CLOUD } from "@/lib/constants";
-import { getEnvironment, getEnvironments } from "@/lib/environment/service";
+import { getEnvironment } from "@/lib/environment/service";
 import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
 import { getAccessFlags } from "@/lib/membership/utils";
 import {
@@ -12,13 +9,9 @@ import {
   getMonthlyOrganizationResponseCount,
   getOrganizationByEnvironmentId,
 } from "@/lib/organization/service";
+import { getProjectByEnvironmentId, getProjects } from "@/lib/project/service";
 import { getUser } from "@/lib/user/service";
 import { getEnterpriseLicense } from "@/modules/ee/license-check/lib/license";
-import {
-  getAccessControlPermission,
-  getOrganizationProjectsLimit,
-} from "@/modules/ee/license-check/lib/utils";
-import { getProjectPermissionByUserId } from "@/modules/ee/teams/lib/roles";
 import { LimitsReachedBanner } from "@/modules/ui/components/limits-reached-banner";
 import { PendingDowngradeBanner } from "@/modules/ui/components/pending-downgrade-banner";
 import { getTranslate } from "@/tolgee/server";
@@ -31,10 +24,9 @@ interface EnvironmentLayoutProps {
 
 export const EnvironmentLayout = async ({ environmentId, session, children }: EnvironmentLayoutProps) => {
   const t = await getTranslate();
-  const [user, environment, organizations, organization] = await Promise.all([
+  const [user, environment, organization] = await Promise.all([
     getUser(session.user.id),
     getEnvironment(environmentId),
-    getOrganizationsByUserId(session.user.id),
     getOrganizationByEnvironmentId(environmentId),
   ]);
 
@@ -54,29 +46,14 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
   if (!currentUserMembership) {
     throw new Error(t("common.membership_not_found"));
   }
-  const membershipRole = currentUserMembership?.role;
 
-  const [projects, environments, isAccessControlAllowed] = await Promise.all([
-    getProjectsByUserId(user.id, currentUserMembership),
-    getEnvironments(environment.projectId),
-    getAccessControlPermission(organization.billing.plan),
+  const { isOwner } = getAccessFlags(currentUserMembership.role);
+
+  const [projects, currentProject, { lastChecked, isPendingDowngrade, active }] = await Promise.all([
+    getProjects(organization.id),
+    getProjectByEnvironmentId(environmentId),
+    getEnterpriseLicense(),
   ]);
-
-  if (!projects || !environments || !organizations) {
-    throw new Error(t("environments.projects_environments_organizations_not_found"));
-  }
-
-  const { isMember } = getAccessFlags(membershipRole);
-
-  const { features, lastChecked, isPendingDowngrade, active } = await getEnterpriseLicense();
-
-  const projectPermission = await getProjectPermissionByUserId(session.user.id, environment.projectId);
-
-  if (isMember && !projectPermission) {
-    throw new Error(t("common.project_permission_not_found"));
-  }
-
-  const isMultiOrgEnabled = features?.isMultiOrgEnabled ?? false;
 
   let peopleCount = 0;
   let responseCount = 0;
@@ -87,16 +64,6 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
       getMonthlyOrganizationResponseCount(organization.id),
     ]);
   }
-
-  const organizationProjectsLimit = await getOrganizationProjectsLimit(organization.billing.limits);
-
-  // Find the current project from the projects array
-  const project = projects.find((p) => p.id === environment.projectId);
-  if (!project) {
-    throw new Error(t("common.project_not_found"));
-  }
-
-  getAccessFlags(membershipRole);
 
   return (
     <div className="flex h-screen min-h-screen flex-col overflow-hidden">
@@ -117,29 +84,17 @@ export const EnvironmentLayout = async ({ environmentId, session, children }: En
         locale={user.locale}
       />
 
-      <div className="flex h-full">
-        <MainNavigation
-          environment={environment}
-          organization={organization}
-          projects={projects}
-          user={user}
-          isFormbricksCloud={IS_FORMBRICKS_CLOUD}
-          membershipRole={membershipRole}
-          organizationProjectsLimit={organizationProjectsLimit}
-          isLicenseActive={active}
-          isAccessControlAllowed={isAccessControlAllowed}
-        />
-        <div id="mainContent" className="flex flex-1 flex-col overflow-hidden bg-slate-50">
-          <TopControlBar
-            environments={environments}
-            currentOrganizationId={organization.id}
-            organizations={organizations}
-            currentProjectId={project.id}
-            projects={projects}
-            isMultiOrgEnabled={isMultiOrgEnabled}
-          />
-          <div className="flex-1 overflow-y-auto">{children}</div>
-        </div>
+      <TopNavbar
+        user={user}
+        organization={organization}
+        environmentId={environmentId}
+        projects={projects ?? []}
+        currentProject={currentProject ?? null}
+        canCreateProject={isOwner}
+      />
+
+      <div id="mainContent" className="flex flex-1 flex-col overflow-hidden bg-slate-50">
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
