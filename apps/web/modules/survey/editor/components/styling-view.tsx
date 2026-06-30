@@ -315,7 +315,7 @@ export const StylingView = ({
             />
           </div>
 
-          {/* Card styling + Background — multi-page only */}
+          {/* Card styling — multi-page only */}
           {!isOnePage && (
             <div className="space-y-3">
               <p className="pr-1 text-xs font-medium text-slate-400">خاص بالاستبيان التدريجي فقط</p>
@@ -327,37 +327,21 @@ export const StylingView = ({
                 project={project}
                 form={form as UseFormReturn<TProjectStyling | TSurveyStyling>}
               />
-              {localSurvey.type === "link" && (
-                <BackgroundStylingCard
-                  open={stylingOpen}
-                  setOpen={setStylingOpen}
-                  environmentId={environmentId}
-                  colors={colors}
-                  disabled={!overwriteThemeStyling}
-                  isUnsplashConfigured={isUnsplashConfigured}
-                  form={form as UseFormReturn<TProjectStyling | TSurveyStyling>}
-                  isStorageConfigured={isStorageConfigured}
-                />
-              )}
             </div>
           )}
 
-          {/* One-page notice */}
-          {isOnePage && (
-            <div
-              className="flex items-start gap-3 rounded-xl px-4 py-3"
-              style={{ backgroundColor: "#f0f4fa", border: "1px solid #c7d4e8" }}>
-              <div className="mt-0.5 shrink-0 text-base">ℹ️</div>
-              <div>
-                <p className="text-xs font-semibold" style={{ color: "#1b335f" }}>
-                  تصميم البطاقة والخلفية غير متاح
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  خيارات ترتيب البطاقة وخلفية الصفحة تُطبَّق فقط على وضع الاستبيان التدريجي. غيّر وضع الفورم
-                  من تبويب الإعدادات لتفعيلها.
-                </p>
-              </div>
-            </div>
+          {/* Background — both modes */}
+          {localSurvey.type === "link" && (
+            <BackgroundStylingCard
+              open={stylingOpen}
+              setOpen={setStylingOpen}
+              environmentId={environmentId}
+              colors={colors}
+              disabled={!overwriteThemeStyling}
+              isUnsplashConfigured={isUnsplashConfigured}
+              form={form as UseFormReturn<TProjectStyling | TSurveyStyling>}
+              isStorageConfigured={isStorageConfigured}
+            />
           )}
 
           {/* Footer actions */}

@@ -50,6 +50,10 @@ function resolveFormStyling(s?: TBaseStyling | null) {
     inputBd: s?.inputBorderColor?.light ?? "#cbd5e1",
     qColor: s?.questionColor?.light ?? "#1e293b",
     radius: s?.roundness != null ? `${s.roundness}px` : "12px",
+    qFontSize:
+      s && "questionFontSize" in s && (s as any).questionFontSize
+        ? `${(s as any).questionFontSize}px`
+        : "15px",
     pageBgStyle,
   };
 }
@@ -428,8 +432,9 @@ const ILSearchableDropdown = ({
         setIsOpen(false);
       }
     };
-    // Close on scroll so position is recalculated on next open
-    const closeOnScroll = () => {
+    // Close on scroll outside the dropdown menu
+    const closeOnScroll = (e: Event) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
       setIsOpen(false);
       setSearchTerm("");
     };
@@ -448,7 +453,7 @@ const ILSearchableDropdown = ({
         type="button"
         onClick={handleToggle}
         disabled={disabled}
-        className="relative w-full border-2 px-4 py-3 text-right text-sm transition focus:outline-none"
+        className="relative w-full border-2 text-sm transition focus:outline-none"
         style={{
           borderRadius: "var(--radius)",
           borderColor: hasError ? "#f87171" : isOpen ? "var(--brand)" : "var(--input-bd)",
@@ -456,6 +461,9 @@ const ILSearchableDropdown = ({
           color: selected ? "var(--q-color)" : "#94a3b8",
           cursor: disabled ? "not-allowed" : "pointer",
           opacity: disabled ? 0.5 : 1,
+          textAlign: "right",
+          direction: "rtl",
+          padding: "0.75rem 1.5rem 0.75rem 2.5rem",
         }}>
         <span className="block truncate">{selected ? getDisplayName(selected) : placeholder}</span>
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
@@ -499,8 +507,8 @@ const ILSearchableDropdown = ({
           </div>
           <div className="flex-1 overflow-y-auto py-1">
             {filtered.length > 0 ? (
-              filtered.map((opt) => {
-                const key = opt.province_id ?? opt.district_ID ?? opt.Neighbor_ID;
+              filtered.map((opt, idx) => {
+                const key = `${idx}-${opt.province_id ?? opt.district_ID ?? opt.Neighbor_ID}`;
                 const isSel =
                   selected &&
                   ((opt.province_id && selected.province_id === opt.province_id) ||
@@ -891,6 +899,7 @@ export const OnepageForm = ({
     "--input-bd": colors.inputBd,
     "--q-color": colors.qColor,
     "--radius": colors.radius,
+    "--q-size": colors.qFontSize,
   } as React.CSSProperties;
 
   // ── Success screen ────────────────────────────────────────────────────────
@@ -1118,8 +1127,8 @@ export const OnepageForm = ({
             {idx + 1}
           </span>
           <p
-            className="text-sm font-semibold leading-relaxed sm:text-base"
-            style={{ color: "var(--q-color)" }}>
+            className="font-semibold leading-relaxed"
+            style={{ color: "var(--q-color)", fontSize: "var(--q-size)" }}>
             {t(q.headline)}
             {q.required && <span className="mr-1 text-red-500">*</span>}
           </p>
@@ -1156,6 +1165,9 @@ export const OnepageForm = ({
           config={survey.bannerConfig ?? orgDefaultBannerConfig}
           surveyTitle={survey.name}
           projectName={projectName}
+          titleBg={(styling as any)?.bannerTitleBg}
+          titleTextColor={(styling as any)?.bannerTitleTextColor}
+          subtitleColor={(styling as any)?.bannerSubtitleColor}
         />
       )}
 

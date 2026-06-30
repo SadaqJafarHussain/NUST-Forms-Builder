@@ -80,9 +80,19 @@ interface BannerRendererProps {
   config: TBannerConfig;
   surveyTitle?: string;
   projectName?: string;
+  titleBg?: string;
+  titleTextColor?: string;
+  subtitleColor?: string;
 }
 
-export const BannerRenderer = ({ config, surveyTitle, projectName }: BannerRendererProps) => {
+export const BannerRenderer = ({
+  config,
+  surveyTitle,
+  projectName,
+  titleBg,
+  titleTextColor,
+  subtitleColor,
+}: BannerRendererProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -115,14 +125,18 @@ export const BannerRenderer = ({ config, surveyTitle, projectName }: BannerRende
 
       {/* Form title bar (below canvas) */}
       {surveyTitle && (
-        <div style={{ backgroundColor: "#1b335f" }}>
+        <div style={{ backgroundColor: titleBg ?? "#1b335f" }}>
           <div className="mx-auto max-w-2xl px-4 py-3 text-center">
             {projectName && (
-              <p className="mb-1 text-xs font-semibold tracking-wide" style={{ color: "#f4bf00" }}>
+              <p
+                className="mb-1 text-xs font-semibold tracking-wide"
+                style={{ color: subtitleColor ?? "#f4bf00" }}>
                 {projectName}
               </p>
             )}
-            <h1 className="text-lg font-bold text-white sm:text-2xl">{surveyTitle}</h1>
+            <h1 className="text-lg font-bold sm:text-2xl" style={{ color: titleTextColor ?? "#ffffff" }}>
+              {surveyTitle}
+            </h1>
           </div>
         </div>
       )}

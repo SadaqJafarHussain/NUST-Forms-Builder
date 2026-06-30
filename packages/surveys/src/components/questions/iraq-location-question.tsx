@@ -141,12 +141,16 @@ const SearchableDropdown = ({
         dir={dir}
         className={cn(
           "fb-border-border fb-text-subheading fb-bg-input-bg fb-rounded-custom fb-block fb-w-full fb-border fb-p-2 fb-shadow-sm fb-outline-none fb-ring-offset-1 focus:fb-ring-2 focus:fb-ring-offset-2",
-          "fb-text-left fb-relative",
+          dir === "rtl" ? "fb-text-right fb-relative fb-pl-8" : "fb-text-left fb-relative fb-pr-8",
           disabled ? "fb-opacity-50 fb-cursor-not-allowed fb-bg-input-disabled-bg" : "fb-cursor-pointer",
           !selected ? "fb-text-placeholder" : ""
         )}>
         {selected ? getDisplayName(selected) : placeholder}
-        <span className="fb-absolute fb-inset-y-0 fb-right-0 fb-flex fb-items-center fb-pr-2 fb-pointer-events-none">
+        <span
+          className={cn(
+            "fb-absolute fb-inset-y-0 fb-flex fb-items-center fb-pointer-events-none fb-px-2",
+            dir === "rtl" ? "fb-left-0" : "fb-right-0"
+          )}>
           <svg
             className="fb-h-5 fb-w-5 fb-text-subheading"
             fill="none"

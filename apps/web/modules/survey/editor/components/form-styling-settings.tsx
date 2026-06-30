@@ -1,11 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { COLOR_DEFAULTS } from "@/lib/styling/constants";
-import { mixColor } from "@/lib/utils/colors";
-import { Button } from "@/modules/ui/components/button";
-import { ColorPicker } from "@/modules/ui/components/color-picker";
-import { FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/modules/ui/components/form";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useTranslate } from "@tolgee/react";
@@ -14,6 +8,12 @@ import React from "react";
 import { UseFormReturn } from "react-hook-form";
 import { TProjectStyling } from "@formbricks/types/project";
 import { TSurveyStyling } from "@formbricks/types/surveys/types";
+import { cn } from "@/lib/cn";
+import { COLOR_DEFAULTS } from "@/lib/styling/constants";
+import { mixColor } from "@/lib/utils/colors";
+import { Button } from "@/modules/ui/components/button";
+import { ColorPicker } from "@/modules/ui/components/color-picker";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/modules/ui/components/form";
 
 type FormStylingSettingsProps = {
   open: boolean;
@@ -214,6 +214,138 @@ export const FormStylingSettings = ({
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="cardBackgroundColor.light"
+            render={({ field }) => (
+              <FormItem className="space-y-4">
+                <div>
+                  <FormLabel>لون خلفية بطاقة السؤال</FormLabel>
+                  <FormDescription>لون خلفية كل بطاقة سؤال في النموذج</FormDescription>
+                </div>
+                <FormControl>
+                  <ColorPicker
+                    color={field.value || "#ffffff"}
+                    onChange={(color: string) => field.onChange(color)}
+                    containerClass="max-w-xs"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="roundness"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <div>
+                  <FormLabel>استدارة الحواف</FormLabel>
+                  <FormDescription>تحكم في درجة استدارة حواف بطاقات الأسئلة وحقول الإدخال</FormDescription>
+                </div>
+                <FormControl>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={24}
+                      step={1}
+                      value={field.value ?? 12}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="w-40"
+                    />
+                    <span className="w-10 text-sm font-medium text-slate-700">{field.value ?? 12}px</span>
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name={"questionFontSize" as keyof (TProjectStyling | TSurveyStyling)}
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <div>
+                  <FormLabel>حجم خط الأسئلة</FormLabel>
+                  <FormDescription>حجم نص السؤال في النموذج (من 10 إلى 32)</FormDescription>
+                </div>
+                <FormControl>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={10}
+                      max={32}
+                      step={1}
+                      value={(field.value as number) ?? 15}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="w-40"
+                    />
+                    <span className="w-10 text-sm font-medium text-slate-700">
+                      {(field.value as number) ?? 15}px
+                    </span>
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {/* Banner title bar colors */}
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-600">شريط عنوان البانر</p>
+
+            <FormField
+              control={form.control}
+              name={"bannerTitleBg" as keyof (TProjectStyling | TSurveyStyling)}
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-xs">لون خلفية الشريط</FormLabel>
+                  <FormControl>
+                    <ColorPicker
+                      color={(field.value as string) || "#1b335f"}
+                      onChange={(color: string) => field.onChange(color)}
+                      containerClass="max-w-xs"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"bannerTitleTextColor" as keyof (TProjectStyling | TSurveyStyling)}
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-xs">لون عنوان النموذج</FormLabel>
+                  <FormControl>
+                    <ColorPicker
+                      color={(field.value as string) || "#ffffff"}
+                      onChange={(color: string) => field.onChange(color)}
+                      containerClass="max-w-xs"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={"bannerSubtitleColor" as keyof (TProjectStyling | TSurveyStyling)}
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-xs">لون اسم القسم / المنظمة</FormLabel>
+                  <FormControl>
+                    <ColorPicker
+                      color={(field.value as string) || "#f4bf00"}
+                      onChange={(color: string) => field.onChange(color)}
+                      containerClass="max-w-xs"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
       </Collapsible.CollapsibleContent>
     </Collapsible.Root>

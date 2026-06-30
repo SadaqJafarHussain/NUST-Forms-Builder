@@ -294,6 +294,10 @@ export type TSurveyBackgroundBgType = z.infer<typeof ZSurveyBackgroundBgType>;
 
 export const ZSurveyStyling = ZBaseStyling.extend({
   overwriteThemeStyling: z.boolean().nullish(),
+  questionFontSize: z.number().min(10).max(32).nullish(),
+  bannerTitleBg: z.string().nullish(),
+  bannerTitleTextColor: z.string().nullish(),
+  bannerSubtitleColor: z.string().nullish(),
 });
 
 export type TSurveyStyling = z.infer<typeof ZSurveyStyling>;

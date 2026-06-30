@@ -241,6 +241,7 @@ export const SurveyEditor = ({
                 isPreview={true}
                 projectName={localProject.name}
                 orgDefaultBannerConfig={orgDefaultBannerConfig}
+                styling={localSurvey.styling ?? null}
               />
             </div>
           ) : (
