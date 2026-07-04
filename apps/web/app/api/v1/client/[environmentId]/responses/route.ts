@@ -1,3 +1,12 @@
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
+import { UAParser } from "ua-parser-js";
+import { prisma } from "@formbricks/database";
+import { logger } from "@formbricks/logger";
+import { ZId } from "@formbricks/types/common";
+import { InvalidInputError } from "@formbricks/types/errors";
+import { TResponseWithQuotaFull } from "@formbricks/types/quota";
+import { TResponseInput, ZResponseInput } from "@formbricks/types/responses";
 import { responses } from "@/app/lib/api/response";
 import { transformErrorToDetails } from "@/app/lib/api/validator";
 import { withV1ApiWrapper } from "@/app/lib/api/with-api-logging";
@@ -7,15 +16,77 @@ import { getSurvey } from "@/lib/survey/service";
 import { getIsContactsEnabled } from "@/modules/ee/license-check/lib/utils";
 import { createQuotaFullObject } from "@/modules/ee/quotas/lib/helpers";
 import { validateFileUploads } from "@/modules/storage/utils";
-import { headers } from "next/headers";
-import { NextRequest } from "next/server";
-import { UAParser } from "ua-parser-js";
-import { logger } from "@formbricks/logger";
-import { ZId } from "@formbricks/types/common";
-import { InvalidInputError } from "@formbricks/types/errors";
-import { TResponseWithQuotaFull } from "@formbricks/types/quota";
-import { TResponseInput, ZResponseInput } from "@formbricks/types/responses";
 import { createResponseWithQuotaEvaluation } from "./lib/response";
+
+/**
+ * Atomically checks choice response limits using PostgreSQL advisory locks.
+ * When two submissions race for the last slot, the advisory lock serializes them:
+ * - First request acquires the lock, counts, sees count < limit, proceeds
+ * - Second request blocks until first commits, then counts again, sees count >= limit, rejects
+ * Returns the violated choice info, or null if all limits are satisfied.
+ */
+async function enforceChoiceLimits(
+  surveyId: string,
+  questions: any[],
+  responseData: Record<string, unknown>
+): Promise<{ choiceId: string; questionId: string } | null> {
+  // Build list of limited choices that appear in this submission
+  const checks: Array<{
+    questionId: string;
+    choiceId: string;
+    choiceLabel: string;
+    limit: number;
+  }> = [];
+
+  for (const question of questions) {
+    if (question.type !== "multipleChoiceSingle" && question.type !== "multipleChoiceMulti") continue;
+    const answer = responseData[question.id];
+    if (answer == null) continue;
+    const labels = Array.isArray(answer) ? answer.map(String) : [String(answer)];
+    for (const label of labels) {
+      const choice = question.choices?.find(
+        (c: any) => c.limit != null && Object.values(c.label ?? {}).some((v) => v === label)
+      );
+      if (!choice?.limit) continue;
+      checks.push({ questionId: question.id, choiceId: choice.id, choiceLabel: label, limit: choice.limit });
+    }
+  }
+
+  if (!checks.length) return null;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      for (const check of checks) {
+        // pg_advisory_xact_lock: exclusive lock per choice, released automatically on tx commit/rollback
+        // hashtext() converts the string key to int4 which advisory lock requires
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${surveyId}:${check.choiceId}`}))`;
+
+        // Count finished responses that selected this choice (lock is held, so no concurrent insert can sneak in)
+        const allFinished = await tx.response.findMany({
+          where: { surveyId, finished: true },
+          select: { data: true },
+        });
+
+        let count = 0;
+        for (const r of allFinished) {
+          const val = (r.data as Record<string, unknown>)[check.questionId];
+          if (val == null) continue;
+          const vals = Array.isArray(val) ? val.map(String) : [String(val)];
+          if (vals.includes(check.choiceLabel)) count++;
+        }
+
+        if (count >= check.limit) {
+          return { choiceId: check.choiceId, questionId: check.questionId };
+        }
+      }
+      return null;
+    });
+  } catch (err) {
+    // If advisory lock check fails for any reason, allow the submission through
+    logger.error({ err }, "Choice limit check failed — allowing submission");
+    return null;
+  }
+}
 
 interface Context {
   params: Promise<{
@@ -120,6 +191,22 @@ export const POST = withV1ApiWrapper({
     if (!validateFileUploads(responseInputData.data, survey.questions)) {
       return {
         response: responses.badRequestResponse("Invalid file upload response"),
+      };
+    }
+
+    // Enforce per-choice response limits (atomic — prevents race conditions)
+    const choiceLimitViolation = await enforceChoiceLimits(
+      responseInputData.surveyId,
+      survey.questions,
+      responseInputData.data as Record<string, unknown>
+    );
+    if (choiceLimitViolation) {
+      return {
+        response: responses.badRequestResponse(
+          "choice_limit_exceeded",
+          { choiceId: choiceLimitViolation.choiceId, questionId: choiceLimitViolation.questionId },
+          true
+        ),
       };
     }
 

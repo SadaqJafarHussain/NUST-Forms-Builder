@@ -135,16 +135,24 @@ const MultipleChoiceQuestion = ({
   value,
   onChange,
   hasError,
+  choiceUsage = {},
 }: {
   question: TSurveyMultipleChoiceQuestion;
   value: string | string[];
   onChange: (v: string | string[]) => void;
   hasError: boolean;
+  choiceUsage?: Record<string, number>; // choiceId → count of responses
 }) => {
   const isMulti = question.type === TSurveyQuestionTypeEnum.MultipleChoiceMulti;
   const selected: string[] = Array.isArray(value) ? value : value ? [value] : [];
 
-  const toggle = (label: string) => {
+  const isChoiceFull = (choiceId: string, limit?: number): boolean => {
+    if (!limit) return false;
+    return (choiceUsage[choiceId] ?? 0) >= limit;
+  };
+
+  const toggle = (label: string, choiceId: string, limit?: number) => {
+    if (isChoiceFull(choiceId, limit)) return;
     if (isMulti) {
       onChange(selected.includes(label) ? selected.filter((s) => s !== label) : [...selected, label]);
     } else {
@@ -157,24 +165,59 @@ const MultipleChoiceQuestion = ({
       {question.choices.map((choice) => {
         const label = t(choice.label);
         const checked = selected.includes(label);
+        const isFull = isChoiceFull(choice.id, choice.limit);
+        const usedCount = choiceUsage[choice.id] ?? 0;
+
         return (
           <label
             key={choice.id}
-            className="flex cursor-pointer items-center gap-4 border-2 px-4 py-3 text-sm font-medium transition-all"
+            className="flex items-center gap-4 border-2 px-4 py-3 text-sm font-medium transition-all"
             style={{
               borderRadius: "var(--radius)",
-              borderColor: checked ? "var(--brand)" : "var(--input-bd)",
-              backgroundColor: checked ? "color-mix(in srgb, var(--brand) 10%, white)" : "var(--card-bg)",
-              color: checked ? "var(--brand)" : "var(--q-color)",
+              borderColor: isFull ? "#cbd5e1" : checked ? "var(--brand)" : "var(--input-bd)",
+              backgroundColor: isFull
+                ? "#f8fafc"
+                : checked
+                  ? "color-mix(in srgb, var(--brand) 10%, white)"
+                  : "var(--card-bg)",
+              color: isFull ? "#94a3b8" : checked ? "var(--brand)" : "var(--q-color)",
+              cursor: isFull ? "not-allowed" : "pointer",
+              opacity: isFull ? 0.75 : 1,
             }}>
             <input
               type={isMulti ? "checkbox" : "radio"}
               checked={checked}
-              onChange={() => toggle(label)}
+              disabled={isFull}
+              onChange={() => toggle(label, choice.id, choice.limit)}
               className="h-4 w-4 flex-shrink-0"
               style={{ accentColor: "var(--brand)" }}
             />
-            <span>{label}</span>
+            <span className="flex-1">{label}</span>
+            {isFull && (
+              <span
+                className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                اكتملت المقاعد ({usedCount}/{choice.limit})
+              </span>
+            )}
+            {!isFull && choice.limit && (
+              <span className="text-xs" style={{ color: "#94a3b8" }}>
+                {choice.limit - usedCount} متبقٍ
+              </span>
+            )}
           </label>
         );
       })}
@@ -716,6 +759,38 @@ export const OnepageForm = ({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // choiceUsage: { [questionId]: { [choiceId]: count } }
+  const [choiceUsage, setChoiceUsage] = useState<Record<string, Record<string, number>>>({});
+
+  // Fetch and poll choice usage counts for limited choices
+  useEffect(() => {
+    if (isPreview) return;
+    const hasLimits = survey.questions.some(
+      (q) =>
+        (q.type === TSurveyQuestionTypeEnum.MultipleChoiceSingle ||
+          q.type === TSurveyQuestionTypeEnum.MultipleChoiceMulti) &&
+        (q as TSurveyMultipleChoiceQuestion).choices.some((c) => c.limit != null)
+    );
+    if (!hasLimits) return;
+
+    const fetchUsage = async () => {
+      try {
+        const res = await fetch(
+          `${publicDomain}/api/v1/client/${survey.environmentId}/surveys/${survey.id}/choice-usage`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setChoiceUsage(json.data ?? {}); // json.data = { questionId: { choiceId: count } }
+        }
+      } catch {
+        // fail silently — real-time update is best-effort
+      }
+    };
+
+    void fetchUsage();
+    const interval = setInterval(fetchUsage, 30_000);
+    return () => clearInterval(interval);
+  }, [survey.id, survey.environmentId, publicDomain, isPreview, survey.questions]);
 
   const setAnswer = (qId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
@@ -880,7 +955,36 @@ export const OnepageForm = ({
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData?.message === "choice_limit_exceeded") {
+          // Re-fetch fresh counts so the form shows the updated grayed-out state
+          try {
+            const usageRes = await fetch(
+              `${publicDomain}/api/v1/client/${survey.environmentId}/surveys/${survey.id}/choice-usage`
+            );
+            if (usageRes.ok) {
+              const json = await usageRes.json();
+              setChoiceUsage(json.data ?? {});
+            }
+          } catch {
+            // best-effort
+          }
+          throw new Error(
+            "عذراً، اكتملت مقاعد أحد الخيارات التي اخترتها. يرجى مراجعة اختياراتك والمحاولة مجدداً"
+          );
+        }
         throw new Error(errData?.message ?? "فشل الإرسال");
+      }
+      // Refresh choice usage so counts reflect this submission
+      try {
+        const usageRes = await fetch(
+          `${publicDomain}/api/v1/client/${survey.environmentId}/surveys/${survey.id}/choice-usage`
+        );
+        if (usageRes.ok) {
+          const json = await usageRes.json();
+          setChoiceUsage(json.data ?? {}); // json.data = { questionId: { choiceId: count } }
+        }
+      } catch {
+        // best-effort
       }
       setSubmitted(true);
     } catch (e: any) {
@@ -1042,6 +1146,7 @@ export const OnepageForm = ({
             value={answers[q.id] ?? (q.type === TSurveyQuestionTypeEnum.MultipleChoiceMulti ? [] : "")}
             onChange={(v) => setAnswer(q.id, v)}
             hasError={hasError}
+            choiceUsage={choiceUsage[q.id]}
           />
         );
         break;

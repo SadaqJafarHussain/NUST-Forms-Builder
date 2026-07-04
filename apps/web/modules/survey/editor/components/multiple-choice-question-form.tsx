@@ -1,12 +1,5 @@
 "use client";
 
-import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
-import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
-import { QuestionOptionChoice } from "@/modules/survey/editor/components/question-option-choice";
-import { findOptionUsedInLogic } from "@/modules/survey/editor/lib/utils";
-import { Button } from "@/modules/ui/components/button";
-import { Label } from "@/modules/ui/components/label";
-import { ShuffleOptionSelect } from "@/modules/ui/components/shuffle-option-select";
 import { DndContext } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
@@ -23,6 +16,13 @@ import {
   TSurveyQuestionTypeEnum,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { createI18nString, extractLanguageCodes } from "@/lib/i18n/utils";
+import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
+import { QuestionOptionChoice } from "@/modules/survey/editor/components/question-option-choice";
+import { findOptionUsedInLogic } from "@/modules/survey/editor/lib/utils";
+import { Button } from "@/modules/ui/components/button";
+import { Label } from "@/modules/ui/components/label";
+import { ShuffleOptionSelect } from "@/modules/ui/components/shuffle-option-select";
 
 interface MultipleChoiceQuestionFormProps {
   localSurvey: TSurvey;
@@ -74,12 +74,20 @@ export const MultipleChoiceQuestionForm = ({
     },
   };
 
-  const updateChoice = (choiceIdx: number, updatedAttributes: { label: TI18nString }) => {
+  const updateChoice = (
+    choiceIdx: number,
+    updatedAttributes: { label?: TI18nString; limit?: number | undefined }
+  ) => {
     let newChoices: any[] = [];
     if (question.choices) {
       newChoices = question.choices.map((choice, idx) => {
         if (idx !== choiceIdx) return choice;
-        return { ...choice, ...updatedAttributes };
+        const updated = { ...choice, ...updatedAttributes };
+        // Remove limit key entirely when undefined to keep data clean
+        if ("limit" in updatedAttributes && updatedAttributes.limit === undefined) {
+          delete updated.limit;
+        }
+        return updated;
       });
     }
 

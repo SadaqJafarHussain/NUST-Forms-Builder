@@ -1,10 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { createI18nString } from "@/lib/i18n/utils";
-import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
-import { Button } from "@/modules/ui/components/button";
-import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslate } from "@tolgee/react";
@@ -18,13 +13,21 @@ import {
   TSurveyRankingQuestion,
 } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { cn } from "@/lib/cn";
+import { createI18nString } from "@/lib/i18n/utils";
+import { QuestionFormInput } from "@/modules/survey/components/question-form-input";
+import { Button } from "@/modules/ui/components/button";
+import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { isLabelValidForAllLanguages } from "../lib/validation";
 
 interface ChoiceProps {
   choice: TSurveyQuestionChoice;
   choiceIdx: number;
   questionIdx: number;
-  updateChoice: (choiceIdx: number, updatedAttributes: { label: TI18nString }) => void;
+  updateChoice: (
+    choiceIdx: number,
+    updatedAttributes: { label?: TI18nString; limit?: number | undefined }
+  ) => void;
   deleteChoice: (choiceIdx: number) => void;
   addChoice: (choiceIdx: number) => void;
   isInvalid: boolean;
@@ -126,6 +129,29 @@ export const QuestionOptionChoice = ({
           />
         )}
       </div>
+      {/* Per-choice response limit input */}
+      {choice.id !== "other" && (
+        <TooltipRenderer tooltipContent="الحد الأقصى لعدد المستجيبين لهذا الخيار (اتركه فارغاً لعدم التحديد)">
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] leading-tight text-slate-400">الحد</span>
+            <input
+              type="number"
+              min={1}
+              placeholder="∞"
+              value={choice.limit ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                updateChoice(choiceIdx, {
+                  limit: raw === "" ? undefined : Math.max(1, parseInt(raw, 10)),
+                });
+              }}
+              className="w-14 rounded border border-slate-200 px-1.5 py-1 text-center text-xs text-slate-700 focus:border-[#1b335f] focus:outline-none"
+              dir="ltr"
+            />
+          </div>
+        </TooltipRenderer>
+      )}
+
       <div className="flex gap-2">
         {question.choices && question.choices.length > 2 && (
           <TooltipRenderer tooltipContent={t("environments.surveys.edit.delete_choice")}>

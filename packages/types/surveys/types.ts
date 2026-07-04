@@ -344,6 +344,7 @@ export type TSurveyMetadata = z.infer<typeof ZSurveyMetadata>;
 export const ZSurveyQuestionChoice = z.object({
   id: z.string(),
   label: ZI18nString,
+  limit: z.number().int().positive().optional(),
 });
 
 export const ZSurveyPictureChoice = z.object({
