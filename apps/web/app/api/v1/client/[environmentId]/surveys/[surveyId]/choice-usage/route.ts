@@ -11,7 +11,7 @@ export const OPTIONS = async (): Promise<Response> => {
   return responses.successResponse({}, true);
 };
 
-export const GET = async (req: NextRequest, props: Context): Promise<Response> => {
+export const GET = async (_req: NextRequest, props: Context): Promise<Response> => {
   const { environmentId, surveyId } = await props.params;
 
   // Verify the survey belongs to this environment
