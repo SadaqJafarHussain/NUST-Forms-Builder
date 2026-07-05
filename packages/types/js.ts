@@ -109,7 +109,21 @@ export const ZJsUserIdentifyInput = z.object({
 
 export type TJsPersonIdentifyInput = z.infer<typeof ZJsUserIdentifyInput>;
 
-export const ZJsConfig = z.object({
+// Explicitly defined to avoid TS7056 (inferred type too complex for serialization)
+export type TJsConfig = {
+  environmentId: string;
+  apiHost: string;
+  environmentState: TJsEnvironmentState;
+  personState: TJsPersonState;
+  filteredSurveys: TJsEnvironmentStateSurvey[];
+  attributes: Record<string, string>;
+  status: {
+    value: "success" | "error";
+    expiresAt: Date | null;
+  };
+};
+
+export const ZJsConfig: z.ZodType<TJsConfig> = z.object({
   environmentId: z.string().cuid(),
   apiHost: z.string(),
   environmentState: ZJsEnvironmentState,
@@ -122,18 +136,25 @@ export const ZJsConfig = z.object({
   }),
 });
 
-export type TJsConfig = z.infer<typeof ZJsConfig>;
+export type TJsConfigUpdateInput = Omit<TJsConfig, "status"> & {
+  status?: {
+    value: "success" | "error";
+    expiresAt: Date | null;
+  };
+};
 
-export const ZJsConfigUpdateInput = ZJsConfig.omit({ status: true }).extend({
-  status: z
-    .object({
-      value: z.enum(["success", "error"]),
-      expiresAt: z.date().nullable(),
-    })
-    .optional(),
-});
-
-export type TJsConfigUpdateInput = z.infer<typeof ZJsConfigUpdateInput>;
+export const ZJsConfigUpdateInput: z.ZodType<TJsConfigUpdateInput> = (
+  ZJsConfig as unknown as z.ZodObject<any>
+)
+  .omit({ status: true })
+  .extend({
+    status: z
+      .object({
+        value: z.enum(["success", "error"]),
+        expiresAt: z.date().nullable(),
+      })
+      .optional(),
+  });
 
 export const ZJsConfigInput = z.object({
   environmentId: z.string().cuid2(),
