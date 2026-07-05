@@ -123,7 +123,7 @@ export type TJsConfig = {
   };
 };
 
-export const ZJsConfig: z.ZodType<TJsConfig> = z.object({
+export const ZJsConfig = z.object({
   environmentId: z.string().cuid(),
   apiHost: z.string(),
   environmentState: ZJsEnvironmentState,
@@ -134,7 +134,7 @@ export const ZJsConfig: z.ZodType<TJsConfig> = z.object({
     value: z.enum(["success", "error"]),
     expiresAt: z.date().nullable(),
   }),
-});
+}) as unknown as z.ZodType<TJsConfig>;
 
 export type TJsConfigUpdateInput = Omit<TJsConfig, "status"> & {
   status?: {
@@ -143,18 +143,14 @@ export type TJsConfigUpdateInput = Omit<TJsConfig, "status"> & {
   };
 };
 
-export const ZJsConfigUpdateInput: z.ZodType<TJsConfigUpdateInput> = (
-  ZJsConfig as unknown as z.ZodObject<any>
-)
-  .omit({ status: true })
-  .extend({
-    status: z
-      .object({
-        value: z.enum(["success", "error"]),
-        expiresAt: z.date().nullable(),
-      })
-      .optional(),
-  });
+export const ZJsConfigUpdateInput = (ZJsConfig as unknown as z.ZodObject<any>).omit({ status: true }).extend({
+  status: z
+    .object({
+      value: z.enum(["success", "error"]),
+      expiresAt: z.date().nullable(),
+    })
+    .optional(),
+}) as unknown as z.ZodType<TJsConfigUpdateInput>;
 
 export const ZJsConfigInput = z.object({
   environmentId: z.string().cuid2(),
