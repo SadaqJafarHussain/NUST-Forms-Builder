@@ -378,6 +378,7 @@ model Survey {
   isSingleResponsePerEmailEnabled Boolean          @default(false)
   isBackButtonHidden              Boolean          @default(false)
   isOnePage                       Boolean          @default(true)
+  scheduledClosingAt              DateTime?
   /// [BannerConfig]
   bannerConfig                    Json?
   pin                             String?

@@ -59,6 +59,17 @@ const STATUS_CONFIG = {
     badgeColor: "#b45309",
     badgeBorder: "#f59e0b40",
   },
+  "deadline passed": {
+    icon: "🔒",
+    iconBg: "#dc262618",
+    iconColor: "#dc2626",
+    title: "انتهى وقت الإجابة",
+    subtitle: "لقد انتهت المدة المحددة لهذا الفورم وأُغلق تلقائياً. شكراً لاهتمامك.",
+    badgeText: "مغلق تلقائياً",
+    badgeBg: "#dc262618",
+    badgeColor: "#dc2626",
+    badgeBorder: "#dc262640",
+  },
 };
 
 export const SurveyInactive = async ({
@@ -66,7 +77,7 @@ export const SurveyInactive = async ({
   surveyClosedMessage,
   bannerConfig,
 }: {
-  status: "paused" | "completed" | "link invalid" | "response submitted" | "link expired";
+  status: "paused" | "completed" | "link invalid" | "response submitted" | "link expired" | "deadline passed";
   surveyClosedMessage?: TSurveyClosedMessage | null;
   project?: Pick<Project, "linkSurveyBranding">;
   bannerConfig?: TBannerConfig | null;

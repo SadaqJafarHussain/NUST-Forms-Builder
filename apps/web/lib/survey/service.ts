@@ -53,6 +53,7 @@ export const selectSurvey = {
   isBackButtonHidden: true,
   isOnePage: true,
   bannerConfig: true,
+  scheduledClosingAt: true,
   redirectUrl: true,
   projectOverwrites: true,
   styling: true,

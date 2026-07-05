@@ -32,6 +32,7 @@ import { getLocalizedValue } from "@/lib/i18n/utils";
 import { EmptySpaceFiller } from "@/modules/ui/components/empty-space-filler";
 import { SkeletonLoader } from "@/modules/ui/components/skeleton-loader";
 import { AddressSummary } from "./AddressSummary";
+import { DropdownSummary } from "./DropdownSummary";
 import { IraqLocationSummary } from "./IraqLocationSummary";
 
 interface SummaryListProps {
@@ -278,6 +279,17 @@ export const SummaryList = ({ summary, environment, responseCount, survey, local
                 environmentId={environment.id}
                 survey={survey}
                 locale={locale}
+              />
+            );
+          }
+          if (questionSummary.type === TSurveyQuestionTypeEnum.Dropdown) {
+            return (
+              <DropdownSummary
+                key={questionSummary.question.id}
+                questionSummary={questionSummary}
+                environmentId={environment.id}
+                survey={survey}
+                setFilter={setFilter}
               />
             );
           }

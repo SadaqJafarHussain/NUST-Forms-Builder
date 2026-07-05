@@ -25,6 +25,7 @@ import { PictureSelectionQuestion } from "@/components/questions/picture-selecti
 import { RankingQuestion } from "@/components/questions/ranking-question";
 import { RatingQuestion } from "@/components/questions/rating-question";
 import { getLocalizedValue } from "@/lib/i18n";
+import { DropdownQuestion } from "../questions/dropdown-question";
 import { IraqLocationQuestion } from "../questions/iraq-location-question";
 
 interface QuestionConditionalProps {
@@ -354,6 +355,23 @@ export function QuestionConditional({
     />
   ) : question.type === TSurveyQuestionTypeEnum.IraqLocation ? (
     <IraqLocationQuestion
+      question={question}
+      value={typeof value === "string" ? value : undefined}
+      onChange={onChange}
+      onSubmit={onSubmit}
+      onBack={onBack}
+      isFirstQuestion={isFirstQuestion}
+      isLastQuestion={isLastQuestion}
+      languageCode={languageCode}
+      ttc={ttc}
+      setTtc={setTtc}
+      currentQuestionId={currentQuestionId}
+      autoFocusEnabled={autoFocusEnabled}
+      isBackButtonHidden={isBackButtonHidden}
+      dir={dir}
+    />
+  ) : question.type === TSurveyQuestionTypeEnum.Dropdown ? (
+    <DropdownQuestion
       question={question}
       value={typeof value === "string" ? value : undefined}
       onChange={onChange}

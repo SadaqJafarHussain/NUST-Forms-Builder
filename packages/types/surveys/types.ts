@@ -137,6 +137,7 @@ export enum TSurveyQuestionTypeEnum {
   Ranking = "ranking",
   ContactInfo = "contactInfo",
   IraqLocation = "iraq_location",
+  Dropdown = "dropdown",
 }
 
 export const ZIraqLocationJudiciary = z.object({
@@ -745,6 +746,17 @@ export const ZSurveyMultipleChoiceQuestion = ZSurveyQuestionBase.extend({
 
 export type TSurveyMultipleChoiceQuestion = z.infer<typeof ZSurveyMultipleChoiceQuestion>;
 
+export const ZSurveyDropdownQuestion = ZSurveyQuestionBase.extend({
+  type: z.literal(TSurveyQuestionTypeEnum.Dropdown),
+  choices: z
+    .array(ZSurveyQuestionChoice)
+    .min(2, { message: "سؤال القائمة المنسدلة يجب أن يحتوي على خيارين على الأقل" }),
+  shuffleOption: ZShuffleOption.optional(),
+  placeholder: ZI18nString.optional(),
+});
+
+export type TSurveyDropdownQuestion = z.infer<typeof ZSurveyDropdownQuestion>;
+
 export const ZSurveyNPSQuestion = ZSurveyQuestionBase.extend({
   type: z.literal(TSurveyQuestionTypeEnum.NPS),
   lowerLabel: ZI18nString.optional(),
@@ -885,6 +897,7 @@ export const ZSurveyQuestion = z.union([
   ZSurveyRankingQuestion,
   ZSurveyContactInfoQuestion,
   ZSurveyIraqLocationQuestion,
+  ZSurveyDropdownQuestion,
 ]);
 
 export type TSurveyQuestion = z.infer<typeof ZSurveyQuestion>;
@@ -909,7 +922,8 @@ export const ZSurveyQuestionType = z.enum([
   TSurveyQuestionTypeEnum.Cal,
   TSurveyQuestionTypeEnum.Ranking,
   TSurveyQuestionTypeEnum.ContactInfo,
-  TSurveyQuestionTypeEnum.IraqLocation, // ← ADD THIS
+  TSurveyQuestionTypeEnum.IraqLocation,
+  TSurveyQuestionTypeEnum.Dropdown,
 ]);
 
 export type TSurveyQuestionType = z.infer<typeof ZSurveyQuestionType>;
@@ -1041,6 +1055,7 @@ export const ZSurvey = z
     displayPercentage: z.number().min(0.01).max(100).nullable(),
     languages: z.array(ZSurveyLanguage),
     metadata: ZSurveyMetadata,
+    scheduledClosingAt: z.date().nullable().optional(),
   })
   .superRefine((survey, ctx) => {
     const { questions, languages, welcomeCard, endings, isBackButtonHidden } = survey;
@@ -3168,6 +3183,22 @@ export const ZSurveyQuestionSummaryIraqLocation = z.object({
 
 export type TSurveyQuestionSummaryIraqLocation = z.infer<typeof ZSurveyQuestionSummaryIraqLocation>;
 
+export const ZSurveyQuestionSummaryDropdown = z.object({
+  type: z.literal("dropdown"),
+  question: ZSurveyDropdownQuestion,
+  responseCount: z.number(),
+  selectionCount: z.number(),
+  choices: z.array(
+    z.object({
+      value: z.string(),
+      count: z.number(),
+      percentage: z.number(),
+    })
+  ),
+});
+
+export type TSurveyQuestionSummaryDropdown = z.infer<typeof ZSurveyQuestionSummaryDropdown>;
+
 export const ZSurveyQuestionSummary = z.union([
   ZSurveyQuestionSummaryOpenText,
   ZSurveyQuestionSummaryMultipleChoice,
@@ -3184,6 +3215,7 @@ export const ZSurveyQuestionSummary = z.union([
   ZSurveyQuestionSummaryRanking,
   ZSurveyQuestionSummaryContactInfo,
   ZSurveyQuestionSummaryIraqLocation,
+  ZSurveyQuestionSummaryDropdown,
 ]);
 
 export type TSurveyQuestionSummary = z.infer<typeof ZSurveyQuestionSummary>;

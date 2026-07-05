@@ -1,8 +1,3 @@
-import { getLocalizedValue } from "@/lib/i18n/utils";
-import { isConditionGroup } from "@/lib/surveyLogic/utils";
-import { recallToHeadline } from "@/lib/utils/recall";
-import { getQuestionTypes } from "@/modules/survey/lib/questions";
-import { TComboboxGroupedOption, TComboboxOption } from "@/modules/ui/components/input-combo-box";
 import { TFnType } from "@tolgee/react";
 import { EyeOffIcon, FileDigitIcon, FileType2Icon } from "lucide-react";
 import { HTMLInputTypeAttribute, JSX } from "react";
@@ -22,6 +17,11 @@ import {
   TSurveyQuestionTypeEnum,
   TSurveyVariable,
 } from "@formbricks/types/surveys/types";
+import { getLocalizedValue } from "@/lib/i18n/utils";
+import { isConditionGroup } from "@/lib/surveyLogic/utils";
+import { recallToHeadline } from "@/lib/utils/recall";
+import { getQuestionTypes } from "@/modules/survey/lib/questions";
+import { TComboboxGroupedOption, TComboboxOption } from "@/modules/ui/components/input-combo-box";
 import { TLogicRuleOption, getLogicRules } from "./logic-rule-engine";
 
 export const MAX_STRING_LENGTH = 2000;
@@ -441,9 +441,10 @@ export const getMatchValueProps = (
       };
     } else if (
       selectedQuestion?.type === TSurveyQuestionTypeEnum.MultipleChoiceSingle ||
-      selectedQuestion?.type === TSurveyQuestionTypeEnum.MultipleChoiceMulti
+      selectedQuestion?.type === TSurveyQuestionTypeEnum.MultipleChoiceMulti ||
+      selectedQuestion?.type === TSurveyQuestionTypeEnum.Dropdown
     ) {
-      const choices = selectedQuestion.choices.map((choice) => {
+      const choices = (selectedQuestion as any).choices.map((choice: any) => {
         return {
           label: getLocalizedValue(choice.label, "default"),
           value: choice.id,

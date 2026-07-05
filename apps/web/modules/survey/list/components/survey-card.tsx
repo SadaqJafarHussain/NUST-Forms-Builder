@@ -1,12 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TUserLocale } from "@formbricks/types/user";
 import { timeSince } from "@/lib/time";
 import { useSingleUseId } from "@/modules/survey/hooks/useSingleUseId";
 import { TSurvey } from "@/modules/survey/list/types/surveys";
 import { SurveyDropDownMenu } from "./survey-dropdown-menu";
+
+// Build a compact countdown string like "2ي 3س 45د"
+function buildCountdown(deadline: Date): string | null {
+  const diff = deadline.getTime() - Date.now();
+  if (diff <= 0) return null;
+  const totalMinutes = Math.floor(diff / 60_000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}ي ${hours}س`;
+  if (hours > 0) return `${hours}س ${minutes}د`;
+  if (minutes > 0) return `${minutes}د`;
+  return "أقل من دقيقة";
+}
 
 // Gradient pairs for card thumbnails
 const GRADIENTS = [
@@ -48,31 +62,74 @@ export const SurveyCard = ({
   const { refreshSingleUseId } = useSingleUseId(survey, isReadOnly);
   const [from, to] = getGradient(survey.id);
 
+  // Real-time deadline — track whether deadline has passed client-side
+  const [deadlinePassed, setDeadlinePassed] = useState(() => {
+    if (!survey.scheduledClosingAt) return false;
+    return Date.now() >= new Date(survey.scheduledClosingAt).getTime();
+  });
+
+  useEffect(() => {
+    if (!survey.scheduledClosingAt) {
+      setDeadlinePassed(false);
+      return;
+    }
+    const deadline = new Date(survey.scheduledClosingAt);
+    if (Date.now() >= deadline.getTime()) {
+      setDeadlinePassed(true);
+      return;
+    }
+    setDeadlinePassed(false);
+    const msUntil = deadline.getTime() - Date.now();
+    const id = setTimeout(() => setDeadlinePassed(true), msUntil);
+    return () => clearTimeout(id);
+  }, [survey.scheduledClosingAt]);
+
+  // Live countdown text (updates every 30s — enough for a card list)
+  const [countdown, setCountdown] = useState<string | null>(() => {
+    if (!survey.scheduledClosingAt || deadlinePassed) return null;
+    return buildCountdown(new Date(survey.scheduledClosingAt));
+  });
+
+  useEffect(() => {
+    if (!survey.scheduledClosingAt || deadlinePassed) {
+      setCountdown(null);
+      return;
+    }
+    const deadline = new Date(survey.scheduledClosingAt);
+    const tick = () => setCountdown(buildCountdown(deadline));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [survey.scheduledClosingAt, deadlinePassed]);
+
+  // Effective status: override to "completed" when deadline passed and survey is still active
+  const effectiveStatus = deadlinePassed && survey.status === "inProgress" ? "completed" : survey.status;
+
   const linkHref = useMemo(
     () =>
-      survey.status === "draft"
+      effectiveStatus === "draft"
         ? `/environments/${environmentId}/surveys/${survey.id}/edit`
         : `/environments/${environmentId}/surveys/${survey.id}/summary`,
-    [survey.status, survey.id, environmentId]
+    [effectiveStatus, survey.id, environmentId]
   );
 
-  const isDraftAndReadOnly = survey.status === "draft" && isReadOnly;
+  const isDraftAndReadOnly = effectiveStatus === "draft" && isReadOnly;
 
   const statusLabel =
-    survey.status === "draft"
+    effectiveStatus === "draft"
       ? "مسودة"
-      : survey.status === "inProgress"
+      : effectiveStatus === "inProgress"
         ? "نشط"
-        : survey.status === "paused"
+        : effectiveStatus === "paused"
           ? "موقوف"
           : "مكتمل";
 
   const statusColor =
-    survey.status === "inProgress"
+    effectiveStatus === "inProgress"
       ? "#16a34a"
-      : survey.status === "paused"
+      : effectiveStatus === "paused"
         ? "#f59e0b"
-        : survey.status === "completed"
+        : effectiveStatus === "completed"
           ? "#64748b"
           : "#94a3b8";
 
@@ -102,6 +159,26 @@ export const SurveyCard = ({
           style={{ backgroundColor: statusColor + "cc" }}>
           {statusLabel}
         </span>
+
+        {/* Deadline-expired icon — bottom-left of thumbnail */}
+        {deadlinePassed && survey.status === "inProgress" && (
+          <span
+            className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold text-white"
+            style={{ backgroundColor: "#dc262699" }}
+            title="أُغلق تلقائياً بانتهاء الموعد">
+            ⏰ انتهى الموعد
+          </span>
+        )}
+
+        {/* Active countdown — bottom of thumbnail */}
+        {!deadlinePassed && countdown && survey.status === "inProgress" && (
+          <span
+            className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+            style={{ backgroundColor: "#1b335fbb" }}
+            title={`يُغلق تلقائياً: ${new Date(survey.scheduledClosingAt!).toLocaleString("ar-IQ")}`}>
+            ⏱ {countdown}
+          </span>
+        )}
 
         {/* 3-dot menu */}
         <button
@@ -134,6 +211,14 @@ export const SurveyCard = ({
           {" · "}
           {timeSince(survey.updatedAt.toString(), locale)}
         </p>
+        {/* Deadline info line */}
+        {survey.scheduledClosingAt && survey.status === "inProgress" && (
+          <p
+            className="mt-0.5 flex items-center gap-1 text-xs font-medium"
+            style={{ color: deadlinePassed ? "#dc2626" : "#1b335f" }}>
+            {deadlinePassed ? "⏰ أُغلق تلقائياً بانتهاء الموعد" : `⏱ يُغلق بعد: ${countdown ?? "..."}`}
+          </p>
+        )}
       </div>
     </div>
   );

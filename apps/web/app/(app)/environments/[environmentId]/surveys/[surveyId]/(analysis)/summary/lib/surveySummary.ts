@@ -17,6 +17,7 @@ import {
 import {
   TSurvey,
   TSurveyContactInfoQuestion,
+  TSurveyDropdownQuestion,
   TSurveyIraqLocationQuestion,
   TSurveyLanguage,
   TSurveyMultipleChoiceQuestion,
@@ -24,6 +25,7 @@ import {
   TSurveyQuestionId,
   TSurveyQuestionSummaryAddress,
   TSurveyQuestionSummaryDate,
+  TSurveyQuestionSummaryDropdown,
   TSurveyQuestionSummaryFileUpload,
   TSurveyQuestionSummaryHiddenFields,
   TSurveyQuestionSummaryIraqLocation,
@@ -979,6 +981,51 @@ export const getQuestionSummary = async (
           provinceDistribution,
           judiciaryDistribution,
           areaDistribution,
+        });
+
+        break;
+      }
+      case TSurveyQuestionTypeEnum.Dropdown: {
+        const dropdownQuestion = question as TSurveyDropdownQuestion;
+        const questionChoices = dropdownQuestion.choices.map((c) => getLocalizedValue(c.label, "default"));
+
+        const choiceCountMap: Record<string, number> = {};
+        questionChoices.forEach((label) => {
+          choiceCountMap[label] = 0;
+        });
+
+        let totalResponseCount = 0;
+
+        responses.forEach((response) => {
+          const responseLanguageCode = getLanguageCode(survey.languages, response.language);
+          const answer =
+            responseLanguageCode === "default"
+              ? response.data[question.id]
+              : checkForI18n(response.data, question.id, survey, responseLanguageCode);
+
+          if (typeof answer === "string" && answer) {
+            if (questionChoices.includes(answer)) {
+              choiceCountMap[answer]++;
+            }
+            totalResponseCount++;
+          }
+        });
+
+        const choices: TSurveyQuestionSummaryDropdown["choices"] = Object.entries(choiceCountMap)
+          .map(([value, count]) => ({
+            value,
+            count,
+            percentage:
+              totalResponseCount > 0 ? convertFloatTo2Decimal((count / totalResponseCount) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        summary.push({
+          type: "dropdown" as const,
+          question: dropdownQuestion,
+          responseCount: totalResponseCount,
+          selectionCount: totalResponseCount,
+          choices,
         });
 
         break;

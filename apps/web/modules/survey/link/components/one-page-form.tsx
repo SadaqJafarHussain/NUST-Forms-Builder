@@ -6,6 +6,7 @@ import iraqLocationData from "@formbricks/surveys/iraq-location-data";
 import { TBaseStyling } from "@formbricks/types/styling";
 import {
   TSurvey,
+  TSurveyDropdownQuestion,
   TSurveyIraqLocationQuestion,
   TSurveyMatrixQuestion,
   TSurveyMultipleChoiceQuestion,
@@ -406,6 +407,172 @@ const MatrixQuestion = ({
   );
 };
 
+// ── Dropdown ──────────────────────────────────────────────────────────────────
+
+const DropdownQuestion = ({
+  question,
+  value,
+  onChange,
+  hasError,
+}: {
+  question: TSurveyDropdownQuestion;
+  value: string;
+  onChange: (v: string) => void;
+  hasError: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 0, maxHeight: 240 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const getLabel = (choice: (typeof question.choices)[0]) => t(choice.label);
+
+  const filtered = question.choices.filter((c) =>
+    getLabel(c).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const r = buttonRef.current.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const spaceBelow = vh - r.bottom - 8;
+      const spaceAbove = r.top - 8;
+      const preferred = 240;
+      let top: number;
+      let maxHeight: number;
+      if (spaceBelow >= preferred || spaceBelow >= spaceAbove) {
+        top = r.bottom + 4;
+        maxHeight = Math.min(preferred, spaceBelow);
+      } else {
+        maxHeight = Math.min(preferred, spaceAbove);
+        top = r.top - maxHeight - 4;
+      }
+      setMenuStyle({ top, left: r.left, width: r.width, maxHeight });
+    }
+    setIsOpen((v) => !v);
+    setSearchTerm("");
+  };
+
+  const handleSelect = (label: string) => {
+    onChange(label);
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    const closeOnScroll = (e: Event) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
+      setIsOpen(false);
+      setSearchTerm("");
+    };
+    document.addEventListener("mousedown", handler);
+    window.addEventListener("scroll", closeOnScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      window.removeEventListener("scroll", closeOnScroll, true);
+    };
+  }, [isOpen]);
+
+  const placeholder = t(question.placeholder) || "اختر من القائمة...";
+
+  return (
+    <div className="relative w-full">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className="relative w-full border-2 text-sm transition focus:outline-none"
+        style={{
+          borderRadius: "var(--radius)",
+          borderColor: hasError ? "#f87171" : isOpen ? "var(--brand)" : "var(--input-bd)",
+          backgroundColor: "var(--input-bg)",
+          color: value ? "var(--q-color)" : "#94a3b8",
+          textAlign: "right",
+          direction: "rtl",
+          padding: "0.75rem 1rem 0.75rem 2.5rem",
+        }}>
+        <span className="block truncate">{value || placeholder}</span>
+        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+          <svg
+            style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+            className="h-4 w-4 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+
+      {isOpen && (
+        <div
+          ref={menuRef}
+          style={{
+            position: "fixed",
+            top: menuStyle.top,
+            left: menuStyle.left,
+            width: menuStyle.width,
+            maxHeight: menuStyle.maxHeight,
+            zIndex: 9999,
+            borderRadius: "var(--radius)",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+          className="border border-slate-200 bg-white shadow-xl">
+          <div className="flex-shrink-0 border-b border-slate-100 p-2">
+            <input
+              autoFocus
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ابحث..."
+              className="w-full border border-slate-200 px-3 py-2 text-right text-sm focus:border-[var(--brand)] focus:outline-none"
+              style={{ borderRadius: "var(--radius)" }}
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto py-1">
+            {filtered.length > 0 ? (
+              filtered.map((choice) => {
+                const label = getLabel(choice);
+                const isSel = value === label;
+                return (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    onClick={() => handleSelect(label)}
+                    className="w-full px-4 py-2.5 text-right text-sm transition hover:bg-slate-50"
+                    style={{
+                      color: isSel ? "var(--brand)" : "#374151",
+                      fontWeight: isSel ? 600 : 400,
+                      backgroundColor: isSel ? "color-mix(in srgb, var(--brand) 8%, white)" : "transparent",
+                    }}>
+                    {label}
+                  </button>
+                );
+              })
+            ) : (
+              <p className="px-4 py-3 text-center text-sm text-slate-400">لا توجد نتائج</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Iraq Location ─────────────────────────────────────────────────────────────
 
 const ILSearchableDropdown = ({
@@ -761,6 +928,9 @@ export const OnepageForm = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   // choiceUsage: { [questionId]: { [choiceId]: count } }
   const [choiceUsage, setChoiceUsage] = useState<Record<string, Record<string, number>>>({});
+  // Real-time deadline enforcement
+  const [deadlineExpired, setDeadlineExpired] = useState(false);
+  const [deadlineRemaining, setDeadlineRemaining] = useState<string | null>(null);
 
   // Fetch and poll choice usage counts for limited choices
   useEffect(() => {
@@ -791,6 +961,36 @@ export const OnepageForm = ({
     const interval = setInterval(fetchUsage, 30_000);
     return () => clearInterval(interval);
   }, [survey.id, survey.environmentId, publicDomain, isPreview, survey.questions]);
+
+  // Real-time deadline check — ticks every second
+  useEffect(() => {
+    if (!survey.scheduledClosingAt || isPreview) return;
+    const deadline = new Date(survey.scheduledClosingAt);
+
+    const computeRemaining = () => {
+      const diff = deadline.getTime() - Date.now();
+      if (diff <= 0) {
+        setDeadlineExpired(true);
+        setDeadlineRemaining(null);
+        return;
+      }
+      const totalSeconds = Math.floor(diff / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const parts: string[] = [];
+      if (days > 0) parts.push(`${days}ي`);
+      if (hours > 0) parts.push(`${hours}س`);
+      if (minutes > 0) parts.push(`${minutes}د`);
+      parts.push(`${seconds}ث`);
+      setDeadlineRemaining(parts.join(" "));
+    };
+
+    computeRemaining();
+    const id = setInterval(computeRemaining, 1000);
+    return () => clearInterval(id);
+  }, [survey.scheduledClosingAt, isPreview]);
 
   const setAnswer = (qId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
@@ -955,6 +1155,10 @@ export const OnepageForm = ({
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData?.message === "deadline_passed") {
+          setDeadlineExpired(true);
+          return;
+        }
         if (errData?.message === "choice_limit_exceeded") {
           // Re-fetch fresh counts so the form shows the updated grayed-out state
           try {
@@ -1005,6 +1209,87 @@ export const OnepageForm = ({
     "--radius": colors.radius,
     "--q-size": colors.qFontSize,
   } as React.CSSProperties;
+
+  // ── Deadline expired screen ───────────────────────────────────────────────
+  if (deadlineExpired) {
+    return (
+      <div className="min-h-screen w-full" dir="rtl" style={{ ...colors.pageBgStyle, ...cssVars }}>
+        {/* NUST Header Banner */}
+        <div className="w-full" style={{ backgroundColor: "#1b335f" }}>
+          <div className="h-2 w-full" style={{ backgroundColor: "#f4bf00" }} />
+          <p
+            className="pt-3 text-center text-sm font-medium"
+            style={{ color: "#f4bf00", fontFamily: "serif" }}>
+            بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
+          </p>
+          <div className="px-4 py-3 sm:px-10 sm:py-5">
+            <div className="hidden w-full items-center justify-between gap-6 sm:flex">
+              <div className="flex flex-1 flex-col items-end gap-1 text-right">
+                <p className="text-xl font-extrabold text-white">الجامعة الوطنية للعلوم والتكنولوجيا</p>
+                <p className="text-sm font-semibold" style={{ color: "#f4bf00" }}>
+                  نظام الاستبيانات الإلكتروني
+                </p>
+              </div>
+              <div className="flex-shrink-0 rounded-full p-1.5" style={{ backgroundColor: "#f4bf00" }}>
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white p-2">
+                  <img
+                    src="/images/logo.png"
+                    alt="شعار الجامعة"
+                    width={80}
+                    height={80}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col items-start gap-1 text-left">
+                <p className="text-xl font-extrabold text-white">
+                  National University of Sciences &amp; Technology
+                </p>
+                <p className="text-sm font-semibold" style={{ color: "#f4bf00" }}>
+                  Electronic Survey System
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="mx-4 sm:mx-10"
+            style={{ height: "2px", backgroundColor: "#f4bf00", opacity: 0.6 }}
+          />
+          <div className="h-2 w-full" style={{ backgroundColor: "#f4bf00" }} />
+        </div>
+        {/* Card */}
+        <div className="flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12">
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white text-center shadow-lg"
+            style={{ border: "1px solid #e2e8f0" }}>
+            <div className="h-1.5 w-full rounded-t-2xl" style={{ backgroundColor: "#1b335f" }} />
+            <div className="px-8 py-10">
+              <div
+                className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full text-5xl font-bold"
+                style={{ backgroundColor: "#dc262618", color: "#dc2626", border: "2px solid #dc262630" }}>
+                🔒
+              </div>
+              <span
+                className="mb-5 inline-block rounded-full px-4 py-1 text-sm font-semibold"
+                style={{ backgroundColor: "#dc262618", color: "#dc2626", border: "1px solid #dc262640" }}>
+                مغلق تلقائياً
+              </span>
+              <h1 className="mb-3 text-2xl font-bold" style={{ color: "#1b335f" }}>
+                انتهى وقت الإجابة
+              </h1>
+              <p className="text-base leading-relaxed text-slate-500">
+                لقد انتهت المدة المحددة لهذا الفورم وأُغلق تلقائياً. شكراً لاهتمامك.
+              </p>
+              <div className="mx-auto my-8 h-0.5 w-16 rounded-full" style={{ backgroundColor: "#f4bf00" }} />
+              <p className="text-xs text-slate-400">
+                نظام الاستبيانات الإلكتروني — الجامعة الوطنية للعلوم والتكنولوجيا
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
@@ -1199,6 +1484,16 @@ export const OnepageForm = ({
           />
         );
         break;
+      case TSurveyQuestionTypeEnum.Dropdown:
+        widget = (
+          <DropdownQuestion
+            question={q as TSurveyDropdownQuestion}
+            value={answers[q.id] ?? ""}
+            onChange={(v) => setAnswer(q.id, v)}
+            hasError={hasError}
+          />
+        );
+        break;
       default:
         widget = (
           <input
@@ -1276,6 +1571,20 @@ export const OnepageForm = ({
         />
       )}
 
+      {/* Deadline countdown banner */}
+      {survey.scheduledClosingAt && !isPreview && deadlineRemaining && (
+        <div className="mx-auto max-w-2xl px-3 pt-4 sm:px-5">
+          <div
+            className="flex items-center gap-2.5 rounded-lg px-4 py-2.5"
+            style={{ backgroundColor: "#1b335f0d", border: "1px solid #1b335f25" }}>
+            <span className="text-base">⏱</span>
+            <p className="text-sm font-medium" style={{ color: "#1b335f" }}>
+              يُغلق الفورم تلقائياً بعد: <span className="font-bold tabular-nums">{deadlineRemaining}</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Form title */}
       {survey.name && (
         <div className="mx-auto max-w-2xl px-3 pt-6 sm:px-5" style={{ color: "var(--q-color)" }}>
@@ -1304,13 +1613,16 @@ export const OnepageForm = ({
         <div className="mt-6 pb-8">
           <button
             type="button"
-            onClick={isPreview ? undefined : handleSubmit}
-            disabled={submitting || isPreview}
+            onClick={isPreview || deadlineExpired ? undefined : handleSubmit}
+            disabled={submitting || isPreview || deadlineExpired}
             className="w-full py-4 text-base font-bold text-white shadow-sm transition-opacity disabled:opacity-50 sm:w-auto sm:px-12"
             style={{ backgroundColor: colors.brand, borderRadius: colors.radius }}>
             {submitting ? "جارٍ الإرسال…" : "إرسال الفورم"}
           </button>
           {isPreview && <p className="mt-2 text-xs text-slate-400">معاينة فقط — لا يمكن الإرسال</p>}
+          {deadlineExpired && (
+            <p className="mt-2 text-xs text-red-500">انتهى وقت الإجابة — هذا الفورم مغلق الآن</p>
+          )}
         </div>
       </div>
     </div>

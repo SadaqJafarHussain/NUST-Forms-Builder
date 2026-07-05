@@ -41,6 +41,7 @@ export const selectSurvey = {
   isOnePage: true,
   bannerConfig: true,
   metadata: true,
+  scheduledClosingAt: true,
   languages: {
     select: {
       default: true,

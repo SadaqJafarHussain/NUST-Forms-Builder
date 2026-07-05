@@ -24,6 +24,7 @@ import { ConsentQuestionForm } from "@/modules/survey/editor/components/consent-
 import { ContactInfoQuestionForm } from "@/modules/survey/editor/components/contact-info-question-form";
 import { CTAQuestionForm } from "@/modules/survey/editor/components/cta-question-form";
 import { DateQuestionForm } from "@/modules/survey/editor/components/date-question-form";
+import { DropdownQuestionForm } from "@/modules/survey/editor/components/dropdown-question-form";
 import { EditorCardMenu } from "@/modules/survey/editor/components/editor-card-menu";
 import { FileUploadQuestionForm } from "@/modules/survey/editor/components/file-upload-question-form";
 import { IraqLocationQuestionForm } from "@/modules/survey/editor/components/iraq-location-question-form";
@@ -275,6 +276,7 @@ export const QuestionCard = ({
             TSurveyQuestionTypeEnum.NPS,
             TSurveyQuestionTypeEnum.Ranking,
             TSurveyQuestionTypeEnum.Matrix,
+            TSurveyQuestionTypeEnum.Dropdown,
           ].includes(question.type) ? (
             <Alert variant="warning" size="small" className="w-fill" role="alert">
               <AlertTitle>{t("environments.surveys.edit.caution_text")}</AlertTitle>
@@ -478,6 +480,19 @@ export const QuestionCard = ({
               question={question}
               questionIdx={questionIdx}
               updateQuestion={updateQuestion}
+              selectedLanguageCode={selectedLanguageCode}
+              setSelectedLanguageCode={setSelectedLanguageCode}
+              isInvalid={isInvalid}
+              locale={locale}
+              isStorageConfigured={isStorageConfigured}
+            />
+          ) : question.type === TSurveyQuestionTypeEnum.Dropdown ? (
+            <DropdownQuestionForm
+              localSurvey={localSurvey}
+              question={question}
+              questionIdx={questionIdx}
+              updateQuestion={updateQuestion}
+              lastQuestion={lastQuestion}
               selectedLanguageCode={selectedLanguageCode}
               setSelectedLanguageCode={setSelectedLanguageCode}
               isInvalid={isInvalid}

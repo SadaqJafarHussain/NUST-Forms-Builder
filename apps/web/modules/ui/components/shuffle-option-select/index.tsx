@@ -1,5 +1,13 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import { ChevronDown } from "lucide-react";
+import {
+  TShuffleOption,
+  TSurveyMatrixQuestion,
+  TSurveyMultipleChoiceQuestion,
+  TSurveyRankingQuestion,
+} from "@formbricks/types/surveys/types";
 import {
   Select,
   SelectContent,
@@ -7,13 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/modules/ui/components/select";
-import { useTranslate } from "@tolgee/react";
-import {
-  TShuffleOption,
-  TSurveyMatrixQuestion,
-  TSurveyMultipleChoiceQuestion,
-  TSurveyRankingQuestion,
-} from "@formbricks/types/surveys/types";
 
 interface ShuffleOptionType {
   id: string;
@@ -51,7 +52,8 @@ export const ShuffleOptionSelect: React.FC<ShuffleOptionSelectProps> = ({
       onValueChange={(e: TShuffleOption) => {
         updateQuestion(questionIdx, { shuffleOption: e });
       }}>
-      <SelectTrigger className="w-fit space-x-2 overflow-hidden border-0 font-medium text-slate-600">
+      <SelectTrigger className="w-fit gap-2 border-0 font-medium text-slate-600" hideArrow>
+        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         <SelectValue placeholder={t("environments.surveys.edit.select_ordering")} />
       </SelectTrigger>
       <SelectContent>

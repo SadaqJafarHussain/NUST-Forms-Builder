@@ -6,6 +6,7 @@ import { TSegment } from "@formbricks/types/segment";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TargetingCard } from "@/modules/ee/contacts/segments/components/targeting-card";
 import { TTeamPermission } from "@/modules/ee/teams/project-teams/types/team";
+import { DeadlineCard } from "@/modules/survey/editor/components/deadline-card";
 import { DisplayModeCard } from "@/modules/survey/editor/components/display-mode-card";
 import { HowToSendCard } from "@/modules/survey/editor/components/how-to-send-card";
 import { RecontactOptionsCard } from "@/modules/survey/editor/components/recontact-options-card";
@@ -96,6 +97,8 @@ export const SettingsView = ({
         setLocalSurvey={setLocalSurvey}
         environmentId={environment.id}
       />
+
+      <DeadlineCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />
 
       {isAppSurvey && (
         <SurveyPlacementCard

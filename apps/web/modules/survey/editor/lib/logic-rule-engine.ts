@@ -417,6 +417,30 @@ export const getLogicRules = (t: TFnType) => {
           },
         ],
       },
+      [TSurveyQuestionTypeEnum.Dropdown]: {
+        options: [
+          {
+            label: t("environments.surveys.edit.equals"),
+            value: ZSurveyLogicConditionsOperator.Enum.equals,
+          },
+          {
+            label: t("environments.surveys.edit.does_not_equal"),
+            value: ZSurveyLogicConditionsOperator.Enum.doesNotEqual,
+          },
+          {
+            label: t("environments.surveys.edit.equals_one_of"),
+            value: ZSurveyLogicConditionsOperator.Enum.equalsOneOf,
+          },
+          {
+            label: t("environments.surveys.edit.is_submitted"),
+            value: ZSurveyLogicConditionsOperator.Enum.isSubmitted,
+          },
+          {
+            label: t("environments.surveys.edit.is_skipped"),
+            value: ZSurveyLogicConditionsOperator.Enum.isSkipped,
+          },
+        ],
+      },
     },
     ["variable.text"]: {
       options: [

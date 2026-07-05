@@ -38,6 +38,7 @@ export const extractChoiceIdsFromResponse = (
   if (
     question.type !== "multipleChoiceMulti" &&
     question.type !== "multipleChoiceSingle" &&
+    question.type !== "dropdown" &&
     question.type !== "ranking" &&
     question.type !== "pictureSelection"
   ) {

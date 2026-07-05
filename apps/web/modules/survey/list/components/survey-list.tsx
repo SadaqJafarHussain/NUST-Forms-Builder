@@ -104,6 +104,17 @@ export const SurveysList = ({
     }
   }, []);
 
+  // Re-fetch when user returns to this tab (e.g. after editing deadline in editor)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setRefreshTrigger((v) => !v);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   // Fetch surveys
   useEffect(() => {
     if (!isFilterInitialized) return;

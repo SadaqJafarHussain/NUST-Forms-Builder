@@ -61,6 +61,19 @@ export const renderSurvey = async ({
 
   const isSpamProtectionEnabled = Boolean(IS_RECAPTCHA_CONFIGURED && survey.recaptcha?.enabled);
 
+  // Check deadline before status — a form scheduled to close takes priority
+  if (survey.scheduledClosingAt && new Date() >= new Date(survey.scheduledClosingAt)) {
+    const project = await getProjectByEnvironmentId(survey.environmentId);
+    return (
+      <SurveyInactive
+        status="deadline passed"
+        surveyClosedMessage={survey.surveyClosedMessage}
+        project={project || undefined}
+        bannerConfig={survey.bannerConfig ?? null}
+      />
+    );
+  }
+
   if (survey.status !== "inProgress") {
     const project = await getProjectByEnvironmentId(survey.environmentId);
     return (

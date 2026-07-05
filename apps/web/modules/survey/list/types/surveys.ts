@@ -11,6 +11,7 @@ export const ZSurvey = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   responseCount: z.number(),
+  scheduledClosingAt: z.date().nullable().optional(),
   creator: z
     .object({
       name: z.string(),

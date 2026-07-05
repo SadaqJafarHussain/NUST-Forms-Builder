@@ -188,6 +188,13 @@ export const POST = withV1ApiWrapper({
       };
     }
 
+    // Enforce scheduled deadline — reject submissions after the deadline
+    if (survey.scheduledClosingAt && new Date() >= new Date(survey.scheduledClosingAt)) {
+      return {
+        response: responses.forbiddenResponse("deadline_passed", true),
+      };
+    }
+
     if (!validateFileUploads(responseInputData.data, survey.questions)) {
       return {
         response: responses.badRequestResponse("Invalid file upload response"),

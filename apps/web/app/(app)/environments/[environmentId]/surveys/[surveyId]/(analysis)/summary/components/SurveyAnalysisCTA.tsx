@@ -70,6 +70,40 @@ export const SurveyAnalysisCTA = ({
 
   const appSetupCompleted = survey.type === "app" && environment.appSetupCompleted;
 
+  // Deadline real-time tracking
+  const [deadlinePassed, setDeadlinePassed] = useState(() => {
+    if (!survey.scheduledClosingAt) return false;
+    return Date.now() >= new Date(survey.scheduledClosingAt).getTime();
+  });
+  const [deadlineCountdown, setDeadlineCountdown] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!survey.scheduledClosingAt) {
+      setDeadlinePassed(false);
+      return;
+    }
+    const deadline = new Date(survey.scheduledClosingAt);
+    const computeState = () => {
+      const diff = deadline.getTime() - Date.now();
+      if (diff <= 0) {
+        setDeadlinePassed(true);
+        setDeadlineCountdown(null);
+        return;
+      }
+      setDeadlinePassed(false);
+      const totalMinutes = Math.floor(diff / 60_000);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const minutes = totalMinutes % 60;
+      if (days > 0) setDeadlineCountdown(`${days} يوم و${hours} ساعة`);
+      else if (hours > 0) setDeadlineCountdown(`${hours} ساعة و${minutes} دقيقة`);
+      else setDeadlineCountdown(`${minutes} دقيقة`);
+    };
+    computeState();
+    const id = setInterval(computeState, 30_000);
+    return () => clearInterval(id);
+  }, [survey.scheduledClosingAt]);
+
   useEffect(() => {
     setModalState((prev) => ({
       ...prev,
@@ -183,59 +217,87 @@ export const SurveyAnalysisCTA = ({
     },
   ];
 
+  const showDeadlineBanner = !!survey.scheduledClosingAt && survey.status === "inProgress";
+
   return (
-    <div className="hidden justify-end gap-x-1.5 sm:flex">
-      {!isReadOnly && (appSetupCompleted || survey.type === "link") && survey.status !== "draft" && (
-        <SurveyStatusDropdown environment={environment} survey={survey} />
+    <div className="flex flex-col items-end gap-2">
+      {/* Deadline banner — shown when survey has a scheduled close date */}
+      {showDeadlineBanner && (
+        <div
+          className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold"
+          dir="rtl"
+          style={
+            deadlinePassed
+              ? { backgroundColor: "#dc262612", color: "#dc2626", border: "1px solid #dc262630" }
+              : { backgroundColor: "#1b335f0d", color: "#1b335f", border: "1px solid #1b335f25" }
+          }>
+          {deadlinePassed ? (
+            <>
+              ⏰ أُغلق تلقائياً بانتهاء الموعد —{" "}
+              {new Date(survey.scheduledClosingAt!).toLocaleString("ar-IQ")}
+            </>
+          ) : (
+            <>
+              ⏱ يُغلق تلقائياً بعد: <span className="font-bold">{deadlineCountdown ?? "..."}</span> —{" "}
+              {new Date(survey.scheduledClosingAt!).toLocaleString("ar-IQ")}
+            </>
+          )}
+        </div>
       )}
 
-      <IconBar actions={iconActions} />
-      {user && (
-        <ShareSurveyModal
-          survey={survey}
-          publicDomain={publicDomain}
-          open={modalState.start || modalState.share}
-          setOpen={(open) => {
-            if (!open) {
-              handleShareModalToggle(false);
-              setModalState((prev) => ({ ...prev, share: false }));
+      <div className="hidden justify-end gap-x-1.5 sm:flex">
+        {!isReadOnly && (appSetupCompleted || survey.type === "link") && survey.status !== "draft" && (
+          <SurveyStatusDropdown environment={environment} survey={survey} />
+        )}
+
+        <IconBar actions={iconActions} />
+        {user && (
+          <ShareSurveyModal
+            survey={survey}
+            publicDomain={publicDomain}
+            open={modalState.start || modalState.share}
+            setOpen={(open) => {
+              if (!open) {
+                handleShareModalToggle(false);
+                setModalState((prev) => ({ ...prev, share: false }));
+              }
+            }}
+            user={user}
+            modalView={modalState.start ? "start" : "share"}
+            segments={segments}
+            isContactsEnabled={isContactsEnabled}
+            isFormbricksCloud={isFormbricksCloud}
+            isReadOnly={isReadOnly}
+            isStorageConfigured={isStorageConfigured}
+          />
+        )}
+        <SuccessMessage environment={environment} survey={survey} />
+
+        {responseCount > 0 && (
+          <EditPublicSurveyAlertDialog
+            open={isCautionDialogOpen}
+            setOpen={setIsCautionDialogOpen}
+            isLoading={loading}
+            primaryButtonAction={() => duplicateSurveyAndRoute(survey.id)}
+            primaryButtonText={t("environments.surveys.edit.caution_edit_duplicate")}
+            secondaryButtonAction={() =>
+              router.push(`/environments/${environment.id}/surveys/${survey.id}/edit`)
             }
-          }}
-          user={user}
-          modalView={modalState.start ? "start" : "share"}
-          segments={segments}
-          isContactsEnabled={isContactsEnabled}
-          isFormbricksCloud={isFormbricksCloud}
-          isReadOnly={isReadOnly}
-          isStorageConfigured={isStorageConfigured}
-        />
-      )}
-      <SuccessMessage environment={environment} survey={survey} />
+            secondaryButtonText={t("common.edit")}
+          />
+        )}
 
-      {responseCount > 0 && (
-        <EditPublicSurveyAlertDialog
-          open={isCautionDialogOpen}
-          setOpen={setIsCautionDialogOpen}
-          isLoading={loading}
-          primaryButtonAction={() => duplicateSurveyAndRoute(survey.id)}
-          primaryButtonText={t("environments.surveys.edit.caution_edit_duplicate")}
-          secondaryButtonAction={() =>
-            router.push(`/environments/${environment.id}/surveys/${survey.id}/edit`)
-          }
-          secondaryButtonText={t("common.edit")}
+        <ConfirmationModal
+          open={isResetModalOpen}
+          setOpen={setIsResetModalOpen}
+          title={t("environments.surveys.summary.delete_all_existing_responses_and_displays")}
+          body={t("environments.surveys.summary.reset_survey_warning")}
+          buttonText={t("environments.surveys.summary.reset_survey")}
+          onConfirm={handleResetSurvey}
+          buttonVariant="destructive"
+          buttonLoading={isResetting}
         />
-      )}
-
-      <ConfirmationModal
-        open={isResetModalOpen}
-        setOpen={setIsResetModalOpen}
-        title={t("environments.surveys.summary.delete_all_existing_responses_and_displays")}
-        body={t("environments.surveys.summary.reset_survey_warning")}
-        buttonText={t("environments.surveys.summary.reset_survey")}
-        onConfirm={handleResetSurvey}
-        buttonVariant="destructive"
-        buttonLoading={isResetting}
-      />
+      </div>
     </div>
   );
 };

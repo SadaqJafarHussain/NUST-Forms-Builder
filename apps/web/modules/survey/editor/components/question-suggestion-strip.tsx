@@ -19,7 +19,7 @@ export interface SuggestionQuestion {
 // ── Metadata helper (also exported for use in import dialog) ─────────────────
 export function getQuestionMeta(q: TSurveyQuestion): string {
   const type = q.type;
-  if (type === "multipleChoiceSingle" || type === "multipleChoiceMulti") {
+  if (type === "multipleChoiceSingle" || type === "multipleChoiceMulti" || type === "dropdown") {
     const count = (q as any).choices?.length ?? 0;
     return count ? `${count} خيارات` : "";
   }

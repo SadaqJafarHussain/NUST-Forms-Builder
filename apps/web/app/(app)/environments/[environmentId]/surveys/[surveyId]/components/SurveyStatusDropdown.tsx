@@ -1,5 +1,11 @@
 "use client";
 
+import { useTranslate } from "@tolgee/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { TEnvironment } from "@formbricks/types/environment";
+import { TSurvey } from "@formbricks/types/surveys/types";
 import { getFormattedErrorMessage } from "@/lib/utils/helper";
 import {
   Select,
@@ -9,11 +15,6 @@ import {
   SelectValue,
 } from "@/modules/ui/components/select";
 import { SurveyStatusIndicator } from "@/modules/ui/components/survey-status-indicator";
-import { useTranslate } from "@tolgee/react";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
-import { TEnvironment } from "@formbricks/types/environment";
-import { TSurvey } from "@formbricks/types/surveys/types";
 import { updateSurveyAction } from "../actions";
 
 interface SurveyStatusDropdownProps {
@@ -29,6 +30,30 @@ export const SurveyStatusDropdown = ({
 }: SurveyStatusDropdownProps) => {
   const { t } = useTranslate();
   const router = useRouter();
+
+  // Real-time deadline tracking
+  const [deadlinePassed, setDeadlinePassed] = useState(() => {
+    if (!survey.scheduledClosingAt) return false;
+    return Date.now() >= new Date(survey.scheduledClosingAt).getTime();
+  });
+
+  useEffect(() => {
+    if (!survey.scheduledClosingAt) {
+      setDeadlinePassed(false);
+      return;
+    }
+    const deadline = new Date(survey.scheduledClosingAt);
+    if (Date.now() >= deadline.getTime()) {
+      setDeadlinePassed(true);
+      return;
+    }
+    setDeadlinePassed(false);
+    const msUntil = deadline.getTime() - Date.now();
+    const id = setTimeout(() => setDeadlinePassed(true), msUntil);
+    return () => clearTimeout(id);
+  }, [survey.scheduledClosingAt]);
+
+  const showDeadlineBadge = deadlinePassed && survey.status === "inProgress";
 
   const handleStatusChange = async (status: TSurvey["status"]) => {
     const updateSurveyActionResponse = await updateSurveyAction({ ...survey, status });
@@ -54,7 +79,7 @@ export const SurveyStatusDropdown = ({
   };
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       {survey.status === "draft" ? (
         <div className="flex items-center">
           <p className="text-sm italic text-slate-600">{t("common.draft")}</p>
@@ -101,6 +126,16 @@ export const SurveyStatusDropdown = ({
           </SelectContent>
         </Select>
       )}
-    </>
+
+      {/* Deadline-passed badge — shows when deadline has passed but admin hasn't manually closed */}
+      {showDeadlineBadge && (
+        <span
+          className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+          style={{ backgroundColor: "#dc262618", color: "#dc2626", border: "1px solid #dc262640" }}
+          title="انتهى الموعد المحدد — النموذج مغلق للمستخدمين">
+          🔒 انتهى الموعد
+        </span>
+      )}
+    </div>
   );
 };
