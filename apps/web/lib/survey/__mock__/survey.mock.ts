@@ -264,6 +264,7 @@ export const mockSyncSurveyOutput: SurveyMock = {
   variables: [],
   showLanguageSwitch: null,
   metadata: {},
+  scheduledClosingAt: null,
 };
 
 export const mockSurveyOutput: SurveyMock = {
@@ -277,6 +278,7 @@ export const mockSurveyOutput: SurveyMock = {
   singleUse: null,
   styling: null,
   displayPercentage: null,
+  scheduledClosingAt: null,
   createdBy: null,
   pin: null,
   segment: null,

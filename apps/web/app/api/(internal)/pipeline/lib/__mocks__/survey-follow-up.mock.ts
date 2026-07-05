@@ -169,6 +169,7 @@ export const mockSurvey: TSurvey = {
   languages: [],
   triggers: [],
   segment: null,
+  scheduledClosingAt: null,
   followUps: mockFollowUps,
 };
 
