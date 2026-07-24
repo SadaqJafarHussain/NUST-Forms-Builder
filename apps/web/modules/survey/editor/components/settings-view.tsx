@@ -8,7 +8,6 @@ import { TargetingCard } from "@/modules/ee/contacts/segments/components/targeti
 import { TTeamPermission } from "@/modules/ee/teams/project-teams/types/team";
 import { DeadlineCard } from "@/modules/survey/editor/components/deadline-card";
 import { DisplayModeCard } from "@/modules/survey/editor/components/display-mode-card";
-import { HowToSendCard } from "@/modules/survey/editor/components/how-to-send-card";
 import { RecontactOptionsCard } from "@/modules/survey/editor/components/recontact-options-card";
 import { ResponseOptionsCard } from "@/modules/survey/editor/components/response-options-card";
 import { SurveyPlacementCard } from "@/modules/survey/editor/components/survey-placement-card";
@@ -51,7 +50,6 @@ export const SettingsView = ({
   return (
     <div className="space-y-3 p-4" dir="rtl">
       <DisplayModeCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />
-      <HowToSendCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} environment={environment} />
 
       {localSurvey.type === "app" ? (
         <div>

@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  FolderPlusIcon,
-  LayoutDashboardIcon,
-  LogOutIcon,
-  PencilIcon,
-  SettingsIcon,
-  XIcon,
-} from "lucide-react";
+import { CheckIcon, ChevronDownIcon, FolderPlusIcon, LogOutIcon, PencilIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { TOrganization } from "@formbricks/types/organizations";
 import { TProject } from "@formbricks/types/project";
 import { TUser } from "@formbricks/types/user";
@@ -31,10 +22,9 @@ import {
 interface NavTabProps {
   href: string;
   label: string;
-  icon?: React.ReactNode;
 }
 
-const NavTab = ({ href, label, icon }: NavTabProps) => {
+const NavTab = ({ href, label }: NavTabProps) => {
   const pathname = usePathname();
   const isActive =
     pathname?.startsWith(
@@ -43,17 +33,11 @@ const NavTab = ({ href, label, icon }: NavTabProps) => {
   return (
     <Link
       href={href}
-      className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-      style={
-        isActive
-          ? {
-              backgroundColor: "rgba(255,255,255,0.15)",
-              color: "#fff",
-              border: "1px solid rgba(255,255,255,0.35)",
-            }
-          : { color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.2)" }
-      }>
-      {icon}
+      className="flex h-full items-center gap-1.5 border-b-[3px] px-4 text-sm font-medium transition-colors"
+      style={{
+        borderBottomColor: isActive ? "#1b335f" : "transparent",
+        color: isActive ? "#1b335f" : "#5f6368",
+      }}>
       {label}
     </Link>
   );
@@ -78,6 +62,8 @@ export const TopNavbar = ({
 }: TopNavbarProps) => {
   const router = useRouter();
   const { signOut } = useSignOut({ id: user.id, email: user.email });
+  const projMenuId = useId();
+  const avatarMenuId = useId();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -139,30 +125,38 @@ export const TopNavbar = ({
   return (
     <>
       <header
-        className="flex h-14 w-full shrink-0 items-center justify-between border-b border-[#0f314c] px-6"
-        style={{ backgroundColor: "#1b335f" }}
+        className="flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6"
         dir="rtl">
         {/* Logo */}
         <Link
           href={`/environments/${environmentId}/surveys`}
           className="flex select-none items-center gap-1.5">
-          <span className="text-xl font-bold text-white">NUST</span>
+          <span className="text-xl font-bold" style={{ color: "#1b335f" }}>
+            NUST
+          </span>
           <span className="text-xl font-light" style={{ color: "#f4bf00" }}>
             |
           </span>
-          <span className="text-xl font-medium text-white">فورمات</span>
+          <span className="text-xl font-medium" style={{ color: "#1b335f" }}>
+            فورمات
+          </span>
         </Link>
 
         {/* Right: project switcher + nav tabs + avatar */}
-        <div className="flex items-center gap-2">
+        <div className="flex h-full items-center gap-1">
           {/* Project Switcher — owners/managers only */}
           {canCreateProject ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 focus:outline-none focus:ring-0">
+              <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-0">
                 <span className="max-w-[140px] truncate">{currentProject?.name ?? "القسم/الكلية"}</span>
-                <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-white/60" />
+                <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="bottom" align="end" sideOffset={8} className="min-w-[240px]">
+              <DropdownMenuContent
+                id={projMenuId}
+                side="bottom"
+                align="end"
+                sideOffset={8}
+                className="min-w-[240px]">
                 <div className="px-3 py-1.5 text-right">
                   <p className="text-xs font-semibold text-slate-400">الأقسام والكليات</p>
                 </div>
@@ -224,28 +218,20 @@ export const TopNavbar = ({
             </DropdownMenu>
           ) : (
             currentProject && (
-              <span className="rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-white/80">
+              <span className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600">
                 {currentProject.name}
               </span>
             )
           )}
 
-          <NavTab
-            href={`/environments/${environmentId}/surveys`}
-            label="فورماتي"
-            icon={<LayoutDashboardIcon className="h-4 w-4" />}
-          />
-          <NavTab
-            href={`/environments/${environmentId}/settings/profile`}
-            label="الإعدادات"
-            icon={<SettingsIcon className="h-4 w-4" />}
-          />
+          <NavTab href={`/environments/${environmentId}/surveys`} label="فورماتي" />
+          <NavTab href={`/environments/${environmentId}/settings/profile`} label="الإعدادات" />
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="mr-1 focus:outline-none focus:ring-0">
+            <DropdownMenuTrigger className="mr-2 focus:outline-none focus:ring-0">
               <ProfileAvatar userId={user.id} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="bottom" align="end" sideOffset={8}>
+            <DropdownMenuContent id={avatarMenuId} side="bottom" align="end" sideOffset={8}>
               <div className="border-b border-slate-100 px-3 py-2 text-right">
                 <p className="text-sm font-medium text-slate-800">{user.name ?? user.email}</p>
                 <p className="text-xs text-slate-500">{user.email}</p>

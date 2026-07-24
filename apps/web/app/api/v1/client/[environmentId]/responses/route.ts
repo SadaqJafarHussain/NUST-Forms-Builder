@@ -13,6 +13,7 @@ import { withV1ApiWrapper } from "@/app/lib/api/with-api-logging";
 import { sendToPipeline } from "@/app/lib/pipelines";
 import { capturePosthogEnvironmentEvent } from "@/lib/posthogServer";
 import { getSurvey } from "@/lib/survey/service";
+import { nameSimilarity } from "@/lib/unique-field/similarity";
 import { getIsContactsEnabled } from "@/modules/ee/license-check/lib/utils";
 import { createQuotaFullObject } from "@/modules/ee/quotas/lib/helpers";
 import { validateFileUploads } from "@/modules/storage/utils";
@@ -86,6 +87,50 @@ async function enforceChoiceLimits(
     logger.error({ err }, "Choice limit check failed — allowing submission");
     return null;
   }
+}
+
+/**
+ * Checks unique-field constraints before saving a response.
+ * Hard-blocks when blockOnMatch=true and the submitted value already exists.
+ */
+async function enforceUniqueFields(
+  surveyId: string,
+  questions: any[],
+  responseData: Record<string, unknown>
+): Promise<{ questionId: string } | null> {
+  const uniqueQuestions = questions.filter(
+    (q) => q.uniqueField?.enabled && q.uniqueField?.blockOnMatch === true
+  );
+  if (!uniqueQuestions.length) return null;
+
+  const allResponses = await prisma.response.findMany({
+    where: { surveyId, finished: true },
+    select: { data: true },
+  });
+
+  for (const question of uniqueQuestions) {
+    const value = responseData[question.id];
+    if (value == null || value === "") continue;
+    const strValue = String(value).trim();
+    const { matchType = "exact", threshold = 0.85 } = question.uniqueField;
+
+    if (matchType === "exact") {
+      const lower = strValue.toLowerCase();
+      const isDuplicate = allResponses.some((r) => {
+        const v = (r.data as Record<string, unknown>)[question.id];
+        return typeof v === "string" && v.trim().toLowerCase() === lower;
+      });
+      if (isDuplicate) return { questionId: question.id };
+    } else {
+      // Fuzzy match
+      for (const r of allResponses) {
+        const v = (r.data as Record<string, unknown>)[question.id];
+        if (typeof v !== "string" || !v.trim()) continue;
+        if (nameSimilarity(strValue, v) >= threshold) return { questionId: question.id };
+      }
+    }
+  }
+  return null;
 }
 
 interface Context {
@@ -212,6 +257,22 @@ export const POST = withV1ApiWrapper({
         response: responses.badRequestResponse(
           "choice_limit_exceeded",
           { choiceId: choiceLimitViolation.choiceId, questionId: choiceLimitViolation.questionId },
+          true
+        ),
+      };
+    }
+
+    // Enforce unique-field constraints (hard block only — soft warnings are client-side)
+    const uniqueViolation = await enforceUniqueFields(
+      responseInputData.surveyId,
+      survey.questions,
+      responseInputData.data as Record<string, unknown>
+    );
+    if (uniqueViolation) {
+      return {
+        response: responses.badRequestResponse(
+          "duplicate_response",
+          { questionId: uniqueViolation.questionId },
           true
         ),
       };

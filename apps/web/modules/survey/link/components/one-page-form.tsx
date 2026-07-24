@@ -909,6 +909,131 @@ const IraqLocationQuestionWidget = ({
   );
 };
 
+// ── Unique field types + warning component ────────────────────────────────────
+
+type UniqueCheckStatus =
+  | { status: "idle" }
+  | { status: "checking" }
+  | { status: "ok" }
+  | { status: "exact-duplicate" }
+  | {
+      status: "similar";
+      matches: { value: string; score: number }[];
+      isPartialMatch: boolean;
+      suggestedTokenCount: number | null;
+    };
+
+const UniqueFieldWarning = ({
+  status,
+  blockOnMatch,
+}: {
+  status: UniqueCheckStatus;
+  blockOnMatch: boolean;
+}) => {
+  if (status.status === "checking") {
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-slate-500" />
+        جارٍ التحقق من التكرار...
+      </p>
+    );
+  }
+
+  if (status.status === "exact-duplicate") {
+    return (
+      <div
+        className="mt-2 rounded-lg p-3 text-sm"
+        style={{
+          backgroundColor: blockOnMatch ? "#fef2f2" : "#fffbeb",
+          border: `1px solid ${blockOnMatch ? "#fecaca" : "#fde68a"}`,
+        }}>
+        <div
+          className="flex items-center gap-2 font-semibold"
+          style={{ color: blockOnMatch ? "#b91c1c" : "#92400e" }}>
+          <span>{blockOnMatch ? "⛔" : "⚠"}</span>
+          <span>هذه القيمة مسجلة مسبقاً في هذا النموذج</span>
+        </div>
+        <p className="mt-1 text-xs" style={{ color: blockOnMatch ? "#dc2626" : "#d97706" }}>
+          {blockOnMatch
+            ? "لا يمكنك إرسال هذا النموذج مرتين"
+            : "يمكنك المتابعة، لكن قد تكون قد أجبت على هذا النموذج مسبقاً"}
+        </p>
+      </div>
+    );
+  }
+
+  if (status.status === "similar" && status.matches.length > 0) {
+    // Partial match: user typed fewer tokens than the stored name.
+    // Prompt them to complete their full name rather than blocking.
+    if (status.isPartialMatch) {
+      const bestMatch = status.matches[0];
+      const needed = status.suggestedTokenCount ?? 4;
+      return (
+        <div
+          className="mt-2 rounded-lg p-4 text-sm"
+          style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+          <div className="mb-2 flex items-center gap-2 font-semibold text-amber-800">
+            <span>✏️</span>
+            <span>يرجى إكمال اسمك الرباعي</span>
+          </div>
+          <p className="mb-2 text-xs text-amber-700">اسمك مشابه لاسم شخص أجاب على هذا النموذج مسبقاً:</p>
+          <div
+            className="mb-3 rounded px-3 py-2 text-xs font-medium"
+            style={{ backgroundColor: "#fff", border: "1px solid #fde68a", color: "#78350f" }}>
+            {bestMatch.value}
+          </div>
+          <p className="text-xs text-amber-700">
+            لإثبات أنك شخص مختلف، أكمل اسمك الرباعي ({needed} كلمات). إذا كان اسمك مختلفاً ستختفي هذه الرسالة
+            تلقائياً.
+          </p>
+        </div>
+      );
+    }
+
+    // Full match — behavior is fully admin-controlled via blockOnMatch
+    return (
+      <div
+        className="mt-2 rounded-lg p-3 text-sm"
+        style={{
+          backgroundColor: blockOnMatch ? "#fef2f2" : "#fffbeb",
+          border: `1px solid ${blockOnMatch ? "#fecaca" : "#fde68a"}`,
+        }}>
+        <div
+          className="mb-2 flex items-center gap-2 font-semibold"
+          style={{ color: blockOnMatch ? "#b91c1c" : "#92400e" }}>
+          <span>{blockOnMatch ? "⛔" : "⚠"}</span>
+          <span>وُجدت أسماء مشابهة جداً لاسمك</span>
+        </div>
+        <ul className="mb-2 space-y-1">
+          {status.matches.slice(0, 3).map((m, i) => (
+            <li
+              key={i}
+              className="flex items-center justify-between rounded px-3 py-1.5 text-xs"
+              style={{
+                backgroundColor: blockOnMatch ? "#fff5f5" : "#fff",
+                border: `1px solid ${blockOnMatch ? "#fecaca" : "#fde68a"}`,
+              }}>
+              <span className="font-medium" style={{ color: blockOnMatch ? "#7f1d1d" : "#78350f" }}>
+                {m.value}
+              </span>
+              <span className="font-semibold" style={{ color: blockOnMatch ? "#b91c1c" : "#d97706" }}>
+                {Math.round(m.score * 100)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs" style={{ color: blockOnMatch ? "#dc2626" : "#d97706" }}>
+          {blockOnMatch
+            ? "لا يمكنك إرسال هذا النموذج — يبدو أنك أجبت عليه مسبقاً"
+            : "يمكنك المتابعة، لكن يبدو أن هذا الاسم مسجل مسبقاً في النموذج"}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 // ── Main OnepageForm ──────────────────────────────────────────────────────────
 
 export const OnepageForm = ({
@@ -931,6 +1056,10 @@ export const OnepageForm = ({
   // Real-time deadline enforcement
   const [deadlineExpired, setDeadlineExpired] = useState(false);
   const [deadlineRemaining, setDeadlineRemaining] = useState<string | null>(null);
+  // ── Unique field real-time checking ───────────────────────────────────────
+  const [uniqueStatus, setUniqueStatus] = useState<Record<string, UniqueCheckStatus>>({});
+  const [alreadyResponded, setAlreadyResponded] = useState(false);
+  const uniqueTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // Fetch and poll choice usage counts for limited choices
   useEffect(() => {
@@ -992,9 +1121,59 @@ export const OnepageForm = ({
     return () => clearInterval(id);
   }, [survey.scheduledClosingAt, isPreview]);
 
+  const checkUniqueField = (questionId: string, value: string) => {
+    const question = survey.questions.find((q) => q.id === questionId);
+    const uq = (question as any)?.uniqueField;
+    if (!uq?.enabled || isPreview) return;
+
+    if (uniqueTimers.current[questionId]) clearTimeout(uniqueTimers.current[questionId]);
+
+    if (!value.trim()) {
+      setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "idle" } }));
+      return;
+    }
+
+    setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "checking" } }));
+
+    uniqueTimers.current[questionId] = setTimeout(async () => {
+      try {
+        const url = `${publicDomain}/api/v1/client/${survey.environmentId}/surveys/${survey.id}/check-unique?questionId=${encodeURIComponent(questionId)}&value=${encodeURIComponent(value.trim())}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "idle" } }));
+          return;
+        }
+        const json = await res.json();
+        const data = json.data ?? json;
+
+        if (data.matchType === "exact" && data.isDuplicate) {
+          setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "exact-duplicate" } }));
+        } else if (data.matchType === "fuzzy" && (data.similarMatches?.length ?? 0) > 0) {
+          setUniqueStatus((prev) => ({
+            ...prev,
+            [questionId]: {
+              status: "similar",
+              matches: data.similarMatches,
+              isPartialMatch: data.isPartialMatch ?? false,
+              suggestedTokenCount: data.suggestedTokenCount ?? null,
+            },
+          }));
+        } else {
+          setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "ok" } }));
+        }
+      } catch {
+        setUniqueStatus((prev) => ({ ...prev, [questionId]: { status: "idle" } }));
+      }
+    }, 400);
+  };
+
   const setAnswer = (qId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
     setErrors((prev) => ({ ...prev, [qId]: false }));
+    // Real-time unique check for text fields
+    if (typeof value === "string") {
+      checkUniqueField(qId, value);
+    }
   };
 
   // ── Conditional visibility ────────────────────────────────────────────────
@@ -1123,6 +1302,24 @@ export const OnepageForm = ({
         valid = false;
       }
     }
+    // Unique-field hard-block check (independent of required status)
+    for (const q of survey.questions) {
+      if (!isQuestionVisible(q.id)) continue;
+      const uq = (q as any).uniqueField;
+      if (!uq?.enabled || !uq?.blockOnMatch) continue;
+      const us = uniqueStatus[q.id];
+      // Hard-block for exact duplicates and full fuzzy matches.
+      // Partial matches (user typed fewer tokens than the stored name) are NOT blocked —
+      // the user is being prompted to complete their name, not denied.
+      if (us?.status === "exact-duplicate") {
+        newErrors[q.id] = true;
+        valid = false;
+      } else if (us?.status === "similar" && !us.isPartialMatch) {
+        newErrors[q.id] = true;
+        valid = false;
+      }
+    }
+
     setErrors(newErrors);
     if (!valid) {
       const firstErrorId = Object.keys(newErrors)[0];
@@ -1157,6 +1354,10 @@ export const OnepageForm = ({
         const errData = await res.json().catch(() => ({}));
         if (errData?.message === "deadline_passed") {
           setDeadlineExpired(true);
+          return;
+        }
+        if (errData?.message === "duplicate_response") {
+          setAlreadyResponded(true);
           return;
         }
         if (errData?.message === "choice_limit_exceeded") {
@@ -1279,6 +1480,85 @@ export const OnepageForm = ({
               </h1>
               <p className="text-base leading-relaxed text-slate-500">
                 لقد انتهت المدة المحددة لهذا الفورم وأُغلق تلقائياً. شكراً لاهتمامك.
+              </p>
+              <div className="mx-auto my-8 h-0.5 w-16 rounded-full" style={{ backgroundColor: "#f4bf00" }} />
+              <p className="text-xs text-slate-400">
+                نظام الاستبيانات الإلكتروني — الجامعة الوطنية للعلوم والتكنولوجيا
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Already responded screen ──────────────────────────────────────────────
+  if (alreadyResponded) {
+    return (
+      <div className="min-h-screen w-full" dir="rtl" style={{ ...colors.pageBgStyle, ...cssVars }}>
+        <div className="w-full" style={{ backgroundColor: "#1b335f" }}>
+          <div className="h-2 w-full" style={{ backgroundColor: "#f4bf00" }} />
+          <p
+            className="pt-3 text-center text-sm font-medium"
+            style={{ color: "#f4bf00", fontFamily: "serif" }}>
+            بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
+          </p>
+          <div className="px-4 py-3 sm:px-10 sm:py-5">
+            <div className="hidden w-full items-center justify-between gap-6 sm:flex">
+              <div className="flex flex-1 flex-col items-end gap-1 text-right">
+                <p className="text-xl font-extrabold text-white">الجامعة الوطنية للعلوم والتكنولوجيا</p>
+                <p className="text-sm font-semibold" style={{ color: "#f4bf00" }}>
+                  نظام الاستبيانات الإلكتروني
+                </p>
+              </div>
+              <div className="flex-shrink-0 rounded-full p-1.5" style={{ backgroundColor: "#f4bf00" }}>
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white p-2">
+                  <img
+                    src="/images/logo.png"
+                    alt="شعار الجامعة"
+                    width={80}
+                    height={80}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col items-start gap-1 text-left">
+                <p className="text-xl font-extrabold text-white">
+                  National University of Sciences &amp; Technology
+                </p>
+                <p className="text-sm font-semibold" style={{ color: "#f4bf00" }}>
+                  Electronic Survey System
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="mx-4 sm:mx-10"
+            style={{ height: "2px", backgroundColor: "#f4bf00", opacity: 0.6 }}
+          />
+          <div className="h-2 w-full" style={{ backgroundColor: "#f4bf00" }} />
+        </div>
+        <div className="flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12">
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white text-center shadow-lg"
+            style={{ border: "1px solid #e2e8f0" }}>
+            <div className="h-1.5 w-full rounded-t-2xl" style={{ backgroundColor: "#dc2626" }} />
+            <div className="px-8 py-10">
+              <div
+                className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full text-5xl font-bold"
+                style={{ backgroundColor: "#fef2f2", border: "2px solid #fecaca" }}>
+                ⛔
+              </div>
+              <span
+                className="mb-5 inline-block rounded-full px-4 py-1 text-sm font-semibold"
+                style={{ backgroundColor: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" }}>
+                إجابة مكررة
+              </span>
+              <h1 className="mb-3 text-2xl font-bold" style={{ color: "#1b335f" }}>
+                لقد أجبت على هذا النموذج مسبقاً
+              </h1>
+              <p className="text-base leading-relaxed text-slate-500">
+                لا يمكن الإجابة على هذا النموذج أكثر من مرة واحدة. شكراً لمشاركتك.
               </p>
               <div className="mx-auto my-8 h-0.5 w-16 rounded-full" style={{ backgroundColor: "#f4bf00" }} />
               <p className="text-xs text-slate-400">
@@ -1537,7 +1817,17 @@ export const OnepageForm = ({
           <p className="mb-3 pr-10 text-xs text-slate-500">{t((q as any).subheader)}</p>
         )}
         <div className="pr-10">{widget}</div>
-        {hasError && <p className="mt-2 pr-10 text-xs text-red-500">هذا الحقل مطلوب</p>}
+        {hasError && !((q as any).uniqueField?.enabled && uniqueStatus[q.id]?.status !== undefined) && (
+          <p className="mt-2 pr-10 text-xs text-red-500">هذا الحقل مطلوب</p>
+        )}
+        {q.type === TSurveyQuestionTypeEnum.OpenText && (q as any).uniqueField?.enabled && (
+          <div className="pr-10">
+            <UniqueFieldWarning
+              status={uniqueStatus[q.id] ?? { status: "idle" }}
+              blockOnMatch={(q as any).uniqueField?.blockOnMatch ?? true}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -1563,10 +1853,10 @@ export const OnepageForm = ({
       {(survey.bannerConfig ?? orgDefaultBannerConfig) && (
         <BannerRenderer
           config={survey.bannerConfig ?? orgDefaultBannerConfig}
-          surveyTitle={survey.name}
           projectName={projectName}
-          titleBg={(styling as any)?.bannerTitleBg}
-          titleTextColor={(styling as any)?.bannerTitleTextColor}
+          titleBg={
+            (styling as any)?.bannerTitleBg ?? (colors.pageBgStyle.backgroundColor as string | undefined)
+          }
           subtitleColor={(styling as any)?.bannerSubtitleColor}
         />
       )}

@@ -56,7 +56,7 @@ export const OpenQuestionForm = ({
   const [showCharLimits, setShowCharLimits] = useState(question.inputType === "text");
 
   const handleInputChange = (inputType: TSurveyOpenTextQuestionInputType) => {
-    const updatedAttributes = {
+    const updatedAttributes: Partial<TSurveyOpenTextQuestion> = {
       inputType: inputType,
       placeholder: createI18nString("", surveyLanguageCodes),
       longAnswer: inputType === "text" ? question.longAnswer : false,
@@ -65,6 +65,12 @@ export const OpenQuestionForm = ({
         max: undefined,
       },
     };
+    // Auto-sync unique field matchType when inputType changes
+    const uq = (question as any).uniqueField;
+    if (uq?.enabled) {
+      const newMatchType = inputType === "email" || inputType === "phone" ? "exact" : "fuzzy";
+      (updatedAttributes as any).uniqueField = { ...uq, matchType: newMatchType };
+    }
     setIsCharLimitEnabled(false);
     setShowCharLimits(inputType === "text");
     updateQuestion(questionIdx, updatedAttributes);
